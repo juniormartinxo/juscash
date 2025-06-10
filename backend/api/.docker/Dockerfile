@@ -18,7 +18,7 @@ COPY . .
 
 # Stage de desenvolvimento
 FROM base AS development
-EXPOSE 8000
+EXPOSE ${API_PORT}
 CMD ["pnpm", "dev"]
 
 # Stage de build para produção
@@ -42,7 +42,7 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 USER nodejs
 
-EXPOSE 8000
+EXPOSE ${API_PORT}
 CMD ["pnpm", "start"]
 
 # Por padrão, usar o stage de desenvolvimento
