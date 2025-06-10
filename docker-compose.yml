@@ -49,6 +49,7 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - ./backend/scraper:/app
     depends_on:
