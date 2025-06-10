@@ -69,3 +69,5 @@ credenciais-codificadas.txt
 .pnpm-store
 
 generated
+
+/src/generated/prisma
