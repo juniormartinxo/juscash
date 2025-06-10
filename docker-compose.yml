@@ -1,35 +1,43 @@
 services:
-  # Frontend - React com Vite
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: .docker/Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - VITE_API_URL=http://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - api
-    networks:
-      - juscash-network
-
   # Backend API - Node.js/Express
   api:
     build:
       context: ./backend/api
       dockerfile: .docker/Dockerfile
+      target: ${NODE_ENV:-development}
+    container_name: ${API_CONTAINER_NAME}
     ports:
-      - "8000:8000"
+      - ${API_HOST_PORT}:${API_PORT}
     environment:
-      - NODE_ENV=development
-      - PORT=8000
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${API_PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
     volumes:
       - ./backend/api:/app
       - /app/node_modules
+    networks:
+      - juscash-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Frontend - React com Vite
+  vite:
+    build:
+      context: ./frontend
+      dockerfile: .docker/Dockerfile
+    container_name: ${VITE_CONTAINER_NAME}
+    ports:
+      - ${VITE_HOST_PORT}:${VITE_PORT}
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - VITE_API_URL=${VITE_API_URL}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
     networks:
       - juscash-network
 
@@ -50,32 +58,68 @@ services:
 
   # Banco de dados PostgreSQL
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: ./database/postgres
+      dockerfile: .docker/Dockerfile
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: always
+    shm_size: 128mb
     environment:
-      - POSTGRES_DB=juscash
-      - POSTGRES_USER=juscash_user
-      - POSTGRES_PASSWORD=juscash_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - ${POSTGRES_HOST_PORT}:${POSTGRES_PORT}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docs/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/postgres/postgres-data:/var/lib/postgresql/data
+      - ./database/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - juscash-network
+      - juscash-network    
+    healthcheck:
+      test: ["CMD", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Redis para cache e filas
   redis:
-    image: redis:7-alpine
+    build:
+      context: ./database/redis
+      dockerfile: .docker/Dockerfile
+    container_name: ${REDIS_CONTAINER_NAME}
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - ${REDIS_HOST_PORT}:${REDIS_PORT}
     volumes:
-      - redis_data:/data
+      - ./database/redis/redis-data:/var/lib/redis/data
+      - ./database/redis/logs:/var/log/redis
+    command: >
+      sh -c "redis-server 
+      --port ${REDIS_PORT} 
+      --requirepass ${REDIS_PASSWORD}
+      --dir /var/lib/redis/data
+      --logfile /var/log/redis/redis.log
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save '60 1'
+      --appendfilename appendonly.aof
+      --appendfsync everysec
+      --bind 0.0.0.0
+      --protected-mode no
+      --maxclients 10000
+      --tcp-keepalive 60"
     networks:
       - juscash-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres-data:
+  redis-data:
 
 networks:
   juscash-network:
