@@ -1,0 +1,82 @@
+services:
+  # Frontend - React com Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: .docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - juscash-network
+
+  # Backend API - Node.js/Express
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: .docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+    volumes:
+      - ./backend/api:/app
+      - /app/node_modules
+    networks:
+      - juscash-network
+
+  # Scraper - Python
+  scraper:
+    build:
+      context: ./backend/scraper
+      dockerfile: .docker/Dockerfile
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/scraper:/app
+    depends_on:
+      - api
+    networks:
+      - juscash-network
+
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=juscash
+      - POSTGRES_USER=juscash_user
+      - POSTGRES_PASSWORD=juscash_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - juscash-network
+
+  # Redis para cache e filas
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - juscash-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  juscash-network:
+    driver: bridge
