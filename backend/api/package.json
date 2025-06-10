@@ -7,30 +7,34 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "nodemon --exec tsx src/index.ts",
-    "dev:debug": "nodemon --exec tsx --inspect=0.0.0.0:9229 src/index.ts",
-    "lint": "npx @biomejs/biome check --write"
+    "dev": "nodemon --exec tsx src/app.ts",
+    "dev:debug": "nodemon --exec tsx --inspect=0.0.0.0:9229 src/app.ts",
+    "lint": "npx @biomejs/biome check --write",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev"
   },
   "keywords": [],
   "author": "Junior Martins <amjr.box@gmail.com>",
   "license": "ISC",
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "express": "^5.1.0",
+    "@prisma/client": "6.9.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0",
     "dotenv": "^16.4.5",
+    "express": "^5.1.0",
     "express-async-errors": "^3.1.1",
+    "helmet": "^7.1.0",
+    "prisma": "^6.9.0",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.3",
+    "nodemon": "^3.0.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3",
-    "@types/cors": "^2.8.17",
-    "nodemon": "^3.0.3"
+    "typescript": "^5.8.3"
   }
 }
