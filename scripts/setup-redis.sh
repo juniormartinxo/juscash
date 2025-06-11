@@ -94,56 +94,6 @@ setup_permissions() {
     done
 }
 
-# Verificar arquivo .env
-check_env_file() {
-    log_info "Verificando arquivo .env..."
-    
-    if [ ! -f ".env" ]; then
-        log_error "Arquivo .env não encontrado!"
-        log_info "Criando .env de exemplo..."
-        
-        cat > .env << EOF
-NODE_ENV=development
-
-# API
-API_CONTAINER_NAME='juscash-api'
-API_PORT=8000
-API_HOST_PORT=8000
-
-# Vite
-VITE_CONTAINER_NAME='juscash-vite'
-VITE_PORT=3000
-VITE_HOST_PORT=3008
-VITE_API_URL='http://\${API_CONTAINER_NAME}:\${API_PORT}'
-
-# POSTGRES
-POSTGRES_USER='juscash_user'
-POSTGRES_PASSWORD='nh2d17u3nD1zMPKK0CxeX7'
-POSTGRES_DB='juscash_db'
-POSTGRES_PORT=5432
-POSTGRES_HOST_PORT=5433
-POSTGRES_CONTAINER_NAME='juscash-postgres'
-
-# REDIS
-REDIS_PORT=6379
-REDIS_HOST_PORT=6383
-REDIS_CONTAINER_NAME='juscash-redis'
-REDIS_PASSWORD='eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81'
-REDIS_URL='redis://\${REDIS_CONTAINER_NAME}:\${REDIS_PORT}'
-REDIS_MAXMEMORY=2gb
-REDIS_MAXMEMORY_POLICY=allkeys-lru
-REDIS_SAVE_POLICY=60 1 300 100 600 1
-
-DATABASE_URL="postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@\${POSTGRES_CONTAINER_NAME}:\${POSTGRES_PORT}/\${POSTGRES_DB}?schema=public&connection_limit=20"
-EOF
-        
-        log_success "Arquivo .env criado com configurações padrão"
-        log_warning "IMPORTANTE: Revise as senhas no arquivo .env antes de usar em produção!"
-    else
-        log_success "Arquivo .env encontrado"
-    fi
-}
-
 # Verificar arquivos necessários do Redis
 check_redis_files() {
     log_info "Verificando arquivos do Redis..."
@@ -275,7 +225,6 @@ main() {
     
     check_docker
     check_docker_compose
-    check_env_file
     create_directories
     setup_permissions
     check_redis_files
