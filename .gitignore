@@ -70,3 +70,6 @@ credenciais-codificadas.txt
 .pnpm-store
 
 generated
+
+redis-data
+postgres-data
