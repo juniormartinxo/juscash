@@ -71,5 +71,5 @@ credenciais-codificadas.txt
 
 generated
 
-redis-data
-postgres-data
+redis-data/*
+postgres-data/*
