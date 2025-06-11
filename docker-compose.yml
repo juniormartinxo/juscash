@@ -4,12 +4,12 @@ services:
     build:
       context: ./backend/api
       dockerfile: .docker/Dockerfile
-      target: ${NODE_ENV:-development}
+      target: ${WORK_MODE:-development}
     container_name: ${API_CONTAINER_NAME}
     ports:
       - ${API_HOST_PORT}:${API_PORT}
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=${WORK_MODE}
       - PORT=${API_PORT}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
@@ -31,7 +31,7 @@ services:
     ports:
       - ${VITE_HOST_PORT}:${VITE_PORT}
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=${WORK_MODE}
       - VITE_API_URL=${VITE_API_URL}
     volumes:
       - ./frontend:/app
