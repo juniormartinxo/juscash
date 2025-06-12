@@ -10,50 +10,85 @@ if [ -f ".env" ]; then
     cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 fi
 
+# ===========================================
+# CONFIGURAÇÕES DA API
+# ===========================================
+API_CONTAINER_NAME="juscash-api"
+API_HOST_PORT="8000"
+API_PORT="8000"
+
+# ===========================================
+# CONFIGURAÇÕES DO FRONTEND - VITE
+# ===========================================
+VITE_CONTAINER_NAME="juscash-vite"
+VITE_PORT="3008"
+VITE_HOST_PORT="3001"
+VITE_API_URL="http://${API_CONTAINER_NAME}:${API_PORT}"
+
+# ===========================================
+# CONFIGURAÇÕES DO BANCO DE DADOS
+# ===========================================
+# POSTGRESQL
+POSTGRES_CONTAINER_NAME="juscash-postgres"
+POSTGRES_USER="justcash_user"
+POSTGRES_DB="justcash_db"
+POSTGRES_PASSWORD="6IVxDUQkY9TUf5ij8Af3zIDhiTdgn"
+POSTGRES_PORT="5432"
+POSTGRES_HOST_PORT="5433"
+
+# REDIS
+REDIS_CONTAINER_NAME="juscash-redis"
+REDIS_PASSWORD="do1HDF1uT5lC49VHuD2xom"
+REDIS_PORT="6381"
+REDIS_HOST_PORT="6388"
+REDIS_URL="redis://${REDIS_CONTAINER_NAME}:${REDIS_PORT}"
+
+# PRISMA
+DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_CONTAINER_NAME}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public&connection_limit=20"
+
 # Cria arquivo .env baseado nas variáveis do docker-compose
-cat > .env << 'EOF'
+cat > .env << EOF
 WORK_MODE='development'
 NODE_VERSION='22.15.0'
 
 # ===========================================
 # CONFIGURAÇÕES DA API
 # ===========================================
-API_CONTAINER_NAME='juscash-api'
-API_HOST_PORT=8000
-API_PORT=8000
+API_CONTAINER_NAME='${API_CONTAINER_NAME}'
+API_HOST_PORT=${API_HOST_PORT}
+API_PORT=${API_PORT}
 
 # ===========================================
 # CONFIGURAÇÕES DO FRONTEND - VITE
 # ===========================================
-VITE_CONTAINER_NAME='juscash-vite'
-VITE_PORT=3008
-VITE_HOST_PORT=3001
-VITE_API_URL='http://$[API_CONTAINER_NAME]:${API_PORT}'
+VITE_CONTAINER_NAME='${VITE_CONTAINER_NAME}'
+VITE_PORT=${VITE_PORT}
+VITE_HOST_PORT=${VITE_HOST_PORT}
+VITE_API_URL='${VITE_API_URL}'
 
 # ===========================================
 # CONFIGURAÇÕES DOS BANCO DE DADOS
 # ===========================================
-
 # POSTGRESQL
-POSTGRES_CONTAINER_NAME='justcash-postgres'
-POSTGRES_USER='justcash_user'
-POSTGRES_DB='justcash_db'
-POSTGRES_PASSWORD='6IVxDUQkY9TUf5ij8Af3zIDhiTdgn'
-POSTGRES_PORT=5432
-POSTGRES_HOST_PORT=5433
-
-# REDIS
-REDIS_CONTAINER_NAME='juscash-redis'
-REDIS_PASSWORD='do1HDF1uT5lC49VHuD2xom'
-REDIS_PORT=6381
-REDIS_HOST_PORT=6388
-REDIS_URL='redis://${REDIS_CONTAINER_NAME}:${REDIS_PORT}'
-REDIS_MAXMEMORY=2gb
-REDIS_MAXMEMORY_POLICY=allkeys-lru
-REDIS_SAVE_POLICY=60 1 300 100 600 1
+POSTGRES_CONTAINER_NAME='${POSTGRES_CONTAINER_NAME}'
+POSTGRES_USER='${POSTGRES_USER}'
+POSTGRES_DB='${POSTGRES_DB}'
+POSTGRES_PASSWORD='${POSTGRES_PASSWORD}'
+POSTGRES_PORT=${POSTGRES_PORT}
+POSTGRES_HOST_PORT=${POSTGRES_HOST_PORT}
 
 # PRISMA
-DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_CONTAINER_NAME}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public&connection_limit=20"
+DATABASE_URL='${DATABASE_URL}'
+
+# REDIS
+REDIS_CONTAINER_NAME='${REDIS_CONTAINER_NAME}'
+REDIS_PASSWORD='${REDIS_PASSWORD}'
+REDIS_PORT=${REDIS_PORT}
+REDIS_HOST_PORT=${REDIS_HOST_PORT}
+REDIS_URL='${REDIS_URL}'
+REDIS_MAXMEMORY='2gb'
+REDIS_MAXMEMORY_POLICY='allkeys-lru'
+REDIS_SAVE_POLICY='60 1 300 100 600 1'
 
 # ===========================================
 # CONFIGURAÇÕES DE E-MAIL
@@ -81,7 +116,7 @@ SCRAPER_RETRY_DELAY=5
 # ===========================================
 BROWSER_HEADLESS=true
 BROWSER_TIMEOUT=30000
-BROWSER_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+BROWSER_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 # ===========================================
 # CONFIGURAÇÕES DE LOG
