@@ -38,8 +38,6 @@ if [ -f "../.env" ]; then
     log_info "Variáveis de ambiente carregadas"
 fi
 
-python -m pip install -r requirements.txt
-
 # Executar scraper
 log_info "Iniciando scraper..."
 python -m src.main "$@"
