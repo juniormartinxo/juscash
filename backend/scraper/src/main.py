@@ -1,184 +1,378 @@
-# src/main.py
-import os
+import asyncio
 import sys
-from pathlib import Path
-from loguru import logger
-from dotenv import load_dotenv
+import signal
+from datetime import datetime, time
+from typing import Optional
 
-# Adiciona o diretório raiz ao PYTHONPATH
-root_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(root_dir))
+from src.config.settings import settings
+from src.config.database import create_tables, close_db_connections
+from src.shared.logger import get_logger, setup_logging
+from src.shared.value_objects import ScrapingCriteria
 
-# Carrega variáveis de ambiente
-load_dotenv()
+# Imports dos adaptadores
+from src.adapters.secondary.playwright_scraper import PlaywrightScraperAdapter
+from src.adapters.secondary.sqlalchemy_repository import EnhancedSQLAlchemyRepository as SQLAlchemyRepository
+from src.adapters.secondary.redis_cache import RedisCacheAdapter
+from src.adapters.primary.scheduler_adapter import APSchedulerAdapter
 
-from src.infrastructure.database.connection_manager import connection_manager
-from src.application.services.database_service import DatabaseService
+# Imports dos casos de uso
+from src.core.usecases.scrape_publications import ScrapePublicationsUseCase
+from src.core.usecases.schedule_scraping import ScheduleScrapingUseCase
+
+# Setup inicial do logging
+setup_logging()
+logger = get_logger(__name__)
 
 
-def setup_logging():
-    """Configura o sistema de logs"""
-    log_level = os.getenv("LOG_LEVEL", "INFO")
-    log_dir = Path(os.getenv("LOG_DIR", "./logs"))
+class DJEScrapingApplication:
+    """
+    Aplicação principal do sistema de scraping do DJE.
     
-    # Cria diretório de logs se não existir
-    log_dir.mkdir(exist_ok=True)
+    Coordena a inicialização de todos os componentes e gerencia
+    o ciclo de vida da aplicação seguindo a arquitetura hexagonal.
+    """
     
-    # Remove configuração padrão do loguru
-    logger.remove()
-    
-    # Configuração para console
-    logger.add(
-        sys.stdout,
-        level=log_level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        colorize=True
-    )
-    
-    # Configuração para arquivo
-    logger.add(
-        log_dir / "scraper_{time:YYYY-MM-DD}.log",
-        level=log_level,
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        rotation="1 day",
-        retention=f"{os.getenv('LOG_ROTATION_DAYS', '7')} days",
-        compression="zip"
-    )
-    
-    # Configuração para erros
-    logger.add(
-        log_dir / "scraper_errors_{time:YYYY-MM-DD}.log",
-        level="ERROR",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}\n{exception}",
-        rotation="1 day",
-        retention="30 days",
-        compression="zip"
-    )
-
-
-def validate_environment():
-    """Valida se todas as variáveis de ambiente necessárias estão configuradas"""
-    required_vars = [
-        "DATABASE_URL",
-    ]
-    
-    missing_vars = []
-    for var in required_vars:
-        if not os.getenv(var):
-            missing_vars.append(var)
-    
-    if missing_vars:
-        logger.error(f"Variáveis de ambiente obrigatórias não configuradas: {missing_vars}")
-        logger.error("Por favor, configure o arquivo .env baseado no .env.example")
-        return False
-    
-    return True
-
-
-def test_database_service():
-    """Testa o serviço de banco de dados com dados de exemplo"""
-    try:
-        db_service = DatabaseService()
+    def __init__(self):
+        """Inicializa a aplicação com configurações padrão."""
+        self.settings = settings
         
-        # Dados de teste
-        test_publication = {
-            "process_number": "1234567-89.2025.8.26.0001",
-            "availability_date": "2025-03-17",
-            "authors": ["João da Silva", "Maria Santos"],
-            "content": "Teste de publicação para verificar a conexão com o banco de dados.",
-            "defendant": "Instituto Nacional do Seguro Social - INSS",
-            "lawyers": [
-                {"name": "Dr. Pedro Advogado", "oab": "SP123456"},
-                {"name": "Dra. Ana Advocacia", "oab": "SP654321"}
-            ],
-            "gross_value": 5000.50,
-            "net_value": 4500.30,
-            "interest_value": 300.20,
-            "attorney_fees": 200.00
-        }
+        # Adaptadores (infraestrutura)
+        self.scraper_adapter: Optional[PlaywrightScraperAdapter] = None
+        self.database_adapter: Optional[SQLAlchemyRepository] = None
+        self.cache_adapter: Optional[RedisCacheAdapter] = None
+        self.scheduler_adapter: Optional[APSchedulerAdapter] = None
         
-        # Tenta salvar a publicação de teste
-        logger.info("Testando salvamento de publicação...")
-        saved_publication = db_service.save_publication(test_publication)
-        logger.success(f"Publicação de teste salva com sucesso: {saved_publication.id}")
+        # Casos de uso (aplicação)
+        self.scrape_use_case: Optional[ScrapePublicationsUseCase] = None
+        self.schedule_use_case: Optional[ScheduleScrapingUseCase] = None
         
-        # Testa busca
-        logger.info("Testando busca de publicação...")
-        found_publication = db_service.get_publication_by_process_number(test_publication["process_number"])
+        # Estado da aplicação
+        self.is_running = False
+        self.shutdown_event = asyncio.Event()
         
-        if found_publication:
-            logger.success(f"Publicação encontrada: {found_publication.process_number}")
+        # Configurar handlers para sinais do sistema
+        self._setup_signal_handlers()
+    
+    def _setup_signal_handlers(self):
+        """Configura handlers para sinais do sistema (SIGINT, SIGTERM)."""
+        if sys.platform != "win32":
+            # Unix/Linux
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                signal.signal(sig, self._signal_handler)
         else:
-            logger.error("Publicação não encontrada após salvamento")
-            return False
+            # Windows
+            signal.signal(signal.SIGINT, self._signal_handler)
+    
+    def _signal_handler(self, signum, frame):
+        """Handler para sinais de shutdown."""
+        logger.info(f"Sinal recebido: {signum}. Iniciando shutdown graceful...")
+        self.shutdown_event.set()
+    
+    async def initialize(self) -> None:
+        """
+        Inicializa todos os componentes da aplicação.
         
-        # Testa contagem
-        logger.info("Testando contagem de publicações...")
-        count = db_service.count_publications()
-        logger.info(f"Total de publicações no banco: {count}")
+        Raises:
+            Exception: Se houver erro na inicialização de qualquer componente
+        """
+        logger.info("🚀 Iniciando aplicação DJE Scraping...")
         
-        return True
+        try:
+            # 1. Inicializar banco de dados
+            logger.info("📊 Inicializando banco de dados...")
+            await create_tables()
+            
+            self.database_adapter = SQLAlchemyRepository(
+                database_url=self.settings.database.url
+            )
+            logger.info("✅ Banco de dados inicializado")
+            
+            # 2. Inicializar cache Redis (opcional)
+            try:
+                logger.info("🔄 Inicializando cache Redis...")
+                self.cache_adapter = RedisCacheAdapter(
+                    redis_url=self.settings.redis.url
+                )
+                await self.cache_adapter.initialize()
+                logger.info("✅ Cache Redis inicializado")
+            except Exception as e:
+                logger.warning(f"⚠️ Cache Redis não disponível: {str(e)}")
+                self.cache_adapter = None
+            
+            # 3. Inicializar scraper Playwright
+            logger.info("🌐 Inicializando scraper Playwright...")
+            self.scraper_adapter = PlaywrightScraperAdapter(
+                headless=self.settings.scraping.headless,
+                timeout=self.settings.scraping.timeout,
+                user_agent=self.settings.scraping.user_agent,
+                max_retries=self.settings.scraping.max_retries
+            )
+            await self.scraper_adapter.initialize()
+            logger.info("✅ Scraper Playwright inicializado")
+            
+            # 4. Inicializar agendador
+            logger.info("⏰ Inicializando agendador...")
+            self.scheduler_adapter = APSchedulerAdapter()
+            await self.scheduler_adapter.initialize()
+            logger.info("✅ Agendador inicializado")
+            
+            # 5. Inicializar casos de uso
+            logger.info("🎯 Inicializando casos de uso...")
+            self.scrape_use_case = ScrapePublicationsUseCase(
+                scraper=self.scraper_adapter,
+                database=self.database_adapter,
+                cache=self.cache_adapter
+            )
+            
+            self.schedule_use_case = ScheduleScrapingUseCase(
+                scheduler=self.scheduler_adapter,
+                scrape_use_case=self.scrape_use_case
+            )
+            logger.info("✅ Casos de uso inicializados")
+            
+            self.is_running = True
+            logger.info("🎉 Aplicação inicializada com sucesso!")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro na inicialização da aplicação: {str(e)}")
+            await self.cleanup()
+            raise
+    
+    async def run_immediate_scraping(self) -> dict:
+        """
+        Executa scraping imediato (uma vez).
         
-    except Exception as e:
-        logger.error(f"Erro no teste do serviço de banco de dados: {e}")
-        return False
+        Returns:
+            Dicionário com estatísticas da execução
+            
+        Raises:
+            Exception: Se aplicação não estiver inicializada ou houver erro
+        """
+        if not self.is_running or not self.scrape_use_case:
+            raise RuntimeError("Aplicação não foi inicializada")
+        
+        logger.info("🔄 Executando scraping imediato...")
+        
+        # Criar critérios padrão
+        criteria = ScrapingCriteria(
+            required_terms=tuple(self.settings.scraping.required_terms),
+            caderno=self.settings.dje_caderno,
+            instancia=self.settings.dje_instancia,
+            local=self.settings.dje_local,
+            parte=self.settings.dje_parte
+        )
+        
+        # Executar scraping
+        stats = await self.scrape_use_case.execute(
+            criteria=criteria,
+            skip_duplicates=True
+        )
+        
+        logger.info(f"✅ Scraping imediato concluído: {stats}")
+        return stats
+    
+    async def setup_scheduled_scraping(self) -> str:
+        """
+        Configura execução automática diária do scraping.
+        
+        Returns:
+            ID do job agendado
+            
+        Raises:
+            Exception: Se aplicação não estiver inicializada ou houver erro
+        """
+        if not self.is_running or not self.schedule_use_case:
+            raise RuntimeError("Aplicação não foi inicializada")
+        
+        logger.info("📅 Configurando scraping automático...")
+        
+        # Parsear data de início
+        start_date = datetime.strptime(
+            self.settings.scheduler.start_date, 
+            "%Y-%m-%d"
+        )
+        
+        # Configurar horário de execução
+        execution_time = time(
+            hour=self.settings.scheduler.execution_hour,
+            minute=self.settings.scheduler.execution_minute
+        )
+        
+        # Criar critérios padrão
+        criteria = ScrapingCriteria(
+            required_terms=tuple(self.settings.scraping.required_terms),
+            caderno=self.settings.dje_caderno,
+            instancia=self.settings.dje_instancia,
+            local=self.settings.dje_local,
+            parte=self.settings.dje_parte
+        )
+        
+        # Configurar agendamento
+        job_id = await self.schedule_use_case.setup_daily_execution(
+            start_date=start_date,
+            execution_time=execution_time,
+            criteria=criteria
+        )
+        
+        # Iniciar agendador
+        await self.schedule_use_case.start_scheduler()
+        
+        logger.info(f"✅ Scraping automático configurado. Job ID: {job_id}")
+        logger.info(f"📅 Execuções diárias a partir de {start_date.date()} às {execution_time}")
+        
+        return job_id
+    
+    async def run_with_scheduler(self) -> None:
+        """
+        Executa a aplicação com agendamento automático.
+        
+        Mantém a aplicação rodando e aguarda sinal de shutdown.
+        """
+        if not self.is_running:
+            raise RuntimeError("Aplicação não foi inicializada")
+        
+        logger.info("🔄 Iniciando modo agendado...")
+        
+        try:
+            # Configurar scraping automático
+            job_id = await self.setup_scheduled_scraping()
+            
+            logger.info("⏰ Aplicação rodando em modo agendado. Pressione Ctrl+C para parar.")
+            
+            # Aguardar sinal de shutdown
+            while not self.shutdown_event.is_set():
+                await asyncio.sleep(1)
+            
+            logger.info("🛑 Sinal de shutdown recebido")
+            
+        except KeyboardInterrupt:
+            logger.info("🛑 Interrupção via teclado recebida")
+        except Exception as e:
+            logger.error(f"❌ Erro durante execução agendada: {str(e)}")
+            raise
+        finally:
+            await self.cleanup()
+    
+    async def cleanup(self) -> None:
+        """
+        Limpa recursos e fecha conexões.
+        """
+        logger.info("🧹 Iniciando limpeza de recursos...")
+        
+        self.is_running = False
+        
+        # Parar agendador
+        if self.scheduler_adapter:
+            try:
+                await self.scheduler_adapter.stop()
+                logger.info("✅ Agendador parado")
+            except Exception as e:
+                logger.error(f"❌ Erro ao parar agendador: {str(e)}")
+        
+        # Fechar scraper
+        if self.scraper_adapter:
+            try:
+                await self.scraper_adapter.close()
+                logger.info("✅ Scraper fechado")
+            except Exception as e:
+                logger.error(f"❌ Erro ao fechar scraper: {str(e)}")
+        
+        # Fechar cache
+        if self.cache_adapter:
+            try:
+                await self.cache_adapter.close()
+                logger.info("✅ Cache fechado")
+            except Exception as e:
+                logger.error(f"❌ Erro ao fechar cache: {str(e)}")
+        
+        # Fechar conexões de banco
+        try:
+            await close_db_connections()
+            logger.info("✅ Conexões de banco fechadas")
+        except Exception as e:
+            logger.error(f"❌ Erro ao fechar banco: {str(e)}")
+        
+        logger.info("🏁 Limpeza concluída")
 
 
-def main():
-    """Função principal do scraper"""
-    logger.info("=== INICIANDO SCRAPER DJE ===")
+async def main():
+    """
+    Função principal da aplicação.
     
-    # 1. Configurar logs
-    setup_logging()
-    
-    # 2. Validar ambiente
-    if not validate_environment():
-        sys.exit(1)
-    
-    # 3. Inicializar banco de dados
-    logger.info("Inicializando conexão com o banco de dados...")
-    if not connection_manager.initialize_database():
-        logger.error("Falha ao inicializar banco de dados")
-        sys.exit(1)
-    
-    # 4. Testar serviço de banco de dados
-    logger.info("Testando serviços de banco de dados...")
-    if not test_database_service():
-        logger.error("Falha nos testes do serviço de banco de dados")
-        sys.exit(1)
-    
-    # 5. Exibir informações do sistema
-    db_info = connection_manager.get_database_info()
-    if db_info:
-        logger.info("=== INFORMAÇÕES DO SISTEMA ===")
-        logger.info(f"Versão PostgreSQL: {db_info['version'].split(',')[0]}")
-        logger.info(f"Publicações no banco: {db_info['publication_count']}")
-        logger.info(f"Tamanho do banco: {db_info['database_size']}")
-        logger.info(f"URL de conexão: {db_info['connection_url']}")
-    
-    logger.info("=== SCRAPER CONFIGURADO COM SUCESSO ===")
-    logger.info("Sistema pronto para scraping das publicações DJE")
-    
-    # TODO: Aqui será implementado o scheduler e o scraper principal
-    # Por enquanto, o sistema fica em modo de teste
+    Ponto de entrada que pode ser usado de diferentes formas:
+    - Execução imediata: python -m src.main
+    - Execução agendada: python -m src.main --schedule
+    """
+    app = DJEScrapingApplication()
     
     try:
-        logger.info("Pressione Ctrl+C para finalizar o scraper")
+        # Inicializar aplicação
+        await app.initialize()
         
-        # Mantém o programa rodando
-        import time
-        while True:
-            time.sleep(60)  # Aguarda 1 minuto
-            logger.info("Scraper ativo - aguardando implementação do scheduler...")
+        # Verificar argumentos da linha de comando
+        if len(sys.argv) > 1 and "--schedule" in sys.argv:
+            # Modo agendado
+            await app.run_with_scheduler()
+        else:
+            # Modo imediato (execução única)
+            logger.info("🔄 Modo execução imediata")
+            stats = await app.run_immediate_scraping()
             
-    except KeyboardInterrupt:
-        logger.info("Finalizando scraper...")
-    except Exception as e:
-        logger.error(f"Erro inesperado: {e}")
-        sys.exit(1)
+            # Exibir resumo
+            logger.info("📊 RESUMO DA EXECUÇÃO:")
+            logger.info(f"   📋 Publicações encontradas: {stats.get('publications_found', 0)}")
+            logger.info(f"   ✅ Publicações novas: {stats.get('publications_new', 0)}")
+            logger.info(f"   🔄 Publicações duplicadas: {stats.get('publications_duplicated', 0)}")
+            logger.info(f"   ❌ Publicações com erro: {stats.get('publications_failed', 0)}")
+            logger.info(f"   ⏱️ Tempo de execução: {stats.get('execution_time_seconds', 0):.2f}s")
     
-    logger.info("Scraper finalizado")
+    except KeyboardInterrupt:
+        logger.info("🛑 Aplicação interrompida pelo usuário")
+    except Exception as e:
+        logger.error(f"❌ Erro fatal na aplicação: {str(e)}")
+        sys.exit(1)
+    finally:
+        await app.cleanup()
+
+
+# CLI adicional para operações específicas
+async def test_scraping():
+    """Função para testar o scraping sem agendamento."""
+    logger.info("🧪 Modo teste de scraping")
+    app = DJEScrapingApplication()
+    
+    try:
+        await app.initialize()
+        stats = await app.run_immediate_scraping()
+        logger.info(f"🧪 Teste concluído: {stats}")
+        return stats
+    finally:
+        await app.cleanup()
+
+
+async def test_database():
+    """Função para testar conexão com banco de dados."""
+    logger.info("🧪 Testando conexão com banco de dados")
+    
+    try:
+        from src.config.database import get_db_session
+        
+        async with await get_db_session() as session:
+            logger.info("✅ Conexão com banco de dados OK")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Erro na conexão: {str(e)}")
+        return False
 
 
 if __name__ == "__main__":
-    main()
+    # Verificar argumentos especiais
+    if len(sys.argv) > 1:
+        if "--test-scraping" in sys.argv:
+            asyncio.run(test_scraping())
+        elif "--test-db" in sys.argv:
+            asyncio.run(test_database())
+        else:
+            asyncio.run(main())
+    else:
+        asyncio.run(main())
