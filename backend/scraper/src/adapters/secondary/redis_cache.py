@@ -127,6 +127,24 @@ class RedisCacheAdapter(CachePort):
             logger.error(f"Erro ao verificar cache: {str(e)}")
             return False
     
+    async def clear_all(self) -> bool:
+        """
+        Limpa todo o cache.
+        
+        Returns:
+            True se limpeza foi bem-sucedida
+        """
+        if not self.client:
+            return False
+            
+        try:
+            await self.client.flushdb()
+            logger.info("Cache Redis limpo completamente")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao limpar cache: {str(e)}")
+            return False
+    
     async def close(self) -> None:
         """Fecha conexão com Redis."""
         if self.client:
