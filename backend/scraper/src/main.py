@@ -335,6 +335,33 @@ async def main():
         await app.cleanup()
 
 
+async def test_scraper():
+    scraper = PlaywrightScraperAdapter(headless=False)
+    
+    try:
+        print("🚀 Inicializando scraper...")
+        await scraper.initialize()
+        print("✅ Scraper inicializado!")
+        
+        print("🌐 Navegando para teste...")
+        await scraper.page.goto('https://example.com')
+        print("✅ Navegação concluída!")
+        
+        print("⏳ Aguardando 5 segundos...")
+        await scraper.page.wait_for_timeout(5000)
+        
+        print("📸 Tirando screenshot...")
+        await scraper.page.screenshot(path='test_scraper.png')
+        print("✅ Screenshot salvo!")
+        
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+    
+    finally:
+        print("🔒 Fechando scraper...")
+        await scraper.close()
+        print("✅ Teste concluído!")
+
 # CLI adicional para operações específicas
 async def test_scraping():
     """Função para testar o scraping sem agendamento."""
@@ -369,7 +396,7 @@ if __name__ == "__main__":
     # Verificar argumentos especiais
     if len(sys.argv) > 1:
         if "--test-scraping" in sys.argv:
-            asyncio.run(test_scraping())
+            asyncio.run(test_scraper())
         elif "--test-db" in sys.argv:
             asyncio.run(test_database())
         else:
