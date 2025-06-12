@@ -20,14 +20,14 @@ class APSchedulerAdapter(SchedulerPort):
     def __init__(self):
         """Inicializa o adaptador do agendador."""
         self.scheduler = AsyncIOScheduler()
-        self.is_running = False
+        self._is_running = False
     
     async def initialize(self) -> None:
         """Inicializa o agendador."""
         try:
             logger.info("Inicializando APScheduler")
             self.scheduler.start()
-            self.is_running = True
+            self._is_running = True
             logger.info("APScheduler inicializado com sucesso")
         except Exception as e:
             logger.error(f"Erro ao inicializar APScheduler: {str(e)}")
@@ -164,9 +164,128 @@ class APSchedulerAdapter(SchedulerPort):
         
         return tasks
     
+    async def schedule_daily_scraping(self, 
+                                    job_function: Callable,
+                                    start_date: datetime,
+                                    hour: int = 9,
+                                    minute: int = 0) -> str:
+        """
+        Agenda execução diária do scraping.
+        
+        Args:
+            job_function: Função a ser executada
+            start_date: Data de início das execuções
+            hour: Hora da execução (padrão: 9h)
+            minute: Minuto da execução (padrão: 0)
+            
+        Returns:
+            ID do job agendado
+        """
+        try:
+            # Criar trigger cron para execução diária
+            trigger = CronTrigger(
+                hour=hour,
+                minute=minute,
+                start_date=start_date
+            )
+            
+            # Gerar ID único para o job
+            job_id = f"daily_scraping_{start_date.strftime('%Y%m%d')}_{hour:02d}{minute:02d}"
+            
+            # Adicionar job ao agendador
+            job = self.scheduler.add_job(
+                job_function,
+                trigger=trigger,
+                id=job_id,
+                replace_existing=True,
+                misfire_grace_time=3600  # 1 hora de tolerância
+            )
+            
+            logger.info(
+                f"Scraping diário agendado para {hour:02d}:{minute:02d} "
+                f"iniciando em {start_date.strftime('%Y-%m-%d')}"
+            )
+            
+            return job.id
+            
+        except Exception as e:
+            logger.error(f"Erro ao agendar scraping diário: {str(e)}")
+            raise
+    
+    async def schedule_one_time_execution(self,
+                                        job_function: Callable,
+                                        execution_time: datetime) -> str:
+        """
+        Agenda uma execução única.
+        
+        Args:
+            job_function: Função a ser executada
+            execution_time: Momento da execução
+            
+        Returns:
+            ID do job agendado
+        """
+        try:
+            # Gerar ID único para o job
+            job_id = f"one_time_{execution_time.strftime('%Y%m%d_%H%M%S')}"
+            
+            # Adicionar job ao agendador
+            job = self.scheduler.add_job(
+                job_function,
+                'date',
+                run_date=execution_time,
+                id=job_id,
+                replace_existing=True
+            )
+            
+            logger.info(
+                f"Execução única agendada para "
+                f"{execution_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            
+            return job.id
+            
+        except Exception as e:
+            logger.error(f"Erro ao agendar execução única: {str(e)}")
+            raise
+    
+    async def cancel_job(self, job_id: str) -> bool:
+        """
+        Cancela um job agendado.
+        
+        Args:
+            job_id: ID do job a cancelar
+            
+        Returns:
+            True se cancelamento foi bem-sucedido
+        """
+        try:
+            self.scheduler.remove_job(job_id)
+            logger.info(f"Job '{job_id}' cancelado com sucesso")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao cancelar job '{job_id}': {str(e)}")
+            return False
+    
+    async def start(self) -> None:
+        """Inicia o agendador."""
+        if not self._is_running:
+            self.scheduler.start()
+            self._is_running = True
+            logger.info("APScheduler iniciado")
+    
     async def stop(self) -> None:
         """Para o agendador."""
-        if self.is_running:
+        if self._is_running:
             self.scheduler.shutdown(wait=True)
-            self.is_running = False
-            logger.info("APScheduler parado") 
+            self._is_running = False
+            logger.info("APScheduler parado")
+    
+    async def is_running(self) -> bool:
+        """
+        Verifica se o agendador está rodando.
+        
+        Returns:
+            True se está rodando
+        """
+        return self._is_running 
