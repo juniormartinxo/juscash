@@ -80,7 +80,7 @@ class DJEScrapingApplication:
         try:
             # 1. Inicializar banco de dados
             logger.info("📊 Inicializando banco de dados...")
-            await create_tables()
+            #await create_tables()
             
             self.database_adapter = SQLAlchemyRepository(
                 database_url=self.settings.database.url
