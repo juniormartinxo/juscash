@@ -183,21 +183,22 @@ test_redis() {
     # Testar conectividade
     log_info "Testando conectividade..."
     REDIS_PASSWORD=$(grep REDIS_PASSWORD .env | cut -d'=' -f2 | tr -d "'\"")
+    REDIS_PORT=$(grep REDIS_PORT .env | cut -d'=' -f2 | tr -d "'\"")
     
-    if docker exec juscash-redis redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q "PONG"; then
+    if docker exec juscash-redis redis-cli -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q "PONG"; then
         log_success "Redis respondendo ao ping"
         
         # Testar escrita/leitura
-        if docker exec juscash-redis redis-cli -a "$REDIS_PASSWORD" set test_setup "funcionando" >/dev/null 2>&1; then
-            if [ "$(docker exec juscash-redis redis-cli -a "$REDIS_PASSWORD" get test_setup 2>/dev/null)" = "funcionando" ]; then
+        if docker exec juscash-redis redis-cli -p "$REDIS_PORT" -a "$REDIS_PASSWORD" set test_setup "funcionando" >/dev/null 2>&1; then
+            if [ "$(docker exec juscash-redis redis-cli -p "$REDIS_PORT" -a "$REDIS_PASSWORD" get test_setup 2>/dev/null)" = "funcionando" ]; then
                 log_success "Teste de escrita/leitura OK"
                 
                 # Testar persistência
-                if docker exec juscash-redis redis-cli -a "$REDIS_PASSWORD" bgsave >/dev/null 2>&1; then
+                if docker exec juscash-redis redis-cli -p "$REDIS_PORT" -a "$REDIS_PASSWORD" bgsave >/dev/null 2>&1; then
                     log_success "Teste de persistência OK"
                     
                     # Limpeza do teste
-                    docker exec juscash-redis redis-cli -a "$REDIS_PASSWORD" del test_setup >/dev/null 2>&1
+                    docker exec juscash-redis redis-cli -p "$REDIS_PORT" -a "$REDIS_PASSWORD" del test_setup >/dev/null 2>&1
                     
                     return 0
                 else
