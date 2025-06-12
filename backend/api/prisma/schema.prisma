@@ -129,21 +129,34 @@ model Publication {
   status            PublicationStatus @default(NOVA) // Status da publicação
   created_at        DateTime          @default(now()) @map("created_at") // Data de criação
   updated_at        DateTime          @updatedAt @map("updated_at") // Data de atualização
-  PublicationLog    PublicationLog[]
+
+  // Novos campos específicos para o sistema de scraping
+  scraping_source     String @default("DJE-SP") @map("scraping_source") // Fonte do scraping
+  caderno             String @default("3") // Caderno 3 - Judicial - 1ª Instância
+  instancia           String @default("1") @map("instancia") // 1ª Instância
+  local               String @default("Capital") // Capital
+  parte               String @default("1") // Parte 1
+  extraction_metadata Json?  @map("extraction_metadata") // Metadados da extração
+
+  PublicationLog        PublicationLog[]
+  ScrapingExecution     ScrapingExecution? @relation(fields: [scraping_execution_id], references: [id])
+  scraping_execution_id String?            @map("scraping_execution_id")
 
   @@index([process_number]) // Índice para o número do processo
   @@index([status]) // Índice para o status
   @@index([availability_date]) // Índice para a data de disponibilidade
   @@index([created_at]) // Índice para a data de criação
   @@index([status, availability_date]) // Índice para o status e a data de disponibilidade
-  @@index([availability_date, created_at]) // Índice para a data de disponibilidade e a data de criação
+  @@index([availability_date, created_at]) // Índice composto
+  @@index([scraping_source, caderno]) // Índice para fonte e caderno
+  @@index([defendant]) // Índice para réu (sempre INSS)
   @@map("publications")
 }
 
 /**
- * A tabela PublicationLog registra cada ação realizada na publicação, como criação, atualização, exclusão,
- * visualização e download. Isso permite rastrear todas as alterações feitas na publicação e fornecer
- * um histórico completo de suas atividades.
+ * A tabela PublicationLog registra cada ação realizada na publicação através da interface web,
+ * como visualização, mudança de status, etc. Complementa o sistema de scraping com auditoria
+ * das interações dos usuários.
  */
 model PublicationLog {
   id             String                @id @default(cuid(2))
@@ -152,29 +165,140 @@ model PublicationLog {
   user_id        String
   user           User                  @relation(fields: [user_id], references: [id])
   action         EPublicationLogAction
-  old_data       Json? // Dados antigos
-  new_data       Json? // Dados novos
-  created_at     DateTime              @default(now()) @map("created_at") // Data de criação
+  old_data       Json? // Dados antigos (para mudanças de status)
+  new_data       Json? // Dados novos (para mudanças de status)
+  notes          String? // Notas do usuário sobre a ação
+  created_at     DateTime              @default(now()) @map("created_at")
 
+  @@index([publication_id, created_at])
+  @@index([user_id, created_at])
+  @@index([action, created_at])
   @@map("publication_logs")
 }
 
+/**
+ * A tabela ScrapingExecution registra cada execução do sistema de scraping Python,
+ * permitindo rastrear estatísticas, performance e resultados de cada execução
+ * automática ou manual do processo.
+ */
+model ScrapingExecution {
+  id                     String                   @id @default(uuid())
+  execution_type         EScrapingExecutionType   @map("execution_type") // Tipo de execução
+  status                 EScrapingExecutionStatus @default(RUNNING) // Status da execução
+  started_at             DateTime                 @default(now()) @map("started_at")
+  finished_at            DateTime?                @map("finished_at")
+  execution_time_seconds Int?                     @map("execution_time_seconds")
+
+  // Estatísticas da execução
+  publications_found      Int @default(0) @map("publications_found")
+  publications_new        Int @default(0) @map("publications_new")
+  publications_duplicated Int @default(0) @map("publications_duplicated")
+  publications_failed     Int @default(0) @map("publications_failed")
+  publications_saved      Int @default(0) @map("publications_saved")
+
+  // Configurações da execução
+  criteria_used          Json? @map("criteria_used") // Critérios de busca utilizados
+  max_publications_limit Int?  @map("max_publications_limit")
+
+  // Informações técnicas
+  scraper_version    String? @map("scraper_version")
+  browser_user_agent String? @map("browser_user_agent")
+  error_details      Json?   @map("error_details") // Detalhes de erros se houver
+
+  // Relacionamentos
+  Publications Publication[]
+
+  @@index([execution_type, started_at])
+  @@index([status, started_at])
+  @@index([started_at])
+  @@map("scraping_executions")
+}
+
+/**
+ * A tabela ScrapingLog registra logs detalhados do processo de scraping,
+ * complementando os logs de arquivo com persistência em banco para
+ * análise e monitoramento via interface web.
+ */
+model ScrapingLog {
+  id                    String            @id @default(uuid())
+  scraping_execution_id String?           @map("scraping_execution_id")
+  level                 EScrapingLogLevel @default(INFO)
+  message               String            @db.Text
+  context               Json? // Contexto adicional (URL, seletores, etc.)
+  error_stack           String?           @map("error_stack") @db.Text
+  created_at            DateTime          @default(now()) @map("created_at")
+
+  @@index([scraping_execution_id, created_at])
+  @@index([level, created_at])
+  @@index([created_at])
+  @@map("scraping_logs")
+}
+
+/**
+ * A tabela ScrapingConfiguration permite armazenar configurações dinâmicas
+ * do sistema de scraping, permitindo ajustes sem necessidade de redeploy.
+ */
+model ScrapingConfiguration {
+  id          String   @id @default(cuid(2))
+  key         String   @unique // Chave da configuração
+  value       String   @db.Text // Valor da configuração
+  description String?  @db.Text // Descrição da configuração
+  is_active   Boolean  @default(true) @map("is_active")
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  @@index([key, is_active])
+  @@map("scraping_configurations")
+}
+
+// ==================== ENUMS ====================
+
 enum EPublicationLogAction {
-  CRIADA
-  ATUALIZADA
-  DELETADA
-  VISUALIZADA
-  DOWNLOADED
+  CRIADA // Publicação criada pelo scraper
+  ATUALIZADA // Dados atualizados
+  VISUALIZADA // Usuário visualizou no modal
+  STATUS_CHANGED // Status alterado no Kanban
+  MOVED_TO_COLUMN // Movida entre colunas do Kanban
+  EXPORTED // Exportada/baixada
 
   @@map("publication_log_action")
 }
-
 enum PublicationStatus {
-  NOVA
-  LIDA
-  PROCESSADA
+  NOVA // Publicação nova (scraping inicial)
+  LIDA // Publicação foi lida/revisada
+  ENVIADA_PARA_ADV // Enviada para advogado
+  CONCLUIDA // Processamento concluído
 
   @@map("publication_status")
+}
+
+enum EScrapingExecutionType {
+  SCHEDULED // Execução agendada (diária)
+  MANUAL // Execução manual/imediata
+  TEST // Execução de teste
+  RETRY // Reexecução após falha
+
+  @@map("scraping_execution_type")
+}
+
+enum EScrapingExecutionStatus {
+  RUNNING // Em execução
+  COMPLETED // Concluída com sucesso
+  FAILED // Falhou com erro
+  CANCELLED // Cancelada
+  TIMEOUT // Timeout
+
+  @@map("scraping_execution_status")
+}
+
+enum EScrapingLogLevel {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+
+  @@map("scraping_log_level")
 }
 
 enum EAuthLogAction {
