@@ -97,7 +97,7 @@ check_container_health() {
         if [[ "$service_name" == "PostgreSQL" ]]; then
             log_warning "Container $container_name está marcado como não saudável, mas tentando conexão direta..."
             # Tentar conectar ao PostgreSQL para verificar se está realmente funcionando
-            if docker exec "$container_name" pg_isready -U "juscash_user" -d "juscashh_db" > /dev/null 2>&1; then
+            if docker exec "$container_name" pg_isready -U "juscash_user" -d "juscash_db" > /dev/null 2>&1; then
                 log_success "PostgreSQL está respondendo apesar do status unhealthy"
                 return 0
             else
@@ -138,7 +138,7 @@ check_postgres_ready() {
     log_info "Verificando se PostgreSQL está pronto para conexões..."
     
     while [ $attempt -le $max_attempts ]; do
-        if docker exec "$container_name" pg_isready -U "juscash_user" -d "juscashh_db" > /dev/null 2>&1; then
+        if docker exec "$container_name" pg_isready -U "juscash_user" -d "juscash_db" > /dev/null 2>&1; then
             log_success "PostgreSQL está pronto para conexões!"
             return 0
         fi
