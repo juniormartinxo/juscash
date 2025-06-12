@@ -10,7 +10,7 @@ from datetime import datetime
 os.environ['ENVIRONMENT'] = 'test'
 os.environ['LOG_LEVEL'] = 'INFO'
 os.environ['POSTGRES_URL_ASYNC'] = 'postgresql+asyncpg://juscash_user:juscash_pass@localhost:5432/juscash_db'
-os.environ['REDIS_URL'] = 'redis://localhost:6388'
+os.environ['REDIS_URL'] = 'redis://localhost:6379'
 
 from src.main import main as scraper_main
 from src.shared.logger import get_logger
