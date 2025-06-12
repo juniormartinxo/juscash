@@ -8,6 +8,7 @@ services:
     container_name: ${API_CONTAINER_NAME}
     ports:
       - ${API_HOST_PORT}:${API_PORT}
+      - 5555:5555
     environment:
       - NODE_ENV=${WORK_MODE}
       - PORT=${API_PORT}
@@ -17,7 +18,7 @@ services:
       - ./backend/api:/app
       - /app/node_modules
     networks:
-      - juscash-network
+      - juscash-net
     depends_on:
       - postgres
       - redis
@@ -39,7 +40,7 @@ services:
     depends_on:
       - api
     networks:
-      - juscash-network
+      - juscash-net
 
   # Scraper - Python
   scraper:
@@ -55,7 +56,7 @@ services:
     depends_on:
       - api
     networks:
-      - juscash-network
+      - juscash-net
 
   # Banco de dados PostgreSQL
   postgres:
@@ -75,9 +76,9 @@ services:
       - ./database/postgres/postgres-data:/var/lib/postgresql/data
       - ./database/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - juscash-network    
+      - juscash-net    
     healthcheck:
-      test: ["CMD", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD", "pg_isready", "-U", "justcash_user", "-d", "justcash_db"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -110,7 +111,7 @@ services:
       --maxclients 10000
       --tcp-keepalive 60"
     networks:
-      - juscash-network
+      - juscash-net
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
@@ -123,5 +124,5 @@ volumes:
   redis-data:
 
 networks:
-  juscash-network:
+  juscash-net:
     driver: bridge
