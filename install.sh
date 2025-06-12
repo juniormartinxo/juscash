@@ -23,6 +23,9 @@ echo "🚀 JusCash - Script de Instalação"
 echo "=================================="
 echo ""
 
+export COMPOSE_BAKE=true
+
+
 # Verificar argumentos da linha de comando
 if [ "$1" = "--scraper-only" ]; then
     log_info "Modo: Instalação apenas do Scraper"
