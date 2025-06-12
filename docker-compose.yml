@@ -50,7 +50,7 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_URL_ASYNC=${POSTGRES_URL_ASYNC}
     volumes:
       - ./backend/scraper:/app
     depends_on:
@@ -78,7 +78,7 @@ services:
     networks:
       - juscash-net    
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "justcash_user", "-d", "justcash_db"]
+      test: ["CMD", "pg_isready", "-U", "juscash_user", "-d", "juscashh_db"]
       interval: 30s
       timeout: 10s
       retries: 3
