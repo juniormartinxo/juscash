@@ -7,7 +7,7 @@ RUN npm install -g pnpm
 # Definir diretório de trabalho
 WORKDIR /app
 
-RUN apk add --no-cache tzdata bash
+RUN apk add --no-cache tzdata bash wget curl
 
 # Copiar arquivos de configuração do pnpm
 COPY .npmrc pnpm-lock.yaml package.json ./
@@ -20,7 +20,7 @@ COPY . .
 
 # Stage de desenvolvimento
 FROM base AS development
-EXPOSE ${API_PORT}
+EXPOSE ${API_PORT} 5555
 CMD ["pnpm", "dev"]
 
 # Stage de build para produção
@@ -44,7 +44,7 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 USER nodejs
 
-EXPOSE ${API_PORT}
+EXPOSE ${API_PORT} 5555
 CMD ["pnpm", "start"]
 
 # Por padrão, usar o stage de desenvolvimento
