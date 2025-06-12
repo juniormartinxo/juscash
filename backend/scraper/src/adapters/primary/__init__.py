@@ -1,0 +1,1 @@
+# Adaptadores primários (entrada) do sistema 
