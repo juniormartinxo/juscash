@@ -23,6 +23,27 @@ echo "🚀 JusCash - Script de Instalação"
 echo "=================================="
 echo ""
 
+# Verificar argumentos da linha de comando
+if [ "$1" = "--scraper-only" ]; then
+    log_info "Modo: Instalação apenas do Scraper"
+    if [ -f "scripts/install-scraper.sh" ]; then
+        chmod +x scripts/install-scraper.sh
+        exec ./scripts/install-scraper.sh
+    else
+        log_error "Script install-scraper.sh não encontrado em scripts/"
+        exit 1
+    fi
+elif [ "$1" = "--check-scraper" ]; then
+    log_info "Modo: Verificação do ambiente do Scraper"
+    if [ -f "scripts/check-scraper-env.sh" ]; then
+        chmod +x scripts/check-scraper-env.sh
+        exec ./scripts/check-scraper-env.sh
+    else
+        log_error "Script check-scraper-env.sh não encontrado em scripts/"
+        exit 1
+    fi
+fi
+
 # Verificar se estamos no diretório correto
 if [ ! -f "docker-compose.yml" ]; then
     log_error "docker-compose.yml não encontrado. Execute o script a partir do diretório raiz do projeto."
@@ -39,7 +60,7 @@ log_info "Iniciando configuração do ambiente JusCash..."
 echo ""
 
 # 1. Verificar variáveis de ambiente
-log_info "Passo 1/2: Verificando variáveis de ambiente..."
+log_info "Passo 1/5: Verificando variáveis de ambiente..."
 if [ -f "scripts/check-env.sh" ]; then
     chmod +x scripts/check-env.sh
     if ./scripts/check-env.sh; then
@@ -57,7 +78,7 @@ fi
 echo ""
 
 # 2. Verificar portas
-log_info "Passo 2/2: Verificando conflitos de portas..."
+log_info "Passo 2/5: Verificando conflitos de portas..."
 if [ -f "scripts/check-ports.sh" ]; then
     chmod +x scripts/check-ports.sh
     if ./scripts/check-ports.sh; then
@@ -74,7 +95,7 @@ fi
 echo ""
 
 # 3. Configurar Redis
-log_info "Passo 3/4: Configurando Redis..."
+log_info "Passo 3/5: Configurando Redis..."
 if [ -f "scripts/setup-redis.sh" ]; then
     chmod +x scripts/setup-redis.sh
     if ./scripts/setup-redis.sh; then
@@ -91,7 +112,7 @@ fi
 echo ""
 
 # 4. Configurar banco de dados
-log_info "Passo 4/4: Configurando banco de dados com Prisma..."
+log_info "Passo 4/5: Configurando banco de dados com Prisma..."
 if [ -f "scripts/setup-database.sh" ]; then
     chmod +x scripts/setup-database.sh
     if ./scripts/setup-database.sh; then
@@ -105,6 +126,20 @@ else
     exit 1
 fi
 
+# 5. Configurar scraper
+log_info "Passo 5/5: Configurando scraper via Docker..."
+if [ -f "scripts/run-scraper-docker.sh" ]; then
+    chmod +x scripts/run-scraper-docker.sh
+    if ./scripts/run-scraper-docker.sh; then
+        log_success "Scraper configurado com sucesso!"
+    else
+        log_error "Falha ao configurar scraper"
+        exit 1
+    fi
+else
+    log_error "Script run-scraper-docker.sh não encontrado em scripts/"
+    exit 1
+fi
 echo ""
 
 # Verificação final
@@ -151,4 +186,19 @@ echo "   docker-compose exec api npx prisma studio"
 echo ""
 echo "🛑 Para parar todos os serviços:"
 echo "   docker-compose down"
+echo ""
+echo "🐍 Para instalar apenas o Scraper:"
+echo "   ./install.sh --scraper-only"
+echo ""
+echo "🔍 Para verificar ambiente do Scraper:"
+echo "   ./install.sh --check-scraper"
+echo ""
+echo "🐍 Para executar o scraper localmente:"
+echo "   ./scripts/run-scraper-local.sh"
+echo ""
+echo "🐍 Para executar o scraper via Docker:"
+echo "   ./scripts/run-scraper-docker.sh"
+echo ""
+echo "🧪 Para testar o scraper:"
+echo "   ./scripts/test-scraper.sh"
 echo ""
