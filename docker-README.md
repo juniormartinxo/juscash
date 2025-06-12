@@ -82,7 +82,7 @@ Principais variáveis:
 
 ## Rede
 
-Todos os serviços estão na rede `juscash-network` e podem se comunicar usando os nomes dos serviços.
+Todos os serviços estão na rede `juscash-net` e podem se comunicar usando os nomes dos serviços.
 
 ## Troubleshooting
 
