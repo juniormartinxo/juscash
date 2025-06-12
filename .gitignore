@@ -73,4 +73,4 @@ generated
 
 redis-data/*
 postgres-data/*
-.env.backup.*
+.env.backup.*database/redis/redis-data/
