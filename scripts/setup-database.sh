@@ -93,22 +93,100 @@ check_container_health() {
         log_success "Container $container_name está saudável"
         return 0
     elif [ "$health_status" = "unhealthy" ]; then
-        log_warning "Container $container_name não está saudável"
-        return 1
+        # Para PostgreSQL, vamos tentar uma conexão direta mesmo se unhealthy
+        if [[ "$service_name" == "PostgreSQL" ]]; then
+            log_warning "Container $container_name está marcado como não saudável, mas tentando conexão direta..."
+            # Tentar conectar ao PostgreSQL para verificar se está realmente funcionando
+            if docker exec "$container_name" pg_isready -U "justcash_user" -d "justcash_db" > /dev/null 2>&1; then
+                log_success "PostgreSQL está respondendo apesar do status unhealthy"
+                return 0
+            else
+                log_warning "PostgreSQL não está respondendo"
+                return 1
+            fi
+        else
+            log_warning "Container $container_name não está saudável"
+            return 1
+        fi
     elif [ "$health_status" = "starting" ]; then
         log_info "Container $container_name ainda está inicializando..."
         return 2
     else
-        log_info "Container $container_name não tem healthcheck configurado"
-        return 0
+        # Para containers sem healthcheck, verificar se estão funcionalmente prontos
+        if [[ "$service_name" == "API" ]]; then
+            # Verificar se o processo da API está rodando
+            if docker exec "$container_name" pgrep -f "tsx" > /dev/null 2>&1; then
+                log_success "Processo da API está rodando"
+                return 0
+            else
+                log_warning "Processo da API ainda não está rodando"
+                return 1
+            fi
+        else
+            log_info "Container $container_name não tem healthcheck configurado"
+            return 0
+        fi
     fi
+}
+
+# Função específica para verificar se PostgreSQL está pronto
+check_postgres_ready() {
+    local container_name=$1
+    local max_attempts=10
+    local attempt=1
+    
+    log_info "Verificando se PostgreSQL está pronto para conexões..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if docker exec "$container_name" pg_isready -U "justcash_user" -d "justcash_db" > /dev/null 2>&1; then
+            log_success "PostgreSQL está pronto para conexões!"
+            return 0
+        fi
+        
+        log_info "PostgreSQL ainda não está pronto (tentativa $attempt/$max_attempts)"
+        sleep 3
+        attempt=$((attempt + 1))
+    done
+    
+    log_error "PostgreSQL não ficou pronto a tempo"
+    return 1
+}
+
+# Função específica para verificar se API está pronta
+check_api_ready() {
+    local container_name=$1
+    local max_attempts=10
+    local attempt=1
+    
+    log_info "Verificando se API está pronta para comandos..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        # Verificar se o processo Node.js está rodando e escutando na porta
+        if docker exec "$container_name" netstat -tlnp 2>/dev/null | grep -q ":${API_PORT:-8000} " 2>/dev/null; then
+            log_success "API está escutando na porta e pronta!"
+            return 0
+        fi
+        
+        # Alternativa: verificar se o processo tsx está rodando
+        if docker exec "$container_name" pgrep -f "tsx" > /dev/null 2>&1; then
+            log_success "Processo da API está rodando!"
+            return 0
+        fi
+        
+        log_info "API ainda não está pronta (tentativa $attempt/$max_attempts)"
+        sleep 3
+        attempt=$((attempt + 1))
+    done
+    
+    log_error "API não ficou pronta a tempo"
+    return 1
 }
 
 # Função para aguardar container estar pronto
 wait_for_container() {
     local container_name=$1
     local service_name=$2
-    local max_attempts=30
+    local max_attempts=20  # Tempo razoável para containers iniciarem
     local attempt=1
     
     log_info "Aguardando container $container_name estar pronto..."
@@ -119,7 +197,7 @@ wait_for_container() {
             health_result=$(check_container_health "$container_name" "$service_name"; echo $?)
             
             case $health_result in
-                0)  # Saudável ou sem healthcheck
+                0)  # Saudável ou funcionalmente pronto
                     log_success "Container $container_name está pronto!"
                     return 0
                     ;;
@@ -134,7 +212,7 @@ wait_for_container() {
             log_warning "Container $container_name não está rodando (tentativa $attempt/$max_attempts)"
         fi
         
-        sleep 5
+        sleep 3  # Reduzido para verificações mais frequentes
         attempt=$((attempt + 1))
     done
     
@@ -196,6 +274,11 @@ main() {
     API_CONTAINER=${API_CONTAINER_NAME:-"juscash-api"}
     POSTGRES_CONTAINER=${POSTGRES_CONTAINER_NAME:-"justcash-postgres"}
     
+    # Debug: mostrar nomes dos containers que serão verificados
+    log_info "Containers a serem verificados:"
+    log_info "  - API: $API_CONTAINER"
+    log_info "  - PostgreSQL: $POSTGRES_CONTAINER"
+    
     # Verificar se os containers estão rodando
     api_running=false
     postgres_running=false
@@ -218,14 +301,18 @@ main() {
         if docker-compose up -d api postgres; then
             log_success "Containers iniciados com docker-compose"
             
-            # Aguardar containers ficarem prontos
-            if ! wait_for_container "$POSTGRES_CONTAINER" "PostgreSQL"; then
-                log_error "Container PostgreSQL não ficou pronto a tempo"
+            # Aguardar um pouco para containers iniciarem
+            sleep 5
+            
+            # Verificar PostgreSQL diretamente
+            if ! check_postgres_ready "$POSTGRES_CONTAINER"; then
+                log_error "PostgreSQL não está respondendo adequadamente"
                 exit 1
             fi
             
-            if ! wait_for_container "$API_CONTAINER" "API"; then
-                log_error "Container API não ficou pronto a tempo"
+            # Verificar API diretamente
+            if ! check_api_ready "$API_CONTAINER"; then
+                log_error "API não está respondendo adequadamente"
                 exit 1
             fi
         else
@@ -234,13 +321,25 @@ main() {
         fi
     else
         log_success "Todos os containers necessários estão rodando!"
+        
+        # Verificação direta se PostgreSQL está realmente pronto
+        if ! check_postgres_ready "$POSTGRES_CONTAINER"; then
+            log_error "PostgreSQL não está respondendo adequadamente"
+            exit 1
+        fi
+        
+        # Verificação direta se API está realmente pronta
+        if ! check_api_ready "$API_CONTAINER"; then
+            log_error "API não está respondendo adequadamente"
+            exit 1
+        fi
     fi
     
     echo ""
     
     # Aguardar um pouco mais para garantir que o PostgreSQL está totalmente pronto
     log_info "Aguardando conexão com banco de dados estabilizar..."
-    sleep 10
+    sleep 5
     
     # Executar comandos do Prisma
     if execute_prisma_commands "api"; then
