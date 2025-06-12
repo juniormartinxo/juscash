@@ -21,7 +21,7 @@ async def test_redis_adapter():
     logger.info("Testando RedisCacheAdapter...")
     
     # Criar adaptador (sem conectar ao Redis real)
-    adapter = RedisCacheAdapter("redis://localhost:6388")
+    adapter = RedisCacheAdapter("redis://localhost:6379")
     
     # Verificar se todos os métodos existem
     methods = ['get', 'set', 'delete', 'exists', 'clear_all', 'initialize']
