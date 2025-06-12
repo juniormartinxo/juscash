@@ -78,7 +78,7 @@ services:
     networks:
       - juscash-net    
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "juscash_user", "-d", "juscashh_db"]
+      test: ["CMD", "pg_isready", "-U", "juscash_user", "-d", "juscash_db"]
       interval: 30s
       timeout: 10s
       retries: 3
