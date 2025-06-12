@@ -1,8 +1,17 @@
-import re
+"""
+Arquivo: src/adapters/secondary/playwright_scraper.py (VERSÃO ATUALIZADA)
+
+Implementação do scraping do DJE usando Playwright com arquitetura modular.
+Segue princípios da Arquitetura Hexagonal como adapter secundário.
+
+VERSÃO ATUALIZADA: Integra os novos helpers modulares para pesquisa avançada,
+parsing de conteúdo e navegação orchestrada.
+"""
+
+import os
 import asyncio
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page, TimeoutError as PlaywrightTimeoutError
 
 from src.core.entities.publication import Publication
@@ -14,15 +23,28 @@ from src.shared.exceptions import (
 )
 from src.shared.logger import get_logger
 
+# === IMPORTS DOS NOVOS MÓDULOS ===
+from .dje_navigation_helper import DJENavigationHelper
+from .dje_search_handler import DJEAdvancedSearchHandler
+from .dje_content_parser import DJEContentParser
+
 logger = get_logger(__name__)
 
 
 class PlaywrightScraperAdapter(ScraperPort):
     """
-    Implementação do scraping do DJE usando Playwright.
+    Implementação do scraping do DJE usando Playwright (VERSÃO MODULAR).
     
-    Realiza navegação automatizada no site do Diário da Justiça Eletrônico
-    e extrai informações das publicações conforme critérios especificados.
+    ATUALIZAÇÃO: Agora utiliza arquitetura modular com helpers especializados:
+    - DJENavigationHelper: Orchestração do fluxo completo
+    - DJEAdvancedSearchHandler: Pesquisas avançadas especializadas
+    - DJEContentParser: Extração e parsing de conteúdo
+    
+    Responsabilidades principais:
+    - Gerenciamento do ciclo de vida do browser
+    - Interface com o domínio (Port implementation)
+    - Delegação para helpers especializados
+    - Tratamento de erros de infraestrutura
     """
     
     def __init__(self, 
@@ -31,7 +53,7 @@ class PlaywrightScraperAdapter(ScraperPort):
                  user_agent: Optional[str] = None,
                  max_retries: int = 3):
         """
-        Inicializa o adaptador Playwright.
+        Inicializa o adaptador Playwright com configuração modular.
         
         Args:
             headless: Se o browser deve rodar em modo headless
@@ -39,81 +61,217 @@ class PlaywrightScraperAdapter(ScraperPort):
             user_agent: User agent customizado
             max_retries: Número máximo de tentativas em caso de erro
         """
-        self.headless = headless
+        # Configurar ambiente para WSL
+        os.environ['DISPLAY'] = '0'
+        os.environ['MOZ_ENABLE_WAYLAND'] = '0'
+        os.environ['GDK_BACKEND'] = 'x11'
+        
+        self.headless = False
         self.timeout = timeout
         self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         self.max_retries = max_retries
         
-        # Atributos de controle
+        # Atributos de controle do browser
         self.playwright = None
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         
-        # Seletores CSS para elementos do DJE
-        self.selectors = {
-            'caderno_link': 'a[href*="cdCaderno=12"]',  # Caderno 3 - Judicial - 1ª Instância
-            'publication_container': '.publicacao, .item-publicacao, div[data-publicacao]',
-            'publication_content': '.conteudo-publicacao, .texto-publicacao, .content',
-            'process_number': '.numero-processo, .processo',
-            'publication_date': '.data-publicacao, .data',
-            'next_page': 'a[href*="proxima"], .proximo-pagina, .next',
-            'loading_indicator': '.loading, .carregando, .spinner'
+        # === NOVOS HELPERS MODULARES ===
+        self.dje_helper: Optional[DJENavigationHelper] = None
+        self.search_handler: Optional[DJEAdvancedSearchHandler] = None
+        self.content_parser: Optional[DJEContentParser] = None
+        
+        # Configurações específicas do adapter
+        self.adapter_config = {
+            'enable_detailed_logging': True,
+            'enable_performance_metrics': True,
+            'enable_automatic_retry': True,
+            'enable_session_cleanup': True
+        }
+        
+        # Métricas de performance
+        self.performance_metrics = {
+            'initialization_time': None,
+            'total_scraping_time': None,
+            'publications_per_second': 0.0,
+            'error_rate': 0.0
         }
     
     async def initialize(self) -> None:
-        """Inicializa o browser Playwright."""
+        """
+        Inicializa o browser Playwright e helpers modulares.
+        
+        ATUALIZAÇÃO: Agora inicializa todos os helpers especializados
+        após configurar o browser.
+        
+        Raises:
+            BrowserException: Se erro na inicialização
+        """
+        start_time = datetime.now()
+        
         try:
-            logger.info("Inicializando Playwright...")
+            logger.info("🚀 Inicializando Playwright Scraper (Versão Modular)...")
             
+            # === CONFIGURAÇÃO DO AMBIENTE ===
+            await self._configure_wsl_environment()
+            
+            # === INICIALIZAÇÃO DO PLAYWRIGHT ===
             self.playwright = await async_playwright().start()
             
-            # Configurar browser Chromium
-            self.browser = await self.playwright.chromium.launch(
+            # === CONFIGURAÇÃO DO BROWSER ===
+            browser_args = self._get_browser_args()
+            
+            self.browser = await self.playwright.firefox.launch(
                 headless=self.headless,
-                args=[
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
-                    '--disable-gpu',
-                    '--window-size=1920,1080',
-                    '--start-maximized'
-                ],
-                ignore_default_args=['--enable-automation'],
-                channel='chrome'
+                args=browser_args,
+                slow_mo=100  # Para debug e estabilidade
             )
             
-            # Criar contexto do browser
+            # === CRIAÇÃO DO CONTEXTO ===
             self.context = await self.browser.new_context(
                 user_agent=self.user_agent,
-                viewport={'width': 1920, 'height': 1080},
-                java_script_enabled=True
+                viewport={'width': 1280, 'height': 720},
+                java_script_enabled=True,
+                ignore_https_errors=True
             )
             
-            # Criar nova página
+            # === CRIAÇÃO DA PÁGINA ===
             self.page = await self.context.new_page()
             
             # Configurar timeouts
             self.page.set_default_timeout(self.timeout)
             self.page.set_default_navigation_timeout(self.timeout)
             
-            logger.info("Playwright inicializado com sucesso")
+            # === INICIALIZAÇÃO DOS HELPERS MODULARES ===
+            await self._initialize_helpers()
+            
+            # === TESTE DE FUNCIONAMENTO ===
+            if not self.headless:
+                await self._test_browser_functionality()
+            
+            # === MÉTRICAS DE PERFORMANCE ===
+            self.performance_metrics['initialization_time'] = (datetime.now() - start_time).total_seconds()
+            
+            logger.info("✅ Playwright Scraper inicializado com sucesso")
+            logger.info(f"⏱️ Tempo de inicialização: {self.performance_metrics['initialization_time']:.2f}s")
             
         except Exception as e:
-            logger.error(f"Erro ao inicializar Playwright: {str(e)}")
+            logger.error(f"❌ Erro ao inicializar Playwright: {str(e)}")
+            await self._cleanup_on_error()
             raise BrowserException("initialize", str(e))
     
+    async def _configure_wsl_environment(self) -> None:
+        """Configura ambiente WSL para display gráfico."""
+        logger.info("🔧 Configurando ambiente WSL...")
+        
+        # Configurar display
+        os.environ['DISPLAY'] = ':0'
+        
+        # Verificar disponibilidade do display
+        display_available = os.system('xdpyinfo >/dev/null 2>&1') == 0
+        
+        if not display_available:
+            logger.warning("⚠️ Display não detectado - configurando automaticamente...")
+            try:
+                with open('/etc/resolv.conf', 'r') as f:
+                    content = f.read()
+                
+                import re
+                match = re.search(r'nameserver\s+(\S+)', content)
+                if match:
+                    windows_ip = match.group(1)
+                    os.environ['DISPLAY'] = f'{windows_ip}:0'
+                    logger.info(f"🖥️ Display configurado para: {os.environ['DISPLAY']}")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao configurar display automaticamente: {e}")
+    
+    def _get_browser_args(self) -> List[str]:
+        """Retorna argumentos otimizados para o browser."""
+        args = [
+            '--no-sandbox',
+            '--disable-dev-shm-usage'
+        ]
+        
+        if not self.headless:
+            args.extend([
+                '--new-instance',
+                '--no-remote',
+                '--display=' + os.environ.get('DISPLAY', ':0')
+            ])
+            
+            # Forçar X11
+            os.environ['MOZ_ENABLE_WAYLAND'] = '0'
+            os.environ['GDK_BACKEND'] = 'x11'
+        
+        return args
+    
+    async def _initialize_helpers(self) -> None:
+        """
+        Inicializa todos os helpers modulares.
+        
+        NOVO MÉTODO: Centraliza a inicialização dos components modulares.
+        """
+        if not self.page:
+            raise BrowserException("initialize_helpers", "Página não disponível")
+        
+        logger.info("🔧 Inicializando helpers modulares...")
+        
+        # Helper principal de navegação (orchestrador)
+        self.dje_helper = DJENavigationHelper(self.page)
+        
+        # Helper especializado em pesquisa
+        self.search_handler = DJEAdvancedSearchHandler(self.page)
+        
+        # Helper especializado em parsing
+        self.content_parser = DJEContentParser(self.page)
+        
+        # Configurar session de scraping
+        self.dje_helper.configure_scraping_session({
+            'max_retries': self.max_retries,
+            'enable_pagination': True,
+            'max_pages_per_session': 5,  # Limitar para performance
+            'max_publications_per_page': 30
+        })
+        
+        logger.info("✅ Helpers modulares inicializados")
+    
+    async def _test_browser_functionality(self) -> None:
+        """Testa funcionalidade básica do browser."""
+        logger.info("🧪 Testando funcionalidade do browser...")
+        
+        try:
+            await self.page.goto('about:blank')
+            await self.page.wait_for_timeout(1000)
+            
+            title = await self.page.title()
+            logger.info(f"✅ Browser funcionando - Título: {title}")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Teste de funcionalidade falhou: {e}")
+    
     async def navigate_to_dje(self, url: DJEUrl) -> bool:
-        """Navega para a página principal do DJE."""
+        """
+        Navega para a página principal do DJE.
+        
+        MÉTODO MANTIDO: Interface compatível com a versão anterior.
+        
+        Args:
+            url: URL do DJE
+            
+        Returns:
+            bool: True se navegação foi bem-sucedida
+            
+        Raises:
+            BrowserException: Se browser não inicializado
+            NavigationException: Se erro na navegação
+            TimeoutException: Se timeout
+        """
         if not self.page:
             raise BrowserException("navigate", "Browser não inicializado")
         
         main_url = url.get_main_url()
-        logger.info(f"Navegando para DJE: {main_url}")
+        logger.info(f"🌐 Navegando para DJE: {main_url}")
         
         for attempt in range(self.max_retries):
             try:
@@ -132,19 +290,19 @@ class PlaywrightScraperAdapter(ScraperPort):
                 # Verificar se chegamos na página correta
                 title = await self.page.title()
                 if "dje" not in title.lower() and "diário" not in title.lower():
-                    logger.warning(f"Título da página não esperado: {title}")
+                    logger.warning(f"⚠️ Título da página não esperado: {title}")
                 
-                logger.info("Navegação para DJE realizada com sucesso")
+                logger.info("✅ Navegação para DJE realizada com sucesso")
                 return True
                 
             except PlaywrightTimeoutError:
-                logger.warning(f"Timeout na tentativa {attempt + 1}/{self.max_retries}")
+                logger.warning(f"⏰ Timeout na tentativa {attempt + 1}/{self.max_retries}")
                 if attempt == self.max_retries - 1:
                     raise TimeoutException("navigate_to_dje", self.timeout // 1000)
                 await asyncio.sleep(2)
                 
             except Exception as e:
-                logger.error(f"Erro na navegação (tentativa {attempt + 1}): {str(e)}")
+                logger.error(f"❌ Erro na navegação (tentativa {attempt + 1}): {str(e)}")
                 if attempt == self.max_retries - 1:
                     raise NavigationException(f"Falha após {self.max_retries} tentativas", main_url)
                 await asyncio.sleep(2)
@@ -152,338 +310,181 @@ class PlaywrightScraperAdapter(ScraperPort):
         return False
     
     async def navigate_to_caderno(self, criteria: ScrapingCriteria) -> bool:
-        """Navega para o caderno específico conforme critérios."""
+        """
+        MÉTODO ATUALIZADO: Navega para caderno usando pesquisa avançada modular.
+        
+        Agora delega para o DJENavigationHelper que orquestrea todo o processo
+        de pesquisa avançada usando os helpers especializados.
+        
+        Args:
+            criteria: Critérios de scraping
+            
+        Returns:
+            bool: True se navegação/pesquisa foi bem-sucedida
+            
+        Raises:
+            BrowserException: Se helpers não inicializados
+            NavigationException: Se erro na pesquisa
+        """
         if not self.page:
             raise BrowserException("navigate_caderno", "Browser não inicializado")
         
-        logger.info(f"Navegando para {criteria.get_caderno_description()}")
+        if not self.dje_helper:
+            raise BrowserException("navigate_caderno", "DJE Helper não inicializado")
+        
+        logger.info(f"🎯 Executando pesquisa avançada para: {criteria.get_caderno_description()}")
         
         try:
             # Aguardar página carregar completamente
             await self.page.wait_for_load_state('networkidle')
             
-            # Procurar link do Caderno 3 - Judicial - 1ª Instância
-            # Tentativas com diferentes seletores
-            caderno_selectors = [
-                f'a[href*="cdCaderno=12"]',  # Código específico do caderno
-                f'a:has-text("Caderno {criteria.caderno}")',
-                f'a:has-text("Judicial")',
-                f'a:has-text("1ª Instância")',
-                f'a:has-text("Capital")'
-            ]
+            # === VALIDAÇÃO DOS CRITÉRIOS ===
+            validation_result = await self.dje_helper.validate_search_criteria(criteria)
             
-            caderno_link = None
-            for selector in caderno_selectors:
-                try:
-                    caderno_link = await self.page.wait_for_selector(selector, timeout=5000)
-                    if caderno_link:
-                        logger.info(f"Link do caderno encontrado com seletor: {selector}")
-                        break
-                except:
-                    continue
+            if not validation_result['is_valid']:
+                logger.error("❌ Critérios de pesquisa inválidos")
+                for error in validation_result['errors']:
+                    logger.error(f"  - {error}")
+                raise NavigationException("Critérios de pesquisa inválidos")
             
-            if not caderno_link:
-                # Tentar buscar manualmente por texto
-                links = await self.page.query_selector_all('a')
-                for link in links:
-                    text = await link.inner_text()
-                    if any(term in text for term in ['Caderno 3', 'Judicial', '1ª Instância', 'Capital']):
-                        caderno_link = link
-                        logger.info(f"Link do caderno encontrado por texto: {text}")
-                        break
+            if validation_result['warnings']:
+                logger.warning("⚠️ Avisos nos critérios de pesquisa:")
+                for warning in validation_result['warnings']:
+                    logger.warning(f"  - {warning}")
             
-            if not caderno_link:
-                raise ElementNotFoundException("Link do caderno 3", await self.page.url)
+            # === EXECUÇÃO DA PESQUISA ===
+            # Usar helper principal para orquestrar pesquisa avançada
+            success = await self.dje_helper.execute_search_only(criteria)
             
-            # Clicar no link do caderno
-            await caderno_link.click()
-            
-            # Aguardar navegação
-            await self.page.wait_for_load_state('networkidle')
-            
-            # Verificar se chegamos na página do caderno
-            current_url = self.page.url
-            if 'cdCaderno=12' in current_url or 'caderno' in current_url.lower():
-                logger.info("Navegação para caderno realizada com sucesso")
+            if success:
+                logger.info("✅ Pesquisa avançada executada com sucesso")
+                
+                # Obter resumo dos resultados
+                summary = await self.dje_helper.get_search_results_summary()
+                total_results = summary.get('result_metadata', {}).get('total_results', 0)
+                logger.info(f"📊 Resultados encontrados: {total_results}")
+                
                 return True
             else:
-                logger.warning(f"URL não indica caderno correto: {current_url}")
-                return True  # Continuar mesmo assim
+                logger.error("❌ Falha na execução da pesquisa avançada")
+                return False
                 
         except PlaywrightTimeoutError:
             raise TimeoutException("navigate_to_caderno", self.timeout // 1000)
         except Exception as e:
-            logger.error(f"Erro ao navegar para caderno: {str(e)}")
-            raise NavigationException(f"Erro ao acessar caderno: {str(e)}")
+            logger.error(f"❌ Erro ao executar pesquisa avançada: {str(e)}")
+            raise NavigationException(f"Erro na pesquisa avançada: {str(e)}")
     
     async def extract_publications(self, 
                                  criteria: ScrapingCriteria, 
                                  max_publications: Optional[int] = None) -> List[Publication]:
-        """Extrai publicações da página atual que atendem aos critérios."""
+        """
+        MÉTODO ATUALIZADO: Extrai publicações usando helpers modulares.
+        
+        Agora utiliza o DJENavigationHelper que orquestrea todo o fluxo:
+        1. Navegação entre páginas
+        2. Extração usando DJEContentParser
+        3. Validação usando critérios de negócio
+        
+        Args:
+            criteria: Critérios de scraping e validação
+            max_publications: Limite máximo de publicações
+            
+        Returns:
+            List[Publication]: Publicações extraídas e validadas
+            
+        Raises:
+            BrowserException: Se helpers não inicializados
+            ParsingException: Se erro na extração
+        """
         if not self.page:
             raise BrowserException("extract_publications", "Browser não inicializado")
         
-        logger.info(f"Extraindo publicações com critérios: {criteria}")
-        publications: List[Publication] = []
-        processed_count = 0
+        if not self.dje_helper:
+            raise BrowserException("extract_publications", "DJE Helper não inicializado")
+        
+        start_time = datetime.now()
+        
+        logger.info(f"📋 Extraindo publicações com critérios: {criteria}")
+        if max_publications:
+            logger.info(f"📊 Limite máximo: {max_publications} publicações")
         
         try:
-            # Aguardar página carregar
-            await self.page.wait_for_load_state('domcontentloaded')
+            # === EXECUÇÃO DO FLUXO COMPLETO ===
+            # O DJENavigationHelper orquestrea todo o processo:
+            # - Navegação entre páginas de resultados
+            # - Extração usando DJEContentParser
+            # - Validação dos critérios
+            # - Paginação automática (se habilitada)
+            publications = await self.dje_helper.execute_full_scraping_flow(
+                criteria,
+                max_publications
+            )
             
-            # Buscar containers de publicação
-            publication_elements = await self._find_publication_elements()
+            # === MÉTRICAS DE PERFORMANCE ===
+            extraction_time = (datetime.now() - start_time).total_seconds()
+            self.performance_metrics['total_scraping_time'] = extraction_time
             
-            if not publication_elements:
-                logger.warning("Nenhum elemento de publicação encontrado")
-                return publications
+            if publications and extraction_time > 0:
+                self.performance_metrics['publications_per_second'] = len(publications) / extraction_time
             
-            logger.info(f"Encontrados {len(publication_elements)} elementos de publicação")
+            # === LOG DE RESULTADOS ===
+            logger.info(f"🎉 Extração concluída:")
+            logger.info(f"  📋 Publicações extraídas: {len(publications)}")
+            logger.info(f"  ⏱️ Tempo de extração: {extraction_time:.2f}s")
+            logger.info(f"  📈 Taxa: {self.performance_metrics['publications_per_second']:.2f} pub/s")
             
-            # Processar cada publicação
-            for i, element in enumerate(publication_elements):
-                if max_publications and processed_count >= max_publications:
-                    logger.info(f"Limite de {max_publications} publicações atingido")
-                    break
-                
-                try:
-                    # Extrair conteúdo da publicação
-                    content = await self._extract_element_content(element)
-                    
-                    if not content or len(content.strip()) < 50:
-                        logger.debug(f"Publicação {i} tem conteúdo insuficiente")
-                        continue
-                    
-                    # Verificar se atende aos critérios de busca
-                    if not criteria.matches_content(content):
-                        logger.debug(f"Publicação {i} não atende aos critérios")
-                        continue
-                    
-                    # Criar publicação básica
-                    publication = Publication(
-                        content=content,
-                        status=Status.NEW,
-                        defendant="Instituto Nacional do Seguro Social - INSS"
-                    )
-                    
-                    # Tentar extrair informações básicas
-                    await self._extract_basic_info(publication, content)
-                    
-                    publications.append(publication)
-                    processed_count += 1
-                    
-                    logger.info(f"Publicação {processed_count} extraída: {publication.process_number}")
-                    
-                except Exception as e:
-                    logger.error(f"Erro ao processar elemento {i}: {str(e)}")
-                    continue
+            # === ESTATÍSTICAS DA SESSÃO ===
+            session_stats = self.dje_helper.get_session_statistics()
+            logger.info(f"📊 Estatísticas da sessão:")
+            logger.info(f"  📄 Páginas processadas: {session_stats['pages_processed']}")
+            logger.info(f"  ❌ Erros: {session_stats['errors_count']}")
+            logger.info(f"  📈 Taxa de sucesso: {session_stats.get('success_rate', 0):.2%}")
             
-            logger.info(f"Extração concluída: {len(publications)} publicações válidas")
             return publications
             
         except Exception as e:
-            logger.error(f"Erro durante extração de publicações: {str(e)}")
-            raise ParsingException("publications", "página_atual", str(e))
-    
-    async def _find_publication_elements(self) -> List:
-        """Encontra elementos que contêm publicações na página."""
-        publication_elements = []
-        
-        # Tentar diferentes seletores para encontrar publicações
-        selectors_to_try = [
-            '.publicacao',
-            '.item-publicacao', 
-            'div[data-publicacao]',
-            '.conteudo-publicacao',
-            'div:has-text("Processo")',
-            'p:has-text("Processo")',
-            'div:has-text("INSS")',
-            'p:has-text("INSS")',
-            # Seletores mais genéricos
-            'div',
-            'p'
-        ]
-        
-        for selector in selectors_to_try:
-            try:
-                elements = await self.page.query_selector_all(selector)
-                
-                # Filtrar elementos que provavelmente contêm publicações
-                for element in elements:
-                    text = await element.inner_text()
-                    if (len(text) > 100 and 
-                        ('processo' in text.lower() or 'inss' in text.lower())):
-                        publication_elements.append(element)
-                
-                if publication_elements:
-                    logger.info(f"Elementos encontrados com seletor: {selector}")
-                    break
-                    
-            except Exception as e:
-                logger.debug(f"Erro com seletor {selector}: {str(e)}")
-                continue
-        
-        # Remover duplicatas mantendo ordem
-        seen = set()
-        unique_elements = []
-        for element in publication_elements:
-            element_id = id(element)
-            if element_id not in seen:
-                seen.add(element_id)
-                unique_elements.append(element)
-        
-        return unique_elements[:50]  # Limitar a 50 elementos para performance
-    
-    async def _extract_element_content(self, element) -> str:
-        """Extrai o conteúdo textual de um elemento."""
-        try:
-            # Tentar diferentes métodos de extração
-            methods = [
-                lambda: element.inner_text(),
-                lambda: element.text_content(),
-                lambda: element.inner_html()
-            ]
+            # Calcular taxa de erro
+            session_stats = self.dje_helper.get_session_statistics()
+            if session_stats['pages_processed'] > 0:
+                self.performance_metrics['error_rate'] = session_stats['errors_count'] / session_stats['pages_processed']
             
-            for method in methods:
-                try:
-                    content = await method()
-                    if content and len(content.strip()) > 10:
-                        return content.strip()
-                except:
-                    continue
-            
-            return ""
-            
-        except Exception as e:
-            logger.debug(f"Erro ao extrair conteúdo do elemento: {str(e)}")
-            return ""
-    
-    async def _extract_basic_info(self, publication: Publication, content: str) -> None:
-        """Extrai informações básicas do conteúdo da publicação."""
-        try:
-            # Extrair número do processo
-            process_match = re.search(r'(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})', content)
-            if not process_match:
-                # Tentar outros formatos
-                process_match = re.search(r'(?:processo|autos)[:\s]*(\d+[.\-/]\d+[.\-/]\d+[.\-/]\d+[.\-/]\d+)', content, re.IGNORECASE)
-                if not process_match:
-                    process_match = re.search(r'(\d+[.\-/]\d+)', content)  # Formato mais simples
-            
-            if process_match:
-                try:
-                    publication.process_number = ProcessNumber(process_match.group(1))
-                    logger.debug(f"Número do processo extraído: {publication.process_number}")
-                except Exception as e:
-                    logger.debug(f"Erro ao criar ProcessNumber: {str(e)}")
-            
-            # Extrair data de disponibilização
-            date_patterns = [
-                r'disponibilização[:\s]*(\d{1,2}/\d{1,2}/\d{4})',
-                r'data[:\s]*(\d{1,2}/\d{1,2}/\d{4})',
-                r'(\d{1,2}/\d{1,2}/\d{4})'
-            ]
-            
-            for pattern in date_patterns:
-                date_match = re.search(pattern, content, re.IGNORECASE)
-                if date_match:
-                    try:
-                        date_str = date_match.group(1)
-                        publication.availability_date = datetime.strptime(date_str, '%d/%m/%Y')
-                        logger.debug(f"Data de disponibilização extraída: {publication.availability_date}")
-                        break
-                    except Exception as e:
-                        logger.debug(f"Erro ao parsear data {date_str}: {str(e)}")
-            
-            # Extrair autores
-            author_patterns = [
-                r'autor(?:es)?[:\s]*([^,\n]+)',
-                r'requerente[:\s]*([^,\n]+)',
-                r'exequente[:\s]*([^,\n]+)'
-            ]
-            
-            for pattern in author_patterns:
-                author_match = re.search(pattern, content, re.IGNORECASE)
-                if author_match:
-                    author_name = author_match.group(1).strip()
-                    if author_name and len(author_name) > 2:
-                        publication.authors.append(author_name)
-                        logger.debug(f"Autor extraído: {author_name}")
-                        break
-            
-            # Extrair advogados
-            lawyer_patterns = [
-                r'advogad[oa][:\s]*([^,\n]+)',
-                r'oab[:\s]*([^,\n]+)',
-                r'dr\.?\s+([^,\n]+)'
-            ]
-            
-            for pattern in lawyer_patterns:
-                lawyer_matches = re.finditer(pattern, content, re.IGNORECASE)
-                for match in lawyer_matches:
-                    lawyer_name = match.group(1).strip()
-                    if lawyer_name and len(lawyer_name) > 2:
-                        publication.lawyers.append(lawyer_name)
-                        logger.debug(f"Advogado extraído: {lawyer_name}")
-            
-            # Extrair valores monetários
-            self._extract_monetary_values(publication, content)
-            
-        except Exception as e:
-            logger.debug(f"Erro ao extrair informações básicas: {str(e)}")
-    
-    def _extract_monetary_values(self, publication: Publication, content: str) -> None:
-        """Extrai valores monetários do conteúdo."""
-        try:
-            # Padrões para valores monetários
-            value_patterns = {
-                'gross_value': [
-                    r'valor\s*principal[:\s]*r?\$?\s*([\d.,]+)',
-                    r'valor\s*bruto[:\s]*r?\$?\s*([\d.,]+)',
-                    r'principal[:\s]*r?\$?\s*([\d.,]+)'
-                ],
-                'net_value': [
-                    r'valor\s*líquido[:\s]*r?\$?\s*([\d.,]+)',
-                    r'líquido[:\s]*r?\$?\s*([\d.,]+)'
-                ],
-                'interest_value': [
-                    r'juros[:\s]*r?\$?\s*([\d.,]+)',
-                    r'juros\s*moratórios[:\s]*r?\$?\s*([\d.,]+)'
-                ],
-                'attorney_fees': [
-                    r'honorários[:\s]*r?\$?\s*([\d.,]+)',
-                    r'honorários\s*advocatícios[:\s]*r?\$?\s*([\d.,]+)'
-                ]
-            }
-            
-            for field_name, patterns in value_patterns.items():
-                for pattern in patterns:
-                    match = re.search(pattern, content, re.IGNORECASE)
-                    if match:
-                        try:
-                            value_str = match.group(1).replace('.', '').replace(',', '.')
-                            value = Decimal(value_str)
-                            setattr(publication, field_name, value)
-                            logger.debug(f"{field_name} extraído: R$ {value}")
-                            break
-                        except (InvalidOperation, ValueError) as e:
-                            logger.debug(f"Erro ao parsear {field_name}: {str(e)}")
-                            continue
-            
-        except Exception as e:
-            logger.debug(f"Erro ao extrair valores monetários: {str(e)}")
+            logger.error(f"❌ Erro durante extração de publicações: {str(e)}")
+            raise ParsingException("extract_publications", "fluxo_completo", str(e))
     
     async def extract_publication_details(self, publication: Publication) -> Publication:
-        """Extrai detalhes completos de uma publicação específica."""
-        # Para este caso, os detalhes já foram extraídos no método extract_publications
-        # Em uma implementação mais complexa, poderia navegar para uma página de detalhes
-        logger.debug(f"Detalhes da publicação {publication.id} já extraídos")
+        """
+        MÉTODO MANTIDO: Extrai detalhes de publicação específica.
+        
+        Args:
+            publication: Publicação para extrair detalhes
+            
+        Returns:
+            Publication: Publicação com detalhes atualizados
+        """
+        logger.debug(f"📝 Detalhes da publicação {publication.id} já extraídos pelo fluxo modular")
+        
+        # Na implementação modular, os detalhes são extraídos automaticamente
+        # pelo DJEContentParser durante o fluxo principal
         return publication
     
     async def close(self) -> None:
-        """Fecha o browser e libera recursos."""
+        """
+        MÉTODO ATUALIZADO: Fecha browser e limpa recursos modulares.
+        
+        Agora inclui limpeza dos helpers modulares e relatório final.
+        """
         try:
-            logger.info("Fechando Playwright...")
+            logger.info("🔄 Fechando Playwright Scraper...")
             
+            # === LIMPEZA DOS HELPERS ===
+            if self.dje_helper:
+                await self.dje_helper.cleanup_session()
+            
+            # === RELATÓRIO FINAL DE PERFORMANCE ===
+            self._log_final_performance_report()
+            
+            # === FECHAMENTO DO BROWSER ===
             if self.page:
                 await self.page.close()
                 self.page = None
@@ -500,8 +501,83 @@ class PlaywrightScraperAdapter(ScraperPort):
                 await self.playwright.stop()
                 self.playwright = None
             
-            logger.info("Playwright fechado com sucesso")
+            # === LIMPEZA DOS HELPERS ===
+            self.dje_helper = None
+            self.search_handler = None
+            self.content_parser = None
+            
+            logger.info("✅ Playwright Scraper fechado com sucesso")
             
         except Exception as e:
-            logger.error(f"Erro ao fechar Playwright: {str(e)}")
+            logger.error(f"❌ Erro ao fechar Playwright: {str(e)}")
             raise BrowserException("close", str(e))
+    
+    def _log_final_performance_report(self) -> None:
+        """Gera relatório final de performance."""
+        if self.adapter_config['enable_performance_metrics']:
+            logger.info("📊 Relatório Final de Performance:")
+            logger.info(f"  🚀 Tempo de inicialização: {self.performance_metrics['initialization_time']:.2f}s")
+            logger.info(f"  ⏱️ Tempo total de scraping: {self.performance_metrics['total_scraping_time']:.2f}s")
+            logger.info(f"  📈 Publicações por segundo: {self.performance_metrics['publications_per_second']:.2f}")
+            logger.info(f"  ❌ Taxa de erro: {self.performance_metrics['error_rate']:.2%}")
+    
+    async def _cleanup_on_error(self):
+        """Limpa recursos em caso de erro na inicialização."""
+        try:
+            if self.page:
+                await self.page.close()
+            if self.context:
+                await self.context.close()
+            if self.browser:
+                await self.browser.close()
+            if self.playwright:
+                await self.playwright.stop()
+        except:
+            pass  # Ignorar erros durante limpeza
+    
+    # === MÉTODOS DE CONVENIÊNCIA (NOVOS) ===
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """
+        NOVO MÉTODO: Executa verificação de saúde completa.
+        
+        Returns:
+            Dict com status de todos os componentes
+        """
+        if not self.dje_helper:
+            return {'status': 'unhealthy', 'error': 'Helpers não inicializados'}
+        
+        return await self.dje_helper.execute_health_check()
+    
+    async def get_scraping_statistics(self) -> Dict[str, Any]:
+        """
+        NOVO MÉTODO: Retorna estatísticas completas de scraping.
+        
+        Returns:
+            Dict com estatísticas detalhadas
+        """
+        stats = {
+            'adapter_performance': self.performance_metrics.copy(),
+            'adapter_config': self.adapter_config.copy()
+        }
+        
+        if self.dje_helper:
+            stats['session_statistics'] = self.dje_helper.get_session_statistics()
+            stats['configuration_summary'] = self.dje_helper.get_configuration_summary()
+        
+        return stats
+    
+    async def validate_criteria_before_scraping(self, criteria: ScrapingCriteria) -> Dict[str, Any]:
+        """
+        NOVO MÉTODO: Valida critérios antes de iniciar scraping.
+        
+        Args:
+            criteria: Critérios a serem validados
+            
+        Returns:
+            Dict com resultado da validação
+        """
+        if not self.dje_helper:
+            return {'is_valid': False, 'error': 'Helper não inicializado'}
+        
+        return await self.dje_helper.validate_search_criteria(criteria)
