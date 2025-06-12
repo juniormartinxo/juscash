@@ -90,7 +90,7 @@ Verifica se as portas configuradas no arquivo `.env` estão ocupadas e emite ale
 - **8000**: API Backend
 - **3001**: Frontend Vite
 - **5433**: PostgreSQL Database
-- **6388**: Redis Cache
+- **6379**: Redis Cache
 
 **Funcionalidades:**
 
