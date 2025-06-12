@@ -73,7 +73,7 @@ class Settings:
     def __init__(self):
         """Inicializa as configurações a partir das variáveis de ambiente."""
         self.database = DatabaseSettings(
-            url=self._get_env("POSTGRES_URL_ASYNC", "postgresql+asyncpg://juscash_user:password@localhost:5432/juscashh_db"),
+            url=self._get_env("POSTGRES_URL_ASYNC", "postgresql+asyncpg://juscash_user:password@localhost:5432/juscash_db"),
             pool_size=int(self._get_env("DB_POOL_SIZE", "10")),
             max_overflow=int(self._get_env("DB_MAX_OVERFLOW", "20")),
             pool_recycle=int(self._get_env("DB_POOL_RECYCLE", "3600")),
@@ -81,7 +81,7 @@ class Settings:
         )
         
         self.redis = RedisSettings(
-            url=self._get_env("REDIS_URL", "redis://localhost:6388"),
+            url=self._get_env("REDIS_URL", "redis://localhost:6379"),
             default_ttl_hours=int(self._get_env("REDIS_TTL_HOURS", "24")),
             max_connections=int(self._get_env("REDIS_MAX_CONNECTIONS", "10"))
         )
