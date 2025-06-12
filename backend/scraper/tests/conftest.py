@@ -26,7 +26,7 @@ def test_settings() -> Settings:
     """Configurações para testes."""
     settings = Settings()
     settings.database.url = "sqlite+aiosqlite:///:memory:"
-    settings.redis.url = "redis://localhost:6388/15"  # DB 15 para testes
+    settings.redis.url = "redis://localhost:6379/15"  # DB 15 para testes
     settings.scraping.headless = False
     settings.scraping.timeout = 10000
     settings.logging.level = "DEBUG"
