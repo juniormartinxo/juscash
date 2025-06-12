@@ -26,7 +26,7 @@ class PlaywrightScraperAdapter(ScraperPort):
     """
     
     def __init__(self, 
-                 headless: bool = True,
+                 headless: bool = False,
                  timeout: int = 30000,
                  user_agent: Optional[str] = None,
                  max_retries: int = 3):
@@ -41,7 +41,7 @@ class PlaywrightScraperAdapter(ScraperPort):
         """
         self.headless = headless
         self.timeout = timeout
-        self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         self.max_retries = max_retries
         
         # Atributos de controle
@@ -79,8 +79,12 @@ class PlaywrightScraperAdapter(ScraperPort):
                     '--no-first-run',
                     '--no-zygote',
                     '--single-process',
-                    '--disable-gpu'
-                ]
+                    '--disable-gpu',
+                    '--window-size=1920,1080',
+                    '--start-maximized'
+                ],
+                ignore_default_args=['--enable-automation'],
+                channel='chrome'
             )
             
             # Criar contexto do browser
