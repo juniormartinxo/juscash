@@ -28,18 +28,21 @@ Sistema de scraping automatizado para o Diário da Justiça Eletrônico (DJE), d
 ## 📦 Pré-requisitos
 
 ### Sistema
+
 - **Python 3.8+** (recomendado 3.11)
 - **PostgreSQL** (para banco de dados)
 - **Redis** (para cache - opcional)
 - **Git** (para versionamento)
 
 ### Linux/Ubuntu
+
 ```bash
 sudo apt-get update
 sudo apt-get install python3 python3-pip python3-venv python3-dev build-essential
 ```
 
 ### macOS
+
 ```bash
 brew install python3 wget curl git
 ```
@@ -61,29 +64,33 @@ Execute o script de instalação a partir do diretório raiz do projeto:
 ### Opção 2: Instalação Manual
 
 1. **Navegar para o diretório do scraper:**
-```bash
-cd backend/scraper
-```
+
+    ```bash
+    cd backend/scraper
+    ```
 
 2. **Criar ambiente virtual:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
 3. **Instalar dependências:**
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+
+    ```bash
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
 
 4. **Configurar Playwright:**
-```bash
-python -m playwright install chromium
-python -m playwright install-deps chromium
-```
 
-## ⚙️ Configuração
+    ```bash
+    python -m playwright install chromium
+    python -m playwright install-deps chromium
+    ```
+
+## ⚡ Configuração
 
 ### Variáveis de Ambiente
 
@@ -181,11 +188,11 @@ python -m src.main --test-scraping
 python -m pytest tests/ -v
 ```
 
-## 🏗️ Arquitetura
+## 📋 Arquitetura
 
 O scraper segue a **Arquitetura Hexagonal** (Ports & Adapters):
 
-```
+```txt
 src/
 ├── main.py                 # Ponto de entrada da aplicação
 ├── config/                 # Configurações
@@ -214,7 +221,7 @@ src/
 
 Os logs são salvos em `backend/scraper/logs/`:
 
-```
+```txt
 logs/
 ├── scraper.log           # Log principal
 ├── scraper_error.log     # Apenas erros
@@ -233,12 +240,14 @@ logs/
 ### Problemas Comuns
 
 #### 1. Erro de Importação do Playwright
+
 ```bash
 # Reinstalar browsers
 python -m playwright install chromium --with-deps
 ```
 
 #### 2. Erro de Conexão com Banco
+
 ```bash
 # Verificar se PostgreSQL está rodando
 sudo systemctl status postgresql
@@ -248,6 +257,7 @@ python -m src.main --test-db
 ```
 
 #### 3. Erro de Conexão com Redis
+
 ```bash
 # Verificar se Redis está rodando
 redis-cli ping
@@ -256,12 +266,14 @@ redis-cli ping
 ```
 
 #### 4. Permissões no Linux
+
 ```bash
 # Dar permissões aos scripts
 chmod +x scripts/*.sh
 ```
 
 #### 5. Dependências do Sistema (Ubuntu)
+
 ```bash
 # Instalar dependências do Playwright
 sudo apt-get install libnss3-dev libatk-bridge2.0-dev libdrm-dev \
@@ -297,19 +309,3 @@ LOG_LEVEL=DEBUG
 - [Configuração do Redis](../../database/redis/README.md)
 - [Scripts de Instalação](../../scripts/README.md)
 - [Docker Setup](../../docker-README.md)
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](../../LICENSE) para detalhes.
-
----
-
-**Desenvolvido com ❤️ para automatizar a coleta de dados jurídicos** 
