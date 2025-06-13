@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+skinparam component {
+    BackgroundColor #ECF0F1
+    BorderColor #2C3E50
+    ArrowColor #2C3E50
+}
+
+package "Scraper" {
+    [main.py] as main
+    package "Core" {
+        [ScrapePublicationsUseCase] as usecase
+        [Publication] as entity
+        [DatabasePort] as port
+    }
+    
+    package "Adapters" {
+        package "Primary" {
+            [PlaywrightScraper] as scraper
+        }
+        
+        package "Secondary" {
+            [APIRepository] as api
+            [RedisCacheAdapter] as redis
+        }
+    }
+    
+    package "Config" {
+        [settings.py] as settings
+    }
+}
+
+package "API" {
+    [FastAPI] as fastapi
+    database "PostgreSQL" as postgres
+}
+
+database "Redis" as redis_db
+
+main --> usecase
+usecase --> port
+usecase --> scraper
+usecase --> api
+usecase --> redis
+
+api --> fastapi
+fastapi --> postgres
+redis --> redis_db
+
+settings --> main
+settings --> usecase
+settings --> api
+settings --> redis
+
+@enduml 
