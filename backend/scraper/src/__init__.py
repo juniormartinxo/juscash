@@ -14,10 +14,10 @@ Principais componentes:
 Uso:
     # Execução imediata
     python -m src.main
-    
+
     # Execução com agendamento
     python -m src.main --schedule
-    
+
     # Testes
     python -m src.main --test-scraping
     python -m src.main --test-db
@@ -33,11 +33,13 @@ from src.shared.value_objects import Status, ProcessNumber, ScrapingCriteria
 from src.config.settings import settings
 from src.shared.logger import get_logger
 
+# Criar instância das configurações
+
 __all__ = [
     "Publication",
-    "Status", 
+    "Status",
     "ProcessNumber",
     "ScrapingCriteria",
     "settings",
-    "get_logger"
+    "get_logger",
 ]
