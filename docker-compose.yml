@@ -11,7 +11,7 @@ services:
       - 5555:5555
     environment:
       - NODE_ENV=${WORK_MODE}
-      - PORT=${API_PORT}
+      - API_PORT=${API_PORT}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
     volumes:
