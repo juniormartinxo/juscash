@@ -63,7 +63,7 @@ log_info "Iniciando configuração do ambiente JusCash..."
 echo ""
 
 # 1. Verificar variáveis de ambiente
-log_info "Passo 1/5: Verificando variáveis de ambiente..."
+log_info "Passo 1/6: Verificando variáveis de ambiente..."
 if [ -f "scripts/check-env.sh" ]; then
     chmod +x scripts/check-env.sh
     if ./scripts/check-env.sh; then
@@ -81,7 +81,7 @@ fi
 echo ""
 
 # 2. Verificar portas
-log_info "Passo 2/5: Verificando conflitos de portas..."
+log_info "Passo 2/6: Verificando conflitos de portas..."
 if [ -f "scripts/check-ports.sh" ]; then
     chmod +x scripts/check-ports.sh
     if ./scripts/check-ports.sh; then
@@ -98,7 +98,7 @@ fi
 echo ""
 
 # 3. Configurar Redis
-log_info "Passo 3/5: Configurando Redis..."
+log_info "Passo 3/6: Configurando Redis..."
 if [ -f "scripts/setup-redis.sh" ]; then
     chmod +x scripts/setup-redis.sh
     if ./scripts/setup-redis.sh; then
@@ -114,8 +114,23 @@ fi
 
 echo ""
 
-# 4. Configurar banco de dados
-log_info "Passo 4/5: Configurando banco de dados com Prisma..."
+# 4. Configurar API
+    log_info "Passo 4/6: Configurando API..."
+if [ -f "scripts/setup-api.sh" ]; then
+    chmod +x scripts/setup-api.sh
+    if ./scripts/setup-api.sh; then
+        log_success "API configurada com sucesso!"
+    else
+        log_error "Falha ao configurar API"
+        exit 1
+    fi
+else
+    log_error "Script setup-api.sh não encontrado em scripts/"
+    exit 1
+fi
+
+# 5. Configurar banco de dados
+log_info "Passo 5/6: Configurando banco de dados com Prisma..."
 if [ -f "scripts/setup-database.sh" ]; then
     chmod +x scripts/setup-database.sh
     if ./scripts/setup-database.sh; then
@@ -129,8 +144,8 @@ else
     exit 1
 fi
 
-# 5. Configurar scraper
-log_info "Passo 5/5: Configurando scraper via Docker..."
+# 6. Configurar scraper
+log_info "Passo 6/6: Configurando scraper via Docker..."
 if [ -f "scripts/run-scraper-docker.sh" ]; then
     chmod +x scripts/run-scraper-docker.sh
     if ./scripts/run-scraper-docker.sh; then
