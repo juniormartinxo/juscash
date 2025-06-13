@@ -1,0 +1,47 @@
+@startuml
+!theme plain
+skinparam sequence {
+    ArrowColor #2C3E50
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #2C3E50
+    ParticipantBorderColor #2C3E50
+    ParticipantBackgroundColor #ECF0F1
+}
+
+actor "Usuário" as user
+participant "Scraper" as scraper
+participant "API" as api
+participant "Redis" as redis
+participant "DJE" as dje
+
+== Inicialização ==
+
+scraper -> scraper: Carrega configurações
+scraper -> scraper: Inicializa adaptadores
+scraper -> api: POST /api/scraping-executions
+api --> scraper: Retorna execution_id
+
+== Execução ==
+
+scraper -> redis: Verifica cache
+alt Cache hit
+    redis --> scraper: Retorna dados em cache
+else Cache miss
+    scraper -> dje: Extrai dados
+    dje --> scraper: Retorna publicações
+    
+    scraper -> api: POST /api/publications/batch
+    api --> scraper: Confirma recebimento
+    
+    scraper -> redis: Salva em cache
+end
+
+== Finalização ==
+
+scraper -> api: PATCH /api/scraping-executions/{id}
+api --> scraper: Confirma finalização
+
+scraper -> scraper: Limpa recursos
+scraper --> user: Retorna resultado
+
+@enduml 
