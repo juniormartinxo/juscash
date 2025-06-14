@@ -54,7 +54,7 @@ class LogSettings(BaseSettings):
 class Settings(BaseSettings):
     """Configurações principais"""
 
-    environment: str = Field(default="development", env="ENVIRONMENT")
+    environment: str = Field(default="development", env="WORK_MODE")
 
     browser: BrowserSettings = BrowserSettings()
     scraper: ScraperSettings = ScraperSettings()
