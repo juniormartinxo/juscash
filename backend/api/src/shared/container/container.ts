@@ -10,6 +10,7 @@ import { GetPublicationsUseCase } from '@/application/usecases/publications/get-
 import { GetPublicationByIdUseCase } from '@/application/usecases/publications/get-publication-by-id.usecase'
 import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
 import { SearchPublicationsUseCase } from '@/application/usecases/publications/search-publications.usecase'
+import { CreatePublicationUseCase } from '@/application/usecases/publications/create-publication.usecase'
 import { PrismaClient } from '@/generated/prisma/index'
 import { PrismaUserRepository } from '@/infrastructure/database/repositories/user.repository'
 import { PrismaPublicationRepository } from '@/infrastructure/database/repositories/publication.repository'
@@ -35,6 +36,7 @@ export class Container {
   public readonly getPublicationByIdUseCase: GetPublicationByIdUseCase
   public readonly updatePublicationStatusUseCase: UpdatePublicationStatusUseCase
   public readonly searchPublicationsUseCase: SearchPublicationsUseCase
+  public readonly createPublicationUseCase: CreatePublicationUseCase
 
   // Controllers
   public readonly authController: AuthController
@@ -85,6 +87,9 @@ export class Container {
     this.searchPublicationsUseCase = new SearchPublicationsUseCase(
       this.publicationRepository
     )
+    this.createPublicationUseCase = new CreatePublicationUseCase(
+      this.publicationRepository
+    )
 
     // Controllers
     this.authController = new AuthController(
@@ -97,7 +102,8 @@ export class Container {
       this.getPublicationsUseCase,
       this.getPublicationByIdUseCase,
       this.updatePublicationStatusUseCase,
-      this.searchPublicationsUseCase
+      this.searchPublicationsUseCase,
+      this.createPublicationUseCase
     )
 
     // Middleware
@@ -113,7 +119,7 @@ export class Container {
     return Container.instance
   }
 
-  public async close(): Promise<void> {
+  public async disconnect(): Promise<void> {
     await this.prisma.$disconnect()
   }
 }
