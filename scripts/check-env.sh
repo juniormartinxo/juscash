@@ -58,16 +58,21 @@ NODE_VERSION='22.15.0'
 API_CONTAINER_NAME='${API_CONTAINER_NAME}'
 API_HOST_PORT=${API_HOST_PORT}
 API_PORT=${API_PORT}
+API_TIMEOUT=30
+API_BASE_URL='http://${API_CONTAINER_NAME}:${API_PORT}'
+
+# Configurações de segurança e limites
 CORS_ORIGIN=''
-JWT_ACCESS_SECRET='your_jwt_access_secret'
-JWT_REFRESH_SECRET='your_jwt_refresh_secret'
+JWT_ACCESS_SECRET='fUXZOvvcAit2HcrAcXsaY3AnZ5PihzyL'
+JWT_REFRESH_SECRET='FjOkrtGSfalZaPdfyNJEynzYrGmZFRdW'
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 MAX_REQUEST_SIZE='10mb'
+
+# Configurações adicionais
 ENABLE_SECURITY_MIDDLEWARE=true
 ENABLE_METRICS=false
 METRICS_PATH='/admin/metrics'
-LOG_LEVEL='info'
 ENABLE_FILE_LOGGING=true
 
 # ===========================================
@@ -108,28 +113,31 @@ REDIS_SAVE_POLICY='60 1 300 100 600 1'
 # ===========================================
 
 # GOOGLE
-MAIL_HOST='smtp.gmail.com'
 MAIL_PORT='587'
 MAIL_SECURE=false
-MAIL_BOX_CONTACT=''
-MAIL_BOX_BILLING=''
-MAIL_USER=''
-MAIL_PASS=''
+MAIL_BOX_CONTACT='contato@juniormartins.dev'
+MAIL_BOX_BILLING='contato@juniormartins.dev'
+MAIL_USER='contato@juniormartins.dev'
+MAIL_PASS='juniormartins@123'
+MAIL_HOST='smtp.gmail.com'
 
 # ===========================================
 # CONFIGURAÇÕES DO SCRAPER
 # ===========================================
+SCRAPER_CONTAINER_NAME='juscash-scraper'
 SCRAPER_INTERVAL=86400
 SCRAPER_TIMEOUT=30
 SCRAPER_MAX_RETRIES=3
 SCRAPER_RETRY_DELAY=5
+SCRAPER_MAX_PAGES=20
+SCRAPER_TARGET_URL=https://dje.tjsp.jus.br/cdje/index.do
+SCRAPER_SEARCH_TERMS=aposentadoria,benefício,INSS
+SCRAPER_API_KEY='scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP'
 
-# ===========================================
-# CONFIGURAÇÕES DO BROWSER
-# ===========================================
+# Configurações do navegador
 BROWSER_HEADLESS=false
 BROWSER_TIMEOUT=30000
-BROWSER_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+BROWSER_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 
 # ===========================================
 # CONFIGURAÇÕES DE LOG
