@@ -7,15 +7,14 @@ import click
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
-from ..infrastructure.logging.logger import setup_logger
-from ..infrastructure.config.dynamic_config import DynamicConfigManager
-from ..infrastructure.backup.backup_manager import BackupManager
-from ..infrastructure.alerts.alert_system import alert_system
-from ..infrastructure.monitoring.performance_monitor import PerformanceMonitor
-from ..application.services.scraping_orchestrator import ScrapingOrchestrator
-from ..shared.container import Container
+from infrastructure.logging.logger import setup_logger
+from infrastructure.config.dynamic_config import DynamicConfigManager
+from infrastructure.backup.backup_manager import BackupManager
+from infrastructure.alerts.alert_system import alert_system
+from infrastructure.monitoring.performance_monitor import PerformanceMonitor
+from application.services.scraping_orchestrator import ScrapingOrchestrator
+from shared.container import Container
 
 logger = setup_logger(__name__)
 
@@ -209,9 +208,9 @@ def set(ctx, key, value, type):
         if config_manager.update_config({key: value}):
             click.echo(f"✅ Configuração atualizada: {key} = {value}")
         else:
-            click.echo(f"❌ Falha ao atualizar configuração", err=True)
+            click.echo("❌ Falha ao atualizar configuração", err=True)
 
-    except ValueError as error:
+    except ValueError:
         click.echo(f"❌ Valor inválido para tipo {type}: {value}", err=True)
     except Exception as error:
         click.echo(f"❌ Erro ao definir configuração: {error}", err=True)
@@ -435,8 +434,8 @@ def api(ctx, api_url):
 
     async def test_api_connection():
         try:
-            from ..infrastructure.api.api_client_adapter import ApiClientAdapter
-            from ..infrastructure.config.settings import get_settings
+            from infrastructure.api.api_client_adapter import ApiClientAdapter
+            from infrastructure.config.settings import get_settings
 
             # Configurar URL temporariamente
             settings = get_settings()
