@@ -16,7 +16,7 @@ export class PerformanceMiddleware {
     const startCpuUsage = process.cpuUsage()
     const startMemoryUsage = process.memoryUsage()
 
-    // Use finish event instead of intercepting res.end
+    // Store metrics on response finish
     res.on('finish', () => {
       const endTime = performance.now()
       const endCpuUsage = process.cpuUsage(startCpuUsage)
@@ -38,12 +38,10 @@ export class PerformanceMiddleware {
         memoryUsage: memoryDiff,
         cpuUsage: endCpuUsage,
       })
-
-      // Add performance headers
-      res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`)
-      res.set('X-CPU-Usage', `${endCpuUsage.user}μs`)
-      res.set('X-Memory-Usage', `${(memoryDiff.heapUsed / 1024 / 1024).toFixed(2)}MB`)
     })
+
+    // Add performance headers (will be added by other middleware if needed)
+    res.locals.performanceStart = startTime
 
     next()
   };
