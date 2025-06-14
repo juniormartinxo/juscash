@@ -27,3 +27,34 @@ tenacity==9.1.2
 typing-inspection==0.4.1
 typing_extensions==4.14.0
 tzlocal==5.3.1
+
+# requirements.txt (atualizado)
+# Core dependencies
+asyncio
+httpx>=0.25.0
+loguru>=0.7.0
+pydantic[email]>=2.0.0
+python-dotenv>=1.0.0
+
+# Web scraping
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Scheduling
+APScheduler>=3.10.0
+
+# Database (optional for local storage)
+asyncpg>=0.29.0
+sqlalchemy[asyncio]>=2.0.0
+
+# Data processing
+python-dateutil>=2.8.0
+tenacity>=8.2.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
