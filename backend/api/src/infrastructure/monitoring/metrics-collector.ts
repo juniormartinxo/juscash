@@ -125,7 +125,7 @@ export class MetricsCollector {
     if (allResponseTimes.length === 0) return 0
 
     const index = Math.ceil((percentile / 100) * allResponseTimes.length) - 1
-    return allResponseTimes[index]
+    return allResponseTimes[index] ?? 0
   }
 
   getSystemMetrics(): SystemMetrics[] {
