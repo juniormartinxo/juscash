@@ -8,6 +8,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default(''),
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
+  SCRAPER_API_KEY: z.string(),
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
   MAX_REQUEST_SIZE: z.string().default('10mb'),
@@ -31,6 +32,9 @@ export const config = {
   jwt: {
     accessTokenSecret: env.JWT_ACCESS_SECRET,
     refreshTokenSecret: env.JWT_REFRESH_SECRET,
+  },
+  scraper: {
+    apiKey: env.SCRAPER_API_KEY,
   },
   cors: {
     origin: env.CORS_ORIGIN,
