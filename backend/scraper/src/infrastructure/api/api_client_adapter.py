@@ -4,11 +4,11 @@ Adapter - Cliente para comunicação com a API
 
 import httpx
 from typing import Dict, Any, Optional
-from src.domain.ports.scraping_repository import ScrapingRepositoryPort
-from src.domain.entities.publication import Publication
-from src.domain.entities.scraping_execution import ScrapingExecution
-from src.infrastructure.logging.logger import setup_logger
-from src.infrastructure.config.settings import get_settings
+from domain.ports.scraping_repository import ScrapingRepositoryPort
+from domain.entities.publication import Publication
+from domain.entities.scraping_execution import ScrapingExecution
+from infrastructure.logging.logger import setup_logger
+from infrastructure.config.settings import get_settings
 
 logger = setup_logger(__name__)
 
