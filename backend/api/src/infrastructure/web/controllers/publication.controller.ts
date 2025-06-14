@@ -2,6 +2,7 @@ import { GetPublicationByIdUseCase } from '@/application/usecases/publications/g
 import { GetPublicationsUseCase } from '@/application/usecases/publications/get-publications.usecase'
 import { SearchPublicationsUseCase } from '@/application/usecases/publications/search-publications.usecase'
 import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
+import { CreatePublicationUseCase, ValidationError } from '@/application/usecases/publications/create-publication.usecase'
 import { asyncHandler } from '@/shared/utils/async-handler'
 import { ApiResponseBuilder } from '@/shared/utils/api-response'
 import { Request, Response } from 'express'
@@ -11,8 +12,22 @@ export class PublicationController {
     private getPublicationsUseCase: GetPublicationsUseCase,
     private getPublicationByIdUseCase: GetPublicationByIdUseCase,
     private updatePublicationStatusUseCase: UpdatePublicationStatusUseCase,
-    private searchPublicationsUseCase: SearchPublicationsUseCase
+    private searchPublicationsUseCase: SearchPublicationsUseCase,
+    private createPublicationUseCase: CreatePublicationUseCase
   ) { }
+
+  createPublication = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await this.createPublicationUseCase.execute(req.body)
+      res.status(201).json(ApiResponseBuilder.success(result))
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json(ApiResponseBuilder.error(error.message))
+        return
+      }
+      throw error
+    }
+  });
 
   getPublications = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { page, limit, status, startDate, endDate, search } = req.query as any
