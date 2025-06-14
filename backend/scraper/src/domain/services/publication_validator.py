@@ -4,7 +4,7 @@ Serviço de domínio para validação de publicações
 
 import re
 from typing import List
-from src.domain.entities.publication import Publication
+from domain.entities.publication import Publication
 
 
 class PublicationValidator:
