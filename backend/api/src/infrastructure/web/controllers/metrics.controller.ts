@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { ApiResponseBuilder } from '../../../shared/utils/ApiResponse.js'
-import { asyncHandler } from '../../../shared/utils/AsyncHandler.js'
-import { MetricsCollector } from '../../monitoring/metrics-collector.js'
+import { ApiResponseBuilder } from '@/shared/utils/api-response'
+import { asyncHandler } from '@/shared/utils/async-handler'
+import { MetricsCollector } from '@/infrastructure/monitoring/metrics-collector'
 
 export class MetricsController {
   constructor(private metricsCollector: MetricsCollector) { }
