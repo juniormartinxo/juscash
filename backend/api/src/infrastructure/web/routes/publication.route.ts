@@ -1,6 +1,7 @@
 import {
   getPublicationsQuerySchema,
-  updatePublicationStatusSchema
+  updatePublicationStatusSchema,
+  createPublicationSchema
 } from '@/shared/validation/schemas'
 import { PublicationController } from '@/infrastructure/web/controllers/publication.controller'
 import { AuthMiddleware } from '@/infrastructure/web/middleware/auth.middleware'
@@ -24,6 +25,11 @@ export function createPublicationRoutes(
 
   // Aplicar autenticação a todas as rotas
   router.use(authMiddleware.authenticate)
+
+  router.post('/',
+    ValidationMiddleware.validateBody(createPublicationSchema),
+    publicationController.createPublication
+  )
 
   router.get('/',
     ValidationMiddleware.validateQuery(getPublicationsQuerySchema),
