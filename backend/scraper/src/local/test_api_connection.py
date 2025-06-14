@@ -4,17 +4,15 @@ Script para testar conexão com a API
 
 import asyncio
 import os
-import sys
 from datetime import datetime
-from pathlib import Path
 
-# Adicionar o diretório raiz do projeto ao path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
+from src.local.load_root_dotenv import get_dotenv_path
+from dotenv import load_dotenv
 from src.domain.entities.publication import Publication, Lawyer, MonetaryValue
 from src.infrastructure.api.api_client_adapter import ApiClientAdapter
 from src.infrastructure.logging.logger import setup_logger
+
+load_dotenv(get_dotenv_path())
 
 logger = setup_logger(__name__)
 
@@ -24,10 +22,7 @@ async def test_api_connection():
     logger.info("🧪 Iniciando teste de conexão com a API")
 
     # Verificar se API Key está configurada
-    api_key = os.getenv(
-        "SCRAPER_API_KEY",
-        "scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjPSlIvSEKh2ADSvd4nEZJFKDkDGJqO198lJ25W1eQAm1d",
-    )
+    api_key = os.getenv("SCRAPER_API_KEY")
     if not api_key or api_key == "sua_chave_aqui":
         logger.warning("⚠️  SCRAPER_API_KEY não configurada ou usando valor padrão")
         logger.info("💡 Continuando teste mesmo sem API key válida...")
@@ -123,7 +118,7 @@ async def main():
             logger.error(f"❌ {test_name}: ERRO - {error}")
             failed += 1
 
-    logger.info(f"\n📊 Resultados dos testes:")
+    logger.info("\n📊 Resultados dos testes:")
     logger.info(f"✅ Passou: {passed}")
     logger.info(f"❌ Falhou: {failed}")
     logger.info(f"📈 Total: {passed + failed}")
