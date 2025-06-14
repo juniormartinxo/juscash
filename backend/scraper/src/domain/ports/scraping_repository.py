@@ -4,8 +4,8 @@ Port - Interface do repositório de scraping
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from src.domain.entities.publication import Publication
-from src.domain.entities.scraping_execution import ScrapingExecution
+from domain.entities.publication import Publication
+from domain.entities.scraping_execution import ScrapingExecution
 
 
 class ScrapingRepositoryPort(ABC):
