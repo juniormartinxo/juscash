@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { AuthService } from '../../../domain/services/auth.service.js'
+import { AuthService } from '@/domain/services/auth.service'
 
 interface AuthenticatedRequest extends Request {
   user?: {
