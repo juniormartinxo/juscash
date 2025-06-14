@@ -25,6 +25,7 @@ services:
       - METRICS_PATH=${METRICS_PATH}
       - LOG_LEVEL=${LOG_LEVEL}
       - ENABLE_FILE_LOGGING=${ENABLE_FILE_LOGGING}
+      - SCRAPER_API_KEY=${SCRAPER_API_KEY}
     volumes:
       - ./backend/api:/app
       - /app/node_modules
