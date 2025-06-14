@@ -43,6 +43,12 @@ export class SecurityMiddleware {
 
   // XSS Protection
   xssProtection = (req: Request, res: Response, next: NextFunction): void => {
+    // Skip XSS protection for scraper routes to avoid array/object conversion issues
+    if (req.url.startsWith('/api/scraper/')) {
+      next()
+      return
+    }
+
     const xssPatterns = [
       /<script[^>]*>.*?<\/script>/gi,
       /<iframe[^>]*>.*?<\/iframe>/gi,
