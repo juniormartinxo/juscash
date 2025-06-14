@@ -11,6 +11,7 @@ import { RateLimitMiddleware } from './infrastructure/web/middleware/rate-limit.
 import { createAuthRoutes } from './infrastructure/web/routes/auth.route'
 import { createMetricsRoutes } from './infrastructure/web/routes/metrics.route'
 import { createPublicationRoutes } from './infrastructure/web/routes/publication.route'
+import { createScraperRoutes } from './infrastructure/web/routes/scraper.route'
 import { config } from './shared/config/environment'
 import { Container } from './shared/container/container'
 import { ApiResponseBuilder } from './shared/utils/api-response'
@@ -173,10 +174,14 @@ class Application {
             logout: 'POST /api/auth/logout',
           },
           publications: {
+            create: 'POST /api/publications',
             list: 'GET /api/publications',
             search: 'GET /api/publications/search',
             get: 'GET /api/publications/:id',
             updateStatus: 'PUT /api/publications/:id/status',
+          },
+          scraper: {
+            createPublication: 'POST /api/scraper/publications (requires X-API-Key header)',
           },
         },
       }))
@@ -187,6 +192,11 @@ class Application {
     this.app.use('/api/publications', createPublicationRoutes(
       this.container.publicationController,
       this.container.authMiddleware
+    ))
+
+    // Scraper API routes (sem autenticação JWT, usa API Key)
+    this.app.use('/api/scraper', createScraperRoutes(
+      this.container.publicationController
     ))
 
     // Metrics routes (admin only)
@@ -358,7 +368,7 @@ class Application {
 
         server.close(async () => {
           try {
-            await this.container.close()
+            await this.container.disconnect()
             logger.info('✅ Server shut down gracefully')
             process.exit(0)
           } catch (error) {
