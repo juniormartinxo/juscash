@@ -8,7 +8,7 @@ import { RefreshTokenUseCase } from '@/application/usecases/auth/refresh-token.u
 import { LogoutUseCase } from '@/application/usecases/auth/logout.usecase'
 import { GetPublicationsUseCase } from '@/application/usecases/publications/get-publications.usecase'
 import { GetPublicationByIdUseCase } from '@/application/usecases/publications/get-publication-by-id.usecase'
-import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-ublication-status.usecase'
+import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
 import { SearchPublicationsUseCase } from '@/application/usecases/publications/search-publications.usecase'
 import { PrismaClient } from '@/generated/prisma/index'
 import { PrismaUserRepository } from '@/infrastructure/database/repositories/user.repository'
