@@ -4,7 +4,7 @@ Port - Interface do web scraper
 
 from abc import ABC, abstractmethod
 from typing import List, AsyncGenerator
-from ..entities.publication import Publication
+from entities.publication import Publication
 
 
 class WebScraperPort(ABC):
