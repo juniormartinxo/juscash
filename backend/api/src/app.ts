@@ -1,7 +1,7 @@
+import 'dotenv/config'
 import compression from 'compression'
 import cors from 'cors'
 import express from 'express'
-import 'express-async-errors'
 import helmet from 'helmet'
 import { setupSwagger } from './infrastructure/docs/swagger'
 import { MetricsCollector } from './infrastructure/monitoring/metrics-collector'
@@ -11,7 +11,7 @@ import { RateLimitMiddleware } from './infrastructure/web/middleware/rate-limit.
 import { createAuthRoutes } from './infrastructure/web/routes/auth.route'
 import { createMetricsRoutes } from './infrastructure/web/routes/metrics.route'
 import { createPublicationRoutes } from './infrastructure/web/routes/publication.route'
-import config from './shared/config/environment'
+import { config } from './shared/config/environment'
 import { Container } from './shared/container/container'
 import { ApiResponseBuilder } from './shared/utils/api-response'
 import { AppError } from './shared/utils/error-handler'
@@ -248,7 +248,7 @@ class Application {
     })
 
     // 404 handler
-    this.app.use('*', (req, res) => {
+    this.app.use((req, res) => {
       logger.warn('Route not found:', {
         method: req.method,
         url: req.url,
