@@ -343,7 +343,7 @@ class Application {
   }
 
   public async start(): Promise<void> {
-    const port = config.port
+    const apiPort = config.apiPort
 
     try {
       // Test database connection
@@ -351,14 +351,14 @@ class Application {
       logger.info('✅ Database connected successfully')
 
       // Start server
-      const server = this.app.listen(port, () => {
-        logger.info(`🚀 Server running on http://localhost:${port}`)
-        logger.info(`📋 Health check: http://localhost:${port}/health`)
-        logger.info(`📚 API docs: http://localhost:${port}/api-docs`)
-        logger.info(`🔗 API info: http://localhost:${port}/api`)
+      const server = this.app.listen(apiPort, () => {
+        logger.info(`🚀 Server running on http://localhost:${apiPort}`)
+        logger.info(`📋 Health check: http://localhost:${apiPort}/health`)
+        logger.info(`📚 API docs: http://localhost:${apiPort}/api-docs`)
+        logger.info(`🔗 API info: http://localhost:${apiPort}/api`)
 
         if (config.monitoring.enableMetrics) {
-          logger.info(`📊 Metrics: http://localhost:${port}${config.monitoring.metricsPath}`)
+          logger.info(`📊 Metrics: http://localhost:${apiPort}${config.monitoring.metricsPath}`)
         }
       })
 
