@@ -1,153 +1,99 @@
+"""
+Configuração compartilhada para testes do scraper
+"""
+
 import pytest
 import asyncio
-from typing import AsyncGenerator, Generator
-from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
-from decimal import Decimal
+from pathlib import Path
+import tempfile
+import shutil
 
-from src.core.entities.publication import Publication
-from src.shared.value_objects import ProcessNumber, Status, ScrapingCriteria
-from src.config.settings import Settings
-from src.adapters.secondary.sqlalchemy_repository import SQLAlchemyRepository
-from src.adapters.secondary.redis_cache import RedisCacheAdapter
-from src.adapters.secondary.playwright_scraper import PlaywrightScraperAdapter
+from src.domain.entities.publication import Publication, Lawyer, MonetaryValue
+from src.domain.entities.scraping_execution import (
+    ScrapingExecution,
+    ExecutionType,
+    ExecutionStatus,
+)
+from src.infrastructure.logging.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Cria loop de eventos para testes assíncronos."""
-    loop = asyncio.new_event_loop()
+def event_loop():
+    """Cria loop de eventos para testes assíncronos"""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 
 @pytest.fixture
-def test_settings() -> Settings:
-    """Configurações para testes."""
-    settings = Settings()
-    settings.database.url = "sqlite+aiosqlite:///:memory:"
-    settings.redis.url = "redis://localhost:6379/15"  # DB 15 para testes
-    settings.scraping.headless = False
-    settings.scraping.timeout = 10000
-    settings.logging.level = "DEBUG"
-    return settings
+def temp_dir():
+    """Diretório temporário para testes"""
+    temp_path = Path(tempfile.mkdtemp())
+    yield temp_path
+    shutil.rmtree(temp_path)
 
 
 @pytest.fixture
-def sample_publication() -> Publication:
-    """Publicação de exemplo para testes."""
+def sample_publication():
+    """Publicação de exemplo para testes"""
     return Publication(
-        process_number=ProcessNumber("1234567-89.2024.8.26.0100"),
+        process_number="1234567-89.2024.8.26.0100",
         publication_date=datetime(2024, 3, 15),
-        availability_date=datetime(2024, 3, 15),
-        authors=["João da Silva", "Maria Santos"],
-        defendant="Instituto Nacional do Seguro Social - INSS",
-        lawyers=["Dr. Carlos Alberto - OAB/SP 123456"],
-        gross_value=Decimal("15000.50"),
-        net_value=Decimal("12000.00"),
-        interest_value=Decimal("2500.25"),
-        attorney_fees=Decimal("3000.00"),
-        content="Processo nº 1234567-89.2024.8.26.0100. Autor: João da Silva. INSS condenado ao pagamento...",
-        status=Status.NEW
+        availability_date=datetime(2024, 3, 17),
+        authors=["João Silva Santos", "Maria Oliveira Lima"],
+        lawyers=[
+            Lawyer(name="Dr. Carlos Advogado", oab="123456"),
+            Lawyer(name="Dra. Ana Jurista", oab="789012"),
+        ],
+        gross_value=MonetaryValue.from_real(1500.00),
+        net_value=MonetaryValue.from_real(1350.00),
+        interest_value=MonetaryValue.from_real(100.00),
+        attorney_fees=MonetaryValue.from_real(50.00),
+        content="Conteúdo de teste sobre aposentadoria por invalidez do INSS. Benefício concedido após análise médica.",
+        extraction_metadata={
+            "extraction_date": datetime.now().isoformat(),
+            "source_url": "https://dje.tjsp.jus.br/test",
+            "confidence_score": 0.95,
+            "test_data": True,
+        },
     )
 
 
 @pytest.fixture
-def sample_criteria() -> ScrapingCriteria:
-    """Critérios de scraping para testes."""
-    return ScrapingCriteria(
-        required_terms=("Instituto Nacional do Seguro Social", "INSS"),
-        caderno="3",
-        instancia="1",
-        local="Capital",
-        parte="1"
+def sample_execution():
+    """Execução de exemplo para testes"""
+    return ScrapingExecution(
+        execution_id="test-execution-123",
+        execution_type=ExecutionType.TEST,
+        publications_found=10,
+        publications_new=5,
+        publications_duplicated=3,
+        publications_failed=2,
+        publications_saved=5,
     )
 
 
 @pytest.fixture
-def mock_scraper() -> AsyncMock:
-    """Mock do scraper para testes."""
-    scraper = AsyncMock(spec=PlaywrightScraperAdapter)
-    
-    # Configurar métodos principais
-    scraper.initialize.return_value = None
-    scraper.navigate_to_dje.return_value = True
-    scraper.navigate_to_caderno.return_value = True
-    scraper.close.return_value = None
-    
-    return scraper
-
-
-@pytest.fixture
-def mock_database() -> AsyncMock:
-    """Mock do banco de dados para testes."""
-    database = AsyncMock(spec=SQLAlchemyRepository)
-    
-    # Configurar métodos principais
-    database.save_publication.return_value = None
-    database.exists_by_process_number.return_value = False
-    database.find_by_process_number.return_value = None
-    
-    return database
-
-
-@pytest.fixture
-def mock_cache() -> AsyncMock:
-    """Mock do cache para testes."""
-    cache = AsyncMock(spec=RedisCacheAdapter)
-    
-    # Configurar métodos principais
-    cache.get.return_value = None
-    cache.set.return_value = True
-    cache.exists.return_value = False
-    cache.delete.return_value = True
-    
-    return cache
-
-
-@pytest.fixture
-async def test_database(test_settings) -> AsyncGenerator[SQLAlchemyRepository, None]:
-    """Banco de dados real para testes de integração."""
-    db = SQLAlchemyRepository(test_settings.database.url)
-    
-    # Criar tabelas
-    await db.create_tables()
-    
-    yield db
-    
-    # Limpeza após teste
-    await db.close()
-
-
-@pytest.fixture
-def mock_playwright_page():
-    """Mock da página do Playwright."""
-    page = AsyncMock()
-    
-    # Configurar métodos comuns
-    page.goto.return_value = MagicMock(status=200)
-    page.wait_for_load_state.return_value = None
-    page.wait_for_selector.return_value = MagicMock()
-    page.query_selector_all.return_value = []
-    page.title.return_value = "DJE - Diário da Justiça Eletrônico"
-    page.url = "https://dje.tjsp.jus.br"
-    
-    return page
-
-
-@pytest.fixture
-def sample_html_content() -> str:
-    """Conteúdo HTML de exemplo para testes de parsing."""
+def sample_content_dje():
+    """Conteúdo de exemplo do DJE para testes de parsing"""
     return """
-    <div class="publicacao">
-        <p>Processo nº 1234567-89.2024.8.26.0100</p>
-        <p>Data de disponibilização: 15/03/2024</p>
-        <p>Autor: João da Silva</p>
-        <p>Réu: Instituto Nacional do Seguro Social - INSS</p>
-        <p>Advogado: Dr. Carlos Alberto - OAB/SP 123456</p>
-        <p>Valor principal: R$ 15.000,50</p>
-        <p>Juros moratórios: R$ 2.500,25</p>
-        <p>Honorários advocatícios: R$ 3.000,00</p>
-        <p>Conteúdo da decisão judicial...</p>
-    </div>
+    PROCESSO: 1234567-89.2024.8.26.0100
+    Data de Publicação: 15/03/2024
+    Data de Disponibilização: 17/03/2024
+    
+    Autor: João Silva Santos
+    Réu: Instituto Nacional do Seguro Social - INSS
+    Advogado: Dr. Carlos Advogado, OAB 123456
+    
+    DECISÃO: Defiro o pedido de aposentadoria por invalidez.
+    Valor Principal: R$ 1.500,00
+    Valor Líquido: R$ 1.350,00
+    Juros Moratórios: R$ 100,00
+    Honorários Advocatícios: R$ 50,00
+    
+    Considerando a documentação médica apresentada e o benefício do INSS,
+    determino o pagamento do valor devido ao requerente.
     """
