@@ -30,7 +30,7 @@ export const logger = winston.createLogger({
 })
 
 // Add console transport in development
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV === 'development') {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
       winston.format.colorize(),
