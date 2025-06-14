@@ -6,8 +6,8 @@ from typing import List
 from datetime import datetime
 from uuid import uuid4
 
-from ..usecases.extract_publications import ExtractPublicationsUseCase
-from ..usecases.save_publications import SavePublicationsUseCase
+from usecases.extract_publications import ExtractPublicationsUseCase
+from usecases.save_publications import SavePublicationsUseCase
 from domain.entities.scraping_execution import ScrapingExecution, ExecutionType
 from infrastructure.logging.logger import setup_logger
 
