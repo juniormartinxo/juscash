@@ -34,7 +34,7 @@ class ScraperApplication:
         """Inicia a aplicação do scraper"""
         try:
             logger.info("🚀 Iniciando DJE Scraper Application")
-            logger.info(f"📅 Execução programada diária a partir de 17/03/2025")
+            logger.info("📅 Execução programada diária a partir de 17/03/2025")
             logger.info(f"🎯 Target: {self.settings.scraper.target_url}")
 
             # Registrar handlers de shutdown graceful
