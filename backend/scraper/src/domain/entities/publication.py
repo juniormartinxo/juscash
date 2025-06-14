@@ -86,12 +86,21 @@ class Publication:
 
     def to_api_dict(self) -> Dict[str, Any]:
         """Converte para formato da API"""
+
+        def format_datetime_for_api(dt: datetime) -> str:
+            """Formata datetime para o formato esperado pela API (ISO 8601 UTC)"""
+            if dt.tzinfo is None:
+                # Se não tem timezone, assume UTC
+                dt = dt.replace(tzinfo=None)
+            # Converter para UTC e formatar como ISO string
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
         return {
             "processNumber": self.process_number,
-            "publicationDate": self.publication_date.isoformat()
+            "publicationDate": format_datetime_for_api(self.publication_date)
             if self.publication_date
             else None,
-            "availabilityDate": self.availability_date.isoformat(),
+            "availabilityDate": format_datetime_for_api(self.availability_date),
             "authors": self.authors,
             "defendant": self.defendant,
             "lawyers": [
