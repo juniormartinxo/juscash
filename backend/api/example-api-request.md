@@ -193,7 +193,59 @@ Os valores monetários devem ser enviados em **centavos**:
 }
 ```
 
-## 9. Tratamento de Erros
+## 9. Endpoint para Scraper (Novo!)
+
+### Autenticação via API Key
+
+Para scrapers/bots, use o endpoint específico que não requer login de usuário:
+
+```bash
+curl -X POST http://localhost:3000/api/scraper/publications \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sua-api-key-do-scraper-aqui" \
+  -d '{
+    "processNumber": "1234567-89.2024.8.26.0100",
+    "publicationDate": "2024-03-15T00:00:00.000Z",
+    "availabilityDate": "2024-03-17T00:00:00.000Z",
+    "authors": ["João Silva Santos", "Maria Oliveira"],
+    "defendant": "Instituto Nacional do Seguro Social - INSS",
+    "lawyers": [
+      {
+        "name": "Dr. Carlos Advogado",
+        "oab": "123456"
+      }
+    ],
+    "grossValue": 150000,
+    "netValue": 135000,
+    "interestValue": 10000,
+    "attorneyFees": 5000,
+    "content": "Conteúdo completo da publicação...",
+    "status": "NOVA",
+    "scrapingSource": "DJE-SP",
+    "extractionMetadata": {
+      "extraction_date": "2024-03-17T10:30:00.000Z",
+      "source_url": "https://dje.tjsp.jus.br/...",
+      "confidence_score": 0.95
+    }
+  }'
+```
+
+### Configuração da API Key
+
+Adicione no seu arquivo `.env`:
+
+```bash
+SCRAPER_API_KEY="sua-chave-secreta-longa-e-segura-aqui"
+```
+
+### Vantagens do Endpoint Scraper
+
+- **Sem necessidade de login**: Não precisa fazer autenticação de usuário
+- **Rate limiting específico**: 1000 requests por 15 minutos (vs 100 para usuários)
+- **Logs de auditoria**: Identificação clara da origem "SCRAPER"
+- **Mesma validação**: Mantém toda a segurança de validação de dados
+
+## 10. Tratamento de Erros
 
 ### Erro de Validação (400)
 
@@ -210,6 +262,22 @@ Os valores monetários devem ser enviados em **centavos**:
 {
   "success": false,
   "error": "Authorization token required"
+}
+```
+
+### Erro de API Key (400/401)
+
+```json
+{
+  "success": false,
+  "error": "X-API-Key header is required"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "Invalid API Key"
 }
 ```
 
