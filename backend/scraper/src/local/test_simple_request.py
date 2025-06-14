@@ -26,14 +26,14 @@ async def test_simple_request():
 
     headers = {"Content-Type": "application/json", "X-API-Key": api_key}
 
-    print(f"\n📤 Headers enviados:")
+    print("\n📤 Headers enviados:")
     for key, value in headers.items():
         if key == "X-API-Key":
             print(f"  {key}: {value[:20]}...")
         else:
             print(f"  {key}: {value}")
 
-    print(f"\n📋 Dados enviados:")
+    print("\n📋 Dados enviados:")
     print(f"  {test_data}")
 
     try:
@@ -42,7 +42,7 @@ async def test_simple_request():
                 f"{base_url}/api/scraper/publications", json=test_data, headers=headers
             )
 
-            print(f"\n📥 Resposta:")
+            print("\n📥 Resposta:")
             print(f"  Status: {response.status_code}")
             print(f"  Body: {response.text}")
 
