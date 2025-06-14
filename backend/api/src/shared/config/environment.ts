@@ -16,6 +16,7 @@ const envSchema = z.object({
   METRICS_PATH: z.string().default('/admin/metrics'),
   LOG_LEVEL: z.string().default('info'),
   ENABLE_FILE_LOGGING: z.string().transform((val) => val !== 'false').default('true'),
+  REDIS_URL: z.string(),
 })
 
 const env = envSchema.parse(process.env)
@@ -49,6 +50,9 @@ export const config = {
   logging: {
     level: env.LOG_LEVEL,
     enableFileLogging: env.ENABLE_FILE_LOGGING,
+  },
+  redis: {
+    url: env.REDIS_URL,
   },
 }
 
