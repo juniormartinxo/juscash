@@ -35,7 +35,7 @@ class DJEScraperAdapter(WebScraperPort):
         self.playwright = await async_playwright().start()
 
         self.browser = await self.playwright.chromium.launch(
-            headless=False,  # self.settings.browser.headless,
+            headless=True,  # Sempre headless em ambiente Docker
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
