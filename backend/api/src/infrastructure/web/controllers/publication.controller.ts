@@ -29,6 +29,48 @@ export class PublicationController {
     }
   });
 
+  /**
+   * Método específico para criação de publicações via scraper
+   * Usa a mesma lógica do createPublication, mas com logs específicos para auditoria
+   */
+  createPublicationFromScraper = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Log específico para identificar origem do scraper
+      console.log('Publication creation from SCRAPER:', {
+        processNumber: req.body.processNumber,
+        source: 'SCRAPER',
+        timestamp: new Date().toISOString(),
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      })
+
+      const result = await this.createPublicationUseCase.execute(req.body)
+
+      // Log de sucesso específico para scraper
+      console.log('Publication created successfully from SCRAPER:', {
+        publicationId: result.publication.id,
+        processNumber: result.publication.processNumber,
+        source: 'SCRAPER'
+      })
+
+      res.status(201).json(ApiResponseBuilder.success(result))
+    } catch (error) {
+      // Log de erro específico para scraper
+      console.error('Publication creation failed from SCRAPER:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        processNumber: req.body?.processNumber,
+        source: 'SCRAPER',
+        ip: req.ip
+      })
+
+      if (error instanceof ValidationError) {
+        res.status(400).json(ApiResponseBuilder.error(error.message))
+        return
+      }
+      throw error
+    }
+  });
+
   getPublications = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { page, limit, status, startDate, endDate, search } = req.query as any
 
