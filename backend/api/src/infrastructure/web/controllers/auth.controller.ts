@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
-import { LoginUserUseCase } from '../../../application/usecases/auth/login-user.usecase.js'
-import { LogoutUseCase } from '../../../application/usecases/auth/logout.usecase.js'
-import { RefreshTokenUseCase } from '../../../application/usecases/auth/refresh-token.usecase.js'
-import { RegisterUserUseCase } from '../../../application/usecases/auth/register-user.usecase.js'
-import { ApiResponseBuilder } from '../../../shared/utils/ApiResponse.js'
-import { asyncHandler } from '../../../shared/utils/AsyncHandler.js'
+import { LoginUserUseCase } from '../../../application/usecases/auth/login-user.usecase'
+import { LogoutUseCase } from '../../../application/usecases/auth/logout.usecase'
+import { RefreshTokenUseCase } from '../../../application/usecases/auth/refresh-token.usecase'
+import { RegisterUserUseCase } from '../../../application/usecases/auth/register-user.usecase'
+import { ApiResponseBuilder } from '../../../shared/utils/api-response'
+import { asyncHandler } from '../../../shared/utils/async-handler'
 
 export class AuthController {
   constructor(
