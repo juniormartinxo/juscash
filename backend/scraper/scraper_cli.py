@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Adicionar src ao PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent / "src/local/"))
+sys.path.insert(0, str(Path(__file__).parent / "src/"))
 
 from src.cli.commands import cli
 
