@@ -6,10 +6,10 @@ from typing import List
 from datetime import datetime
 from uuid import uuid4
 
-from usecases.extract_publications import ExtractPublicationsUseCase
-from usecases.save_publications import SavePublicationsUseCase
-from domain.entities.scraping_execution import ScrapingExecution, ExecutionType
-from infrastructure.logging.logger import setup_logger
+from src.application.usecases.extract_publications import ExtractPublicationsUseCase
+from src.application.usecases.save_publications import SavePublicationsUseCase
+from src.domain.entities.scraping_execution import ScrapingExecution, ExecutionType
+from src.infrastructure.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 
