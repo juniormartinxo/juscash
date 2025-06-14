@@ -51,6 +51,16 @@ export class SecurityMiddleware {
       /<[^>]*>/gi,
     ]
 
+    const containsXSS = (value: any): boolean => {
+      if (typeof value === 'string') {
+        return xssPatterns.some(pattern => pattern.test(value))
+      }
+      if (typeof value === 'object' && value !== null) {
+        return Object.values(value).some(v => containsXSS(v))
+      }
+      return false
+    }
+
     const sanitizeValue = (value: any): any => {
       if (typeof value === 'string') {
         return xssPatterns.reduce((acc, pattern) => acc.replace(pattern, ''), value)
@@ -65,8 +75,20 @@ export class SecurityMiddleware {
       return value
     }
 
-    req.body = sanitizeValue(req.body)
-    req.query = sanitizeValue(req.query)
+    // Check for XSS in query parameters (read-only in Express 5.x)
+    if (req.query && containsXSS(req.query)) {
+      this.markSuspiciousRequest(req)
+      res.status(400).json({
+        success: false,
+        error: 'Invalid request parameters',
+      })
+      return
+    }
+
+    // Sanitize body (can be modified)
+    if (req.body) {
+      req.body = sanitizeValue(req.body)
+    }
 
     next()
   };
