@@ -2,7 +2,8 @@ import { PublicationEntity } from '@/domain/entities/publication.entity'
 import {
   FindPublicationsParams,
   PublicationRepository,
-  PublicationResult
+  PublicationResult,
+  CreatePublicationData
 } from '@/domain/repositories/publication.repository'
 import { PrismaClient } from '@/generated/prisma/index'
 
@@ -15,6 +16,36 @@ export class PrismaPublicationRepository implements PublicationRepository {
     })
 
     return publication ? this.toDomain(publication) : null
+  }
+
+  async create(data: CreatePublicationData): Promise<PublicationEntity> {
+    const createData: any = {
+      process_number: data.processNumber,
+      availability_date: data.availabilityDate,
+      authors: data.authors,
+      defendant: data.defendant || 'Instituto Nacional do Seguro Social - INSS',
+      content: data.content,
+      status: data.status || 'NOVA',
+      scraping_source: data.scrapingSource || 'DJE-SP',
+      caderno: data.caderno || '3',
+      instancia: data.instancia || '1',
+      local: data.local || 'Capital',
+      parte: data.parte || '1',
+    }
+
+    if (data.publicationDate) createData.publication_date = data.publicationDate
+    if (data.lawyers) createData.lawyers = data.lawyers
+    if (data.grossValue) createData.gross_value = data.grossValue
+    if (data.netValue) createData.net_value = data.netValue
+    if (data.interestValue) createData.interest_value = data.interestValue
+    if (data.attorneyFees) createData.attorney_fees = data.attorneyFees
+    if (data.extractionMetadata) createData.extraction_metadata = data.extractionMetadata
+
+    const publication = await this.prisma.publication.create({
+      data: createData
+    })
+
+    return this.toDomain(publication)
   }
 
   async findMany(params: FindPublicationsParams): Promise<PublicationResult> {
