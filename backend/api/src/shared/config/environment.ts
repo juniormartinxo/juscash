@@ -1,23 +1,28 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
-  API_CONTAINER_NAME: z.string().default('juscash-api'),
-  API_HOST_PORT: z.string().transform(Number).default('8000'),
-  API_PORT: z.string().transform(Number).default('8000'),
-  DATABASE_URL: z.string().default('postgresql://localhost:5432/juscash_db'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
-  JWT_ACCESS_SECRET: z.string().default('dev-access-secret-key'),
-  JWT_REFRESH_SECRET: z.string().default('dev-refresh-secret-key'),
-  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'),
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
-  MAX_REQUEST_SIZE: z.string().default('10mb'),
-  ENABLE_SECURITY_MIDDLEWARE: z.string().transform((val) => val === 'true').default('true'),
-  ENABLE_METRICS: z.string().transform((val) => val !== 'false').default('false'),
-  METRICS_PATH: z.string().default('/admin/metrics'),
-  LOG_LEVEL: z.string().default('info'),
-  ENABLE_FILE_LOGGING: z.string().transform((val) => val !== 'false').default('true'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
-  SCRAPER_API_KEY: z.string().default('dev-scraper-api-key')
+  API_PORT: z.string().transform(Number),
+  DATABASE_URL: z.string(),
+  CORS_ORIGIN: z.string(),
+  JWT_ACCESS_SECRET: z.string(),
+  JWT_REFRESH_SECRET: z.string(),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number),
+  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number),
+  MAX_REQUEST_SIZE: z.string(),
+  ENABLE_SECURITY_MIDDLEWARE: z.string().transform((val) => val === 'true'),
+  ENABLE_METRICS: z.string().transform((val) => val !== 'false'),
+  METRICS_PATH: z.string(),
+  LOG_LEVEL: z.string(),
+  ENABLE_FILE_LOGGING: z.string().transform((val) => val !== 'false'),
+  REDIS_URL: z.string(),
+  SCRAPER_API_KEY: z.string(),
+  MAIL_PORT: z.string().transform(Number),
+  MAIL_SECURE: z.string().transform((val) => val === 'true'),
+  MAIL_BOX_CONTACT: z.string().email(),
+  MAIL_BOX_BILLING: z.string().email(),
+  MAIL_USER: z.string(),
+  MAIL_PASS: z.string(),
+  MAIL_HOST: z.string()
 })
 
 let env: z.infer<typeof envSchema>
@@ -36,9 +41,7 @@ try {
 }
 
 export const config = {
-  containerName: env.API_CONTAINER_NAME,
-  hostPort: env.API_HOST_PORT,
-  port: env.API_PORT,
+  apiPort: env.API_PORT,
   database: {
     url: env.DATABASE_URL,
   },
@@ -71,6 +74,15 @@ export const config = {
   redis: {
     url: env.REDIS_URL,
   },
+  mail: {
+    port: env.MAIL_PORT,
+    secure: env.MAIL_SECURE,
+    user: env.MAIL_USER,
+    pass: env.MAIL_PASS,
+    host: env.MAIL_HOST,
+    boxContact: env.MAIL_BOX_CONTACT,
+    boxBilling: env.MAIL_BOX_BILLING,
+  }
 }
 
 // Environment validation is now handled by Zod schema above
