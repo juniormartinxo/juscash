@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals'
-import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-ublication-status.usecase'
+import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
 import { PublicationEntity } from '@/domain/entities/publication.entity'
 import { PublicationRepository } from '@/domain/repositories/publication.repository'
 
