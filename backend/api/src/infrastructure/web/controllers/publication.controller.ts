@@ -1,7 +1,10 @@
-import { GetPublicationByIdUseCase } from '../../../application/usecases/publications/get-publication-by-id.usecase.js'
-import { GetPublicationsUseCase } from '../../../application/usecases/publications/get-publications.usecase.js'
-import { SearchPublicationsUseCase } from '../../../application/usecases/publications/search-publications.usecase.js'
-import { UpdatePublicationStatusUseCase } from '../../../application/usecases/publications/update-ublication-status.usecase.js'
+import { GetPublicationByIdUseCase } from '@/application/usecases/publications/get-publication-by-id.usecase'
+import { GetPublicationsUseCase } from '@/application/usecases/publications/get-publications.usecase'
+import { SearchPublicationsUseCase } from '@/application/usecases/publications/search-publications.usecase'
+import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
+import { asyncHandler } from '@/shared/utils/async-handler'
+import { ApiResponseBuilder } from '@/shared/utils/api-response'
+import { Request, Response } from 'express'
 
 export class PublicationController {
   constructor(
@@ -29,6 +32,11 @@ export class PublicationController {
   getPublicationById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
 
+    if (!id) {
+      res.status(400).json(ApiResponseBuilder.error('ID is required'))
+      return
+    }
+
     const result = await this.getPublicationByIdUseCase.execute({ id })
 
     res.json(ApiResponseBuilder.success(result))
@@ -37,6 +45,11 @@ export class PublicationController {
   updateStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params
     const { status } = req.body
+
+    if (!id) {
+      res.status(400).json(ApiResponseBuilder.error('ID is required'))
+      return
+    }
 
     const result = await this.updatePublicationStatusUseCase.execute({
       publicationId: id,
