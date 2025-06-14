@@ -6,7 +6,7 @@ import re
 import asyncio
 from typing import List, AsyncGenerator, Optional
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from playwright.async_api import async_playwright, Browser, Page
 
 from domain.ports.web_scraper import WebScraperPort
@@ -35,7 +35,7 @@ class DJEScraperAdapter(WebScraperPort):
         self.playwright = await async_playwright().start()
 
         self.browser = await self.playwright.chromium.launch(
-            headless=self.settings.browser.headless,
+            headless=False,  # self.settings.browser.headless,
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
@@ -119,25 +119,63 @@ class DJEScraperAdapter(WebScraperPort):
             # Aguardar página carregar completamente
             await self.page.wait_for_load_state("networkidle")
 
-            # Acessar pesquisa avançada (como mostrado nas imagens)
-            advanced_search_link = await self.page.query_selector(
-                'a[href*="pesquisa"], a:text("Pesquisa avançada")'
-            )
-            if advanced_search_link:
-                await advanced_search_link.click()
-                await self.page.wait_for_load_state("networkidle")
+            input_dt_inicio = await self.page.wait_for_selector("#dtInicioString")
+            if input_dt_inicio:
+                # O campo está disabled, então não podemos preencher
+                # Mas vamos tentar desabilitar o campo
+                await input_dt_inicio.evaluate("el => el.disabled = false")
+                await input_dt_inicio.evaluate("el => el.readOnly = false")
+                await input_dt_inicio.evaluate(
+                    "el => el.style.backgroundColor = 'white'"
+                )
+                await input_dt_inicio.evaluate("el => el.style.color = 'black'")
+
+                await input_dt_inicio.fill("13/11/2024")
+
+            input_dt_fim = await self.page.wait_for_selector("#dtFimString")
+
+            if input_dt_fim:
+                await input_dt_fim.evaluate("el => el.disabled = false")
+                await input_dt_fim.evaluate("el => el.readOnly = false")
+                await input_dt_fim.evaluate("el => el.style.backgroundColor = 'white'")
+                await input_dt_fim.evaluate("el => el.style.color = 'black'")
+
+                await input_dt_fim.fill("13/11/2024")
 
             # Configurar filtros baseados na interface real
             # Campo Caderno - selecionar "Caderno 3 - Judicial - 1ª Instância - Capital - Parte 1"
-            caderno_selector = 'select[name*="caderno"], select[name*="Caderno"]'
-            caderno_element = await self.page.query_selector(caderno_selector)
+            caderno_selector = 'select[name="dadosConsulta.cdCaderno"]'
+            caderno_element = await self.page.wait_for_selector(caderno_selector)
             if caderno_element:
-                # Valor exato conforme mostrado na imagem
-                await self.page.select_option(
-                    caderno_selector,
-                    label="Caderno 3 - Judicial - 1ª Instância - Capital - Parte 1",
+                # Seleciona pelo value do option
+                if await caderno_element.select_option("12"):
+                    logger.info("✅ Caderno selecionado com value")
+                else:
+                    logger.warning("⚠️  Tentando selecionar pelo label")
+                    # Valor exato conforme mostrado na imagem
+                    if await caderno_element.select_option(
+                        caderno_selector,
+                        label="caderno 3 - Judicial - 1ª Instância - Capital - Parte I",
+                    ):
+                        logger.info("✅ Caderno selecionado com label")
+                    else:
+                        logger.warning("⚠️  Não foi possível selecionar o caderno")
+
+            input_pesquisa = await self.page.wait_for_selector(
+                "input[name='dadosConsulta.pesquisaLivre']"
+            )
+            if await input_pesquisa.evaluate("el => el.disabled = false"):
+                await input_pesquisa.evaluate("el => el.readOnly = false")
+                await input_pesquisa.evaluate(
+                    "el => el.style.backgroundColor = 'white'"
                 )
-                logger.info("✅ Caderno selecionado")
+                await input_pesquisa.evaluate("el => el.style.color = 'black'")
+                await input_pesquisa.fill("")
+                await input_pesquisa.fill('"RPV" e "pagamento pelo INSS"')
+                await input_pesquisa.press("Enter")
+                logger.info("✅ Campo de pesquisa limpo")
+            else:
+                logger.warning("⚠️  Campo de pesquisa não está habilitado")
 
             # Campo Data - deixar em branco para buscar todas as publicações do dia
             # (conforme interface mostrada na imagem)
