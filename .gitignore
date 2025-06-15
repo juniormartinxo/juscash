@@ -79,3 +79,8 @@ database/redis/redis-data/
 .codellm/
 *.code-workspace
 dump.rdb
+*.html
+*.txt
+*.json
+backend/scraper/**/*.png
+backend/scraper/**/*.jpeg
