@@ -11,7 +11,7 @@ async def test_simple_request():
     """Teste simples de requisição HTTP"""
 
     api_key = "scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP"
-    base_url = "http://localhost:8000"
+    base_url = "http://juscash-api:8000"
 
     print(f"🔑 API Key: {api_key[:20]}...")
     print(f"🌐 URL: {base_url}/api/scraper/publications")
