@@ -89,8 +89,16 @@ class Application {
       threshold: 1024,
     }))
 
-    // Rate limiting
-    this.app.use(this.rateLimiter.middleware)
+    // Rate limiting (excluir rotas do scraper que têm seu próprio rate limiting)
+    this.app.use((req, res, next) => {
+      if (req.path.startsWith('/api/scraper')) {
+        // Pular rate limiting geral para rotas do scraper
+        next()
+      } else {
+        // Aplicar rate limiting geral para outras rotas
+        this.rateLimiter.middleware(req, res, next)
+      }
+    })
 
     // Security middleware
     if (config.security.enableSecurityMiddleware) {
