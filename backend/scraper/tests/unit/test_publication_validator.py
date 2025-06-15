@@ -46,7 +46,7 @@ class TestPublicationValidator:
             assert not validator.validate_process_number(number)
 
     def test_contains_required_terms(self, validator):
-        """Testa verificação de termos obrigatórios"""
+        """Testa verificação de termos obrigatórios (pelo menos um)"""
         content = (
             "Este processo trata de aposentadoria por invalidez do benefício do INSS"
         )
@@ -54,11 +54,20 @@ class TestPublicationValidator:
 
         assert validator.contains_required_terms(content, required_terms)
 
-    def test_contains_required_terms_missing(self, validator):
-        """Testa verificação com termos faltando"""
+    def test_contains_required_terms_partial(self, validator):
+        """Testa verificação com apenas um termo presente"""
         content = "Este processo trata de aposentadoria"
         required_terms = ["aposentadoria", "benefício"]
 
+        # Agora deve retornar True pois pelo menos um termo está presente
+        assert validator.contains_required_terms(content, required_terms)
+
+    def test_contains_required_terms_none_present(self, validator):
+        """Testa verificação quando nenhum termo está presente"""
+        content = "Este processo trata de outras questões jurídicas"
+        required_terms = ["aposentadoria", "benefício"]
+
+        # Deve retornar False pois nenhum termo está presente
         assert not validator.contains_required_terms(content, required_terms)
 
     def test_validate_publication_complete(self, validator, sample_publication):
@@ -74,7 +83,8 @@ class TestPublicationValidator:
             publication_date=sample_publication.publication_date,
             availability_date=sample_publication.availability_date,
             authors=sample_publication.authors,
-            content=sample_publication.content + " aposentadoria benefício",
+            content=sample_publication.content
+            + " aposentadoria",  # Apenas um termo é suficiente agora
             gross_value=sample_publication.gross_value,
         )
 
@@ -115,7 +125,7 @@ class TestPublicationValidator:
             sample_publication, required_terms
         )
         assert not is_valid
-        assert "Termos obrigatórios ausentes" in error_message
+        assert "Nenhum dos termos obrigatórios encontrado" in error_message
 
     def test_validate_publication_empty_authors(self, validator, sample_publication):
         """Testa validação com autores vazios"""
