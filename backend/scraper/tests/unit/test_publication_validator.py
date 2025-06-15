@@ -4,7 +4,13 @@ Testes unitários para PublicationValidator
 
 import pytest
 
-from src.domain.services.publication_validator import PublicationValidator
+import sys
+from pathlib import Path
+
+# Adicionar src ao path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
+from domain.services.publication_validator import PublicationValidator
 
 
 class TestPublicationValidator:
@@ -59,7 +65,102 @@ class TestPublicationValidator:
         """Testa validação completa de publicação"""
         required_terms = ["aposentadoria", "benefício"]
 
-        # Adicionar termos ao conteúdo para passar na validação
-        sample_publication.content += " aposentadoria benefício"
+        # Criar nova publicação com termos obrigatórios
+        from domain.entities.publication import Publication, MonetaryValue
+        from datetime import datetime
 
-        assert validator.validate_publication(sample_publication, required_terms)
+        valid_publication = Publication(
+            process_number=sample_publication.process_number,
+            publication_date=sample_publication.publication_date,
+            availability_date=sample_publication.availability_date,
+            authors=sample_publication.authors,
+            content=sample_publication.content + " aposentadoria benefício",
+            gross_value=sample_publication.gross_value,
+        )
+
+        is_valid, error_message = validator.validate_publication(
+            valid_publication, required_terms
+        )
+        assert is_valid, f"Validação falhou: {error_message}"
+
+    def test_validate_publication_invalid_process_number(
+        self, validator, sample_publication
+    ):
+        """Testa validação com número de processo inválido"""
+        # Como a entidade Publication também valida o número do processo na criação,
+        # usamos um mock para testar o validador
+        from unittest.mock import Mock
+
+        mock_publication = Mock()
+        mock_publication.process_number = "123-invalid"
+        mock_publication.publication_date = sample_publication.publication_date
+        mock_publication.availability_date = sample_publication.availability_date
+        mock_publication.authors = sample_publication.authors
+        mock_publication.content = sample_publication.content
+        mock_publication.gross_value = sample_publication.gross_value
+
+        required_terms = ["aposentadoria"]
+
+        is_valid, error_message = validator.validate_publication(
+            mock_publication, required_terms
+        )
+        assert not is_valid
+        assert "Número do processo inválido" in error_message
+
+    def test_validate_publication_missing_terms(self, validator, sample_publication):
+        """Testa validação com termos obrigatórios ausentes"""
+        required_terms = ["termo_inexistente", "outro_termo"]
+
+        is_valid, error_message = validator.validate_publication(
+            sample_publication, required_terms
+        )
+        assert not is_valid
+        assert "Termos obrigatórios ausentes" in error_message
+
+    def test_validate_publication_empty_authors(self, validator, sample_publication):
+        """Testa validação com autores vazios"""
+        # Como a entidade Publication não permite autores vazios na criação,
+        # este teste verifica se o validador detectaria o problema
+        # se uma publicação com autores vazios chegasse até ele
+
+        # Simular uma publicação que de alguma forma passou pela validação da entidade
+        # mas tem autores vazios (cenário hipotético para teste do validador)
+        from unittest.mock import Mock
+
+        mock_publication = Mock()
+        mock_publication.process_number = sample_publication.process_number
+        mock_publication.publication_date = sample_publication.publication_date
+        mock_publication.availability_date = sample_publication.availability_date
+        mock_publication.authors = []
+        mock_publication.content = sample_publication.content
+        mock_publication.gross_value = sample_publication.gross_value
+
+        required_terms = []
+
+        is_valid, error_message = validator.validate_publication(
+            mock_publication, required_terms
+        )
+        assert not is_valid
+        assert "Campo 'authors' está vazio" in error_message
+
+    def test_validate_publication_empty_content(self, validator, sample_publication):
+        """Testa validação com conteúdo vazio"""
+        # Como a entidade Publication não permite conteúdo vazio na criação,
+        # usamos um mock para testar o validador
+        from unittest.mock import Mock
+
+        mock_publication = Mock()
+        mock_publication.process_number = sample_publication.process_number
+        mock_publication.publication_date = sample_publication.publication_date
+        mock_publication.availability_date = sample_publication.availability_date
+        mock_publication.authors = sample_publication.authors
+        mock_publication.content = ""
+        mock_publication.gross_value = sample_publication.gross_value
+
+        required_terms = []
+
+        is_valid, error_message = validator.validate_publication(
+            mock_publication, required_terms
+        )
+        assert not is_valid
+        assert "Campo 'content' está vazio" in error_message
