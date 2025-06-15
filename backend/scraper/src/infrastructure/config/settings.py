@@ -43,6 +43,23 @@ class ApiSettings(BaseSettings):
     timeout: int = Field(default=30, env="API_TIMEOUT")
 
 
+class RedisSettings:
+    """Configurações do Redis"""
+
+    def __init__(self):
+        import os
+
+        self.host = os.getenv("REDIS_HOST", "juscash-redis")
+        self.port = int(os.getenv("REDIS_PORT", "6379"))
+        self.password = os.getenv("REDIS_PASSWORD", "")
+        self.db = int(os.getenv("REDIS_DB", "0"))
+        self.queue_name = os.getenv("REDIS_QUEUE_NAME", "publications_queue")
+        self.max_retries = int(os.getenv("REDIS_MAX_RETRIES", "3"))
+        self.retry_delay = int(os.getenv("REDIS_RETRY_DELAY", "60"))
+        self.batch_size = int(os.getenv("REDIS_BATCH_SIZE", "10"))
+        self.worker_timeout = int(os.getenv("REDIS_WORKER_TIMEOUT", "300"))
+
+
 class LogSettings(BaseSettings):
     """Configurações de logging"""
 
@@ -60,6 +77,7 @@ class Settings(BaseSettings):
     browser: BrowserSettings = BrowserSettings()
     scraper: ScraperSettings = ScraperSettings()
     api: ApiSettings = ApiSettings()
+    redis: RedisSettings = RedisSettings()
     logging: LogSettings = LogSettings()
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
