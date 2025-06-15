@@ -32,7 +32,10 @@ class ScrapingOrchestrator:
             execution_id=str(uuid4()),
             execution_type=ExecutionType.SCHEDULED,
             criteria_used={
-                "search_terms": ["aposentadoria", "benefício"],  # Exemplo de termos
+                "search_terms": [
+                    "RPV",
+                    "pagamento pelo INSS",
+                ],  # Termos corretos para RPV
                 "caderno": "3",
                 "instancia": "1",
                 "local": "Capital",
@@ -44,7 +47,7 @@ class ScrapingOrchestrator:
             logger.info(f"🚀 Iniciando execução {execution.execution_id}")
 
             # Termos de busca obrigatórios (podem vir de configuração)
-            search_terms = ["aposentadoria", "benefício"]  # Configurável
+            search_terms = ["RPV", "pagamento pelo INSS"]  # Configurável
 
             # Extrair publicações
             publications = []
