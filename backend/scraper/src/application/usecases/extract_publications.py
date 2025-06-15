@@ -42,12 +42,16 @@ class ExtractPublicationsUseCase:
                 search_terms, max_pages
             ):
                 # Validar publicação extraída
-                if self.validator.validate_publication(publication, search_terms):
+                is_valid, error_message = self.validator.validate_publication(
+                    publication, search_terms
+                )
+
+                if is_valid:
                     logger.debug(f"✅ Publicação válida: {publication.process_number}")
                     yield publication
                 else:
                     logger.warning(
-                        f"⚠️  Publicação inválida descartada: {publication.process_number}"
+                        f"⚠️  Publicação inválida descartada: {publication.process_number} - Erro: {error_message}"
                     )
 
         except Exception as error:
