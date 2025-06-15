@@ -10,7 +10,7 @@ async def test_exact_format():
     """Teste usando formato exato da documentação"""
 
     api_key = "scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP"
-    base_url = "http://localhost:8000"
+    base_url = "http://juscash-api:8000"
 
     # Dados exatos da documentação
     publication_data = {
