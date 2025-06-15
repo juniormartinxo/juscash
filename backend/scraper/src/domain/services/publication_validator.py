@@ -32,25 +32,44 @@ class PublicationValidator:
     @staticmethod
     def validate_publication(
         publication: Publication, required_terms: List[str]
-    ) -> bool:
+    ) -> tuple[bool, str]:
         """
         Valida uma publicação completa
+
+        Returns:
+            tuple[bool, str]: (is_valid, error_message)
         """
         # Verificar número do processo
         if not PublicationValidator.validate_process_number(publication.process_number):
-            return False
+            return False, f"Número do processo inválido: '{publication.process_number}'"
 
         # Verificar termos obrigatórios no conteúdo
         if not PublicationValidator.contains_required_terms(
             publication.content, required_terms
         ):
-            return False
+            missing_terms = []
+            content_lower = publication.content.lower()
+            for term in required_terms:
+                if term.lower() not in content_lower:
+                    missing_terms.append(term)
+            return False, f"Termos obrigatórios ausentes: {missing_terms}"
 
         # Verificar campos obrigatórios
         if not publication.authors:
-            return False
+            return False, "Campo 'authors' está vazio ou None"
 
         if not publication.content.strip():
-            return False
+            return False, "Campo 'content' está vazio"
 
-        return True
+        # Verificar se availability_date está presente
+        if not publication.availability_date:
+            return False, "Campo 'availability_date' está ausente"
+
+        # Verificar se authors contém apenas strings válidas
+        for i, author in enumerate(publication.authors):
+            if not author or not author.strip():
+                return False, f"Autor na posição {i} está vazio: '{author}'"
+            if len(author.strip()) < 3:
+                return False, f"Autor na posição {i} muito curto: '{author}'"
+
+        return True, "Publicação válida"
