@@ -16,6 +16,7 @@ from domain.ports.web_scraper import WebScraperPort
 from domain.entities.publication import Publication, Lawyer, MonetaryValue
 from infrastructure.web.content_parser import DJEContentParser
 from infrastructure.web.enhanced_content_parser import EnhancedDJEContentParser
+from infrastructure.files.report_txt_saver import ReportTxtSaver
 from infrastructure.logging.logger import setup_logger
 from infrastructure.config.settings import get_settings
 
@@ -40,6 +41,8 @@ class DJEScraperAdapter(WebScraperPort):
         self.temp_dir.mkdir(exist_ok=True)
         # Controle de PDFs problemáticos
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
+        # Instanciar o salvador de relatórios TXT
+        self.report_saver = ReportTxtSaver()
 
     async def initialize(self) -> None:
         """Inicializa o browser e navegação"""
@@ -511,6 +514,26 @@ class DJEScraperAdapter(WebScraperPort):
                                 content, pdf_url
                             )
                             for publication in publications:
+                                # Salvar relatório como arquivo TXT
+                                try:
+                                    saved_path = (
+                                        await self.report_saver.save_publication_report(
+                                            publication
+                                        )
+                                    )
+                                    if saved_path:
+                                        logger.info(
+                                            f"📄 Relatório TXT salvo (HTML fallback): {saved_path}"
+                                        )
+                                    else:
+                                        logger.warning(
+                                            f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+                                        )
+                                except Exception as txt_error:
+                                    logger.error(
+                                        f"❌ Erro ao salvar relatório TXT (HTML fallback): {txt_error}"
+                                    )
+
                                 yield publication
                             return  # Sucesso, sair do loop de retry
                         else:
@@ -602,6 +625,25 @@ class DJEScraperAdapter(WebScraperPort):
                             logger.info(
                                 f"✅ Publicação extraída (aprimorado): {publication.process_number}"
                             )
+
+                            # Salvar relatório como arquivo TXT
+                            try:
+                                saved_path = (
+                                    await self.report_saver.save_publication_report(
+                                        publication
+                                    )
+                                )
+                                if saved_path:
+                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+                                    )
+                            except Exception as txt_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                                )
+
                             yield publication
                     else:
                         # Fallback para parser tradicional
@@ -614,6 +656,25 @@ class DJEScraperAdapter(WebScraperPort):
                             logger.info(
                                 f"✅ Publicação extraída (tradicional): {publication.process_number}"
                             )
+
+                            # Salvar relatório como arquivo TXT
+                            try:
+                                saved_path = (
+                                    await self.report_saver.save_publication_report(
+                                        publication
+                                    )
+                                )
+                                if saved_path:
+                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+                                    )
+                            except Exception as txt_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                                )
+
                             yield publication
 
                 except Exception as e:
@@ -629,6 +690,25 @@ class DJEScraperAdapter(WebScraperPort):
                         logger.info(
                             f"✅ Publicação extraída (fallback): {publication.process_number}"
                         )
+
+                        # Salvar relatório como arquivo TXT
+                        try:
+                            saved_path = (
+                                await self.report_saver.save_publication_report(
+                                    publication
+                                )
+                            )
+                            if saved_path:
+                                logger.info(f"📄 Relatório TXT salvo: {saved_path}")
+                            else:
+                                logger.warning(
+                                    f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+                                )
+                        except Exception as txt_error:
+                            logger.error(
+                                f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                            )
+
                         yield publication
             else:
                 logger.warning("⚠️ Conteúdo do PDF muito pequeno ou vazio")
