@@ -18,7 +18,7 @@ class ScrapingConfig(BaseModel):
     """Configuração dinâmica do scraping"""
 
     # Configurações de busca
-    search_terms: List[str] = Field(default=["aposentadoria", "benefício"])
+    search_terms: List[str] = Field(default=["RPV", "pagamento pelo INSS"])
     max_pages: int = Field(default=20, ge=1, le=100)
     max_publications_per_page: int = Field(default=50, ge=1, le=200)
 
