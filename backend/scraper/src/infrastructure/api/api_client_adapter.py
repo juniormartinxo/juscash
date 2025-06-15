@@ -68,11 +68,21 @@ class ApiClientAdapter(ScrapingRepositoryPort):
                 await self._wait_for_rate_limit()
 
                 async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    api_data = publication.to_api_dict()
+
+                    # Log detalhado para debug
+                    logger.warning(
+                        f"🔍 JSON completo sendo enviado para {publication.process_number}:"
+                    )
+                    import json
+
+                    logger.warning(json.dumps(api_data, ensure_ascii=False, indent=2))
+
                     response = await client.post(
                         f"{self.base_url}/api/scraper/publications",
-                        json=publication.to_api_dict(),
+                        json=api_data,
                         headers={
-                            "Content-Type": "application/json",
+                            "Content-Type": "application/json; charset=utf-8",
                             "X-API-Key": self.api_key,
                         },
                     )
@@ -114,7 +124,26 @@ class ApiClientAdapter(ScrapingRepositoryPort):
                                 f"⚠️  Validação falhou para {publication.process_number}: {response.text}"
                             )
 
-                        logger.debug(f"📤 Dados enviados: {publication.to_api_dict()}")
+                        # Log dos dados enviados para debug
+                        api_data = publication.to_api_dict()
+                        logger.warning(f"📤 Dados enviados para API:")
+                        logger.warning(
+                            f"   🔢 Número processo: {api_data.get('processNumber')}"
+                        )
+                        logger.warning(
+                            f"   📅 Data publicação: {api_data.get('publicationDate')}"
+                        )
+                        logger.warning(
+                            f"   📅 Data disponibilização: {api_data.get('availabilityDate')}"
+                        )
+                        logger.warning(f"   👥 Autores: {api_data.get('authors')}")
+                        logger.warning(f"   ⚖️  Advogados: {api_data.get('lawyers')}")
+                        logger.warning(
+                            f"   💰 Valores: gross={api_data.get('grossValue')}, net={api_data.get('netValue')}, interest={api_data.get('interestValue')}, fees={api_data.get('attorneyFees')}"
+                        )
+                        logger.warning(
+                            f"   📝 Conteúdo (primeiros 100 chars): {api_data.get('content', '')[:100]}..."
+                        )
                         return False
                     elif response.status_code == 429:
                         try:
