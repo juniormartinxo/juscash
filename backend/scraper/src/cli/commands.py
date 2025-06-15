@@ -58,7 +58,7 @@ def run(ctx, search_terms, max_pages, dry_run):
         click.echo("🧪 Modo simulação ativado (dry-run)")
 
     if not search_terms:
-        search_terms = ["aposentadoria", "benefício"]
+        search_terms = ["RPV", "pagamento pelo INSS"]
 
     click.echo(f"🔍 Termos de busca: {', '.join(search_terms)}")
     click.echo(f"📄 Máximo de páginas: {max_pages}")
@@ -426,7 +426,7 @@ def test():
 
 
 @test.command()
-@click.option("--api-url", default="http://localhost:8000", help="URL da API")
+@click.option("--api-url", default="http://juscash-api:8000", help="URL da API")
 @click.pass_context
 def api(ctx, api_url):
     """Testa conexão com a API"""
