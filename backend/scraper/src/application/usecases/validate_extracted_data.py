@@ -258,16 +258,13 @@ class ValidateExtractedDataUseCase:
                 f"Conteúdo muito longo: {content_length} caracteres"
             )
 
-        # Verificar termos obrigatórios
+        # Verificar termos obrigatórios (pelo menos um deve estar presente)
         if not self.validator.contains_required_terms(
             publication.content, required_terms
         ):
-            missing_terms = [
-                term
-                for term in required_terms
-                if term.lower() not in publication.content.lower()
-            ]
-            report["errors"].append(f"Termos obrigatórios ausentes: {missing_terms}")
+            report["errors"].append(
+                f"Nenhum dos termos obrigatórios encontrado: {required_terms}"
+            )
             return 0.0
 
         # Verificar qualidade do conteúdo
