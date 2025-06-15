@@ -29,39 +29,83 @@ class DJEContentParser:
         ),
         re.compile(r"data[:\s]*(\d{1,2}/\d{1,2}/\d{4})", re.IGNORECASE),
         re.compile(r"(\d{1,2}/\d{1,2}/\d{4})"),
+        # Padrão para datas por extenso (ex: "13 de novembro de 2024")
+        re.compile(r"(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})", re.IGNORECASE),
     ]
 
     AUTHOR_PATTERNS = [
         re.compile(
-            r"(?:autor|autora|requerente)(?:es)?[:\s]*(.*?)(?:x|versus|vs\.?|réu|advogado)",
+            r"(?:autor|autora|requerente)(?:es)?[:\s]*(.*?)(?:x|versus|vs\.?|réu|advogado|INSS)",
             re.IGNORECASE | re.DOTALL,
         ),
         re.compile(r"(.*?)\s+(?:x|versus|vs\.?)\s+Instituto Nacional", re.IGNORECASE),
         re.compile(
-            r"Requerente[:\s]*(.*?)(?:\n|Requerido|Advogado)", re.IGNORECASE | re.DOTALL
+            r"Requerente[:\s]*(.*?)(?:\n|Requerido|Advogado|INSS)",
+            re.IGNORECASE | re.DOTALL,
         ),
+        re.compile(
+            r"(?:parte\s+autora|parte\s+requerente)[:\s]*(.*?)(?:\n|Requerido|Advogado|INSS)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        # Padrões específicos para estrutura do DJE-SP
+        re.compile(r"Acidentário\s+-\s+([^-]+?)\s+-", re.IGNORECASE),
+        re.compile(r"Saúde\s+-\s+([^-]+?)\s+-\s+INSTITUTO", re.IGNORECASE),
+        re.compile(r"Exec\.\)\s+-\s+\w+\s+-\s+([^-]+?)\s+-\s+INSTITUTO", re.IGNORECASE),
+        re.compile(r"-\s+([^-]+?)\s+-\s+INSTITUTO\s+NACIONAL", re.IGNORECASE),
     ]
 
     LAWYER_PATTERNS = [
+        # Padrão específico para ADV. NOME (OAB XXXX/SP) - mais restritivo
         re.compile(
-            r"(?:advogad[oa]|dr\.?|dra\.?)[:\s]*([^,\n]+?)(?:oab[:\s]*(\d+))?",
+            r"ADV\.\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])\s*\(\s*OAB\s+(\d+)\/\w+\)",
             re.IGNORECASE,
         ),
-        re.compile(r"OAB[:\s]*(\d+)[:\s]*([^,\n]+)", re.IGNORECASE),
-        re.compile(r"(\w+\s+\w+(?:\s+\w+)*)\s+(?:OAB|oab)[:\s]*(\d+)", re.IGNORECASE),
+        re.compile(
+            r"ADV\.\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])\s*\(\s*OAB\s+(\d+)",
+            re.IGNORECASE,
+        ),
+        # Padrões aprimorados para nomes em maiúsculas com OAB
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])\s*\(\s*OAB\s+(\d+)\/\w+\)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])\s*\(\s*OAB\s+(\d+)",
+            re.IGNORECASE,
+        ),
+        # Padrões tradicionais mais restritivos
+        re.compile(
+            r"OAB[:\s]*(\d+)[:\s]*([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])\s+(?:OAB|oab)[:\s]*(\d+)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"(?:advogad[oa]|dr\.?|dra\.?)[:\s]*([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s]{2,50}[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])(?:oab[:\s]*(\d+))?",
+            re.IGNORECASE,
+        ),
     ]
 
     MONETARY_PATTERNS = {
         "gross": [
             re.compile(
-                r"valor\s+(?:principal|bruto)[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE
+                r"valor\s+(?:principal|bruto|total)[:\s]*r\$?\s*([\d.,]+)",
+                re.IGNORECASE,
             ),
             re.compile(r"principal[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
             re.compile(r"valor\s+devido[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            re.compile(
+                r"valor\s+da\s+execu[çc][ãa]o[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE
+            ),
+            # Padrão genérico para R$ seguido de valor
+            re.compile(r"R\$\s*([\d.,]+)", re.IGNORECASE),
         ],
         "net": [
             re.compile(r"valor\s+l[íi]quido[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
             re.compile(r"l[íi]quido[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            re.compile(r"valor\s+final[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
         ],
         "interest": [
             re.compile(r"juros?[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
@@ -69,16 +113,74 @@ class DJEContentParser:
                 r"corre[çc][ãa]o\s+monet[áa]ria[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE
             ),
             re.compile(r"atualiza[çc][ãa]o[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            re.compile(r"mora[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            # Padrão específico para "juros monetários"
+            re.compile(r"juros\s+monet[áa]rios[,:\s]*R\$?\s*([\d.,]+)", re.IGNORECASE),
         ],
         "fees": [
             re.compile(r"honor[áa]rios?[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
             re.compile(r"sucumbenciais[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
             re.compile(r"advocat[íi]cios[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            re.compile(r"custas[:\s]*r\$?\s*([\d.,]+)", re.IGNORECASE),
+            # Padrão específico para "honorários advocatícios"
+            re.compile(
+                r"honor[áa]rios\s+advocat[íi]cios[,:\s]*R\$?\s*([\d.,]+)", re.IGNORECASE
+            ),
         ],
     }
 
     def __init__(self):
         self.confidence_threshold = 0.7
+
+    def parse_multiple_publications(
+        self, content: str, source_url: str = ""
+    ) -> List[Publication]:
+        """
+        Extrai múltiplas publicações de um documento DJE-SP
+
+        Args:
+            content: Texto completo do documento
+            source_url: URL de origem do documento
+
+        Returns:
+            List[Publication]: Lista de publicações extraídas
+        """
+        publications = []
+
+        # Buscar processos que são efetivamente publicações (começam com "Processo")
+        process_pattern = re.compile(
+            r"Processo\s+(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})", re.IGNORECASE
+        )
+
+        # Encontrar todas as seções de processo
+        matches = list(process_pattern.finditer(content))
+
+        for i, match in enumerate(matches):
+            process_number = match.group(1)
+            start_pos = match.start()
+
+            # Determinar fim da seção (início do próximo processo ou fim do documento)
+            if i + 1 < len(matches):
+                end_pos = matches[i + 1].start()
+                process_content = content[start_pos:end_pos]
+            else:
+                # Último processo - vai até encontrar "Publicação Oficial" ou fim
+                end_match = re.search(
+                    r"Publicação Oficial", content[start_pos:], re.IGNORECASE
+                )
+                if end_match:
+                    end_pos = start_pos + end_match.start()
+                    process_content = content[start_pos:end_pos]
+                else:
+                    process_content = content[start_pos:]
+
+            # Processar esta seção como uma publicação individual
+            publication = self.parse_publication(process_content, source_url)
+            if publication:
+                publications.append(publication)
+
+        logger.info(f"✅ Extraídas {len(publications)} publicações do documento")
+        return publications
 
     def parse_publication(
         self, content: str, source_url: str = ""
@@ -101,6 +203,11 @@ class DJEContentParser:
             process_number = self._extract_process_number(normalized_content)
             if not process_number:
                 logger.debug("❌ Número do processo não encontrado")
+                return None
+
+            # Verificar se é uma publicação relacionada ao INSS
+            if not self._is_inss_related(normalized_content):
+                logger.debug(f"📋 Processo {process_number} não relacionado ao INSS")
                 return None
 
             authors = self._extract_authors(normalized_content)
@@ -204,14 +311,57 @@ class DJEContentParser:
 
         return True
 
+    def _is_inss_related(self, content: str) -> bool:
+        """Verifica se a publicação é relacionada ao INSS"""
+        inss_keywords = [
+            "inss",
+            "instituto nacional do seguro social",
+            "seguro social",
+            "previdencia",
+            "auxilio",
+            "aposentadoria",
+            "beneficio",
+            "acidentario",
+        ]
+
+        content_lower = content.lower()
+        return any(keyword in content_lower for keyword in inss_keywords)
+
     def _extract_publication_date(self, content: str) -> Optional[datetime]:
         """Extrai data de publicação"""
         for pattern in self.DATE_PATTERNS:
             match = pattern.search(content)
             if match:
                 try:
-                    date_str = match.group(1)
-                    return datetime.strptime(date_str, "%d/%m/%Y")
+                    # Verificar se é uma data por extenso (3 grupos)
+                    if len(match.groups()) == 3:
+                        day = match.group(1)
+                        month_name = match.group(2)
+                        year = match.group(3)
+
+                        month_map = {
+                            "janeiro": "01",
+                            "fevereiro": "02",
+                            "março": "03",
+                            "abril": "04",
+                            "maio": "05",
+                            "junho": "06",
+                            "julho": "07",
+                            "agosto": "08",
+                            "setembro": "09",
+                            "outubro": "10",
+                            "novembro": "11",
+                            "dezembro": "12",
+                        }
+
+                        month = month_map.get(month_name.lower())
+                        if month:
+                            date_str = f"{day.zfill(2)}/{month}/{year}"
+                            return datetime.strptime(date_str, "%d/%m/%Y")
+                    else:
+                        # Data no formato DD/MM/YYYY
+                        date_str = match.group(1)
+                        return datetime.strptime(date_str, "%d/%m/%Y")
                 except ValueError:
                     continue
         return None
@@ -265,9 +415,13 @@ class DJEContentParser:
         name = re.sub(r"^(sr\.?|sra\.?|dr\.?|dra\.?)\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*(cpf|rg|cnh)[:.\s]*\d+.*$", "", name, flags=re.IGNORECASE)
 
-        # Limpar caracteres especiais
-        name = re.sub(r"[^\w\s]", "", name)
+        # Limpar caracteres especiais, preservando acentos
+        name = re.sub(r"[^\w\sÁÉÍÓÚÀÂÊÔÃÕÇáéíóúàâêôãõç]", "", name)
         name = re.sub(r"\s+", " ", name)
+
+        # Verificar se não é uma palavra-chave institucional
+        if re.search(r"(inss|instituto|nacional|seguro|social)", name, re.IGNORECASE):
+            return ""
 
         return name.strip().title()
 
@@ -280,14 +434,25 @@ class DJEContentParser:
             matches = pattern.finditer(content)
 
             for match in matches:
-                if len(match.groups()) == 2:
-                    # Padrão: nome + OAB
-                    name = match.group(1).strip()
-                    oab = match.group(2) if match.group(2) else "Não informado"
+                if len(match.groups()) >= 2:
+                    # Verificar qual grupo contém o número OAB
+                    if match.group(2) and match.group(2).isdigit():
+                        # Padrão: nome + OAB
+                        name = match.group(1).strip()
+                        oab = match.group(2)
+                    elif match.group(1) and match.group(1).isdigit():
+                        # Padrão: OAB + nome (invertido)
+                        oab = match.group(1)
+                        name = (
+                            match.group(2).strip() if len(match.groups()) >= 2 else ""
+                        )
+                    else:
+                        # Tentar extrair nome e OAB dos grupos disponíveis
+                        name = match.group(1).strip()
+                        oab = match.group(2) if match.group(2) else "Não informado"
                 else:
-                    # Padrão: OAB + nome (invertido)
-                    oab = match.group(1)
-                    name = match.group(2).strip()
+                    name = match.group(1).strip()
+                    oab = "Não informado"
 
                 # Limpar e validar
                 name = self._clean_lawyer_name(name)
@@ -297,8 +462,8 @@ class DJEContentParser:
                     lawyers.append(Lawyer(name=name, oab=oab))
                     seen_oabs.add(oab)
 
-                # Limitar número de advogados
-                if len(lawyers) >= 3:
+                # Limitar número de advogados por publicação
+                if len(lawyers) >= 5:
                     break
 
         return lawyers
@@ -306,14 +471,41 @@ class DJEContentParser:
     def _clean_lawyer_name(self, name: str) -> str:
         """Limpa nome do advogado"""
         # Remover prefixos profissionais
-        name = re.sub(r"^(dr\.?|dra\.?|advogad[oa])\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(
+            r"^(dr\.?|dra\.?|advogad[oa]|adv\.?)\s*", "", name, flags=re.IGNORECASE
+        )
 
-        # Remover sufixos comuns
+        # Remover sufixos comuns e texto adicional
         name = re.sub(r"\s*(oab|advogad[oa]).*$", "", name, flags=re.IGNORECASE)
 
-        # Limpar caracteres especiais
-        name = re.sub(r"[^\w\s]", "", name)
+        # Remover texto que pode ter sido capturado por engano
+        name = re.sub(
+            r"\b(sp|tratase|de|acao|previdenciaria|para|concessao|auxiliodoenca|aposentadoria)\b",
+            "",
+            name,
+            flags=re.IGNORECASE,
+        )
+
+        # Limitar tamanho (nomes muito longos são provavelmente erro de parsing)
+        if len(name) > 60:
+            # Tentar extrair apenas as primeiras palavras que formam um nome válido
+            words = name.split()
+            valid_words = []
+            for word in words:
+                if len(word) >= 2 and word.isalpha():
+                    valid_words.append(word)
+                if len(valid_words) >= 4:  # Máximo 4 palavras para nome
+                    break
+            name = " ".join(valid_words) if valid_words else name[:50]
+
+        # Limpar caracteres especiais, preservando acentos
+        name = re.sub(r"[^\w\sÁÉÍÓÚÀÂÊÔÃÕÇáéíóúàâêôãõç]", "", name)
         name = re.sub(r"\s+", " ", name)
+
+        # Validar se é um nome válido (pelo menos 2 palavras)
+        words = name.strip().split()
+        if len(words) < 2:
+            return ""
 
         return name.strip().title()
 
