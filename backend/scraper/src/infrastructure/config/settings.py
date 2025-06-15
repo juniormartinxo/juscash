@@ -24,20 +24,21 @@ class ScraperSettings(BaseSettings):
     """Configurações do scraper"""
 
     target_url: str = Field(
-        default="https://dje.tjsp.jus.br/cdje/index.do", env="SCRAPER_TARGET_URL"
+        default="https://esaj.tjsp.jus.br/cdje/consultaAvancada.do#buscaavancada",
+        env="SCRAPER_TARGET_URL",
     )
     max_retries: int = Field(default=3, env="SCRAPER_MAX_RETRIES")
     retry_delay: int = Field(default=5, env="SCRAPER_RETRY_DELAY")
     max_pages: int = Field(default=20, env="SCRAPER_MAX_PAGES")
     search_terms: List[str] = Field(
-        default=["aposentadoria", "benefício"], env="SCRAPER_SEARCH_TERMS"
+        default=["RPV", "pagamento pelo INSS"], env="SCRAPER_SEARCH_TERMS"
     )
 
 
 class ApiSettings(BaseSettings):
     """Configurações da API"""
 
-    base_url: str = Field(default="http://localhost:8000", env="API_BASE_URL")
+    base_url: str = Field(default="http://juscash-api:8000", env="API_BASE_URL")
     scraper_api_key: str = Field(default="", env="SCRAPER_API_KEY")
     timeout: int = Field(default=30, env="API_TIMEOUT")
 
