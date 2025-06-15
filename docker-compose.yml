@@ -8,7 +8,6 @@ services:
     container_name: ${API_CONTAINER_NAME}
     ports:
       - ${API_HOST_PORT}:${API_PORT}
-      - 5555:5555
     env_file:
       - .env    # Variáveis globais compartilhadas
     volumes:
