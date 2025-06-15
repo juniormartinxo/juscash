@@ -144,13 +144,27 @@ class Publication:
             # Converter para UTC e formatar como ISO string
             return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
+        def clean_content(content: str) -> str:
+            """Limpa o conteúdo removendo caracteres problemáticos"""
+            if not content:
+                return ""
+
+            # Remover quebras de linha e espaços extras
+            cleaned = " ".join(content.split())
+
+            # Limitar tamanho para evitar rejeição da API (máximo 2000 caracteres)
+            if len(cleaned) > 2000:
+                cleaned = cleaned[:2000] + "..."
+
+            return cleaned
+
         # Garantir que todos os campos obrigatórios estejam presentes
         data = {
             "processNumber": self.process_number,
             "availabilityDate": format_datetime_for_api(self.availability_date),
             "authors": self.authors,
             "defendant": "Instituto Nacional do Seguro Social - INSS",  # Valor padrão
-            "content": self.content,
+            "content": clean_content(self.content),
             "status": "NOVA",  # Valor padrão
             "scrapingSource": "DJE-SP",  # Valor padrão
             "caderno": "3",  # Valor padrão
@@ -163,10 +177,10 @@ class Publication:
         if self.publication_date:
             data["publicationDate"] = format_datetime_for_api(self.publication_date)
 
-        if self.lawyers:
-            data["lawyers"] = [
-                {"name": lawyer.name, "oab": lawyer.oab} for lawyer in self.lawyers
-            ]
+        # Sempre incluir lawyers como array (mesmo que vazio)
+        data["lawyers"] = [
+            {"name": lawyer.name, "oab": lawyer.oab} for lawyer in self.lawyers
+        ]
 
         if self.gross_value:
             data["grossValue"] = self.gross_value.amount_cents
