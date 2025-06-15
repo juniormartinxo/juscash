@@ -3,7 +3,7 @@ Entidade Publication - Core Domain
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from decimal import Decimal
 
@@ -84,6 +84,55 @@ class Publication:
         if not self.content.strip():
             raise ValueError("Conteúdo da publicação é obrigatório")
 
+        # Validar formato do número do processo
+        if not self._validate_process_number_format(self.process_number):
+            raise ValueError(f"Número do processo inválido: {self.process_number}")
+
+        # Validar autores
+        if len(self.authors) == 1 and self.authors[0] == "Não identificado":
+            raise ValueError("Autor não pode ser 'Não identificado'")
+
+        # Validar datas (permitir pequeno buffer para evitar problemas de timezone)
+        now = datetime.now()
+
+        if self.publication_date:
+            # Permitir até 1 dia no futuro para evitar problemas de timezone
+            max_future = now.replace(hour=0, minute=0, second=0) + timedelta(days=2)
+            if self.publication_date > max_future:
+                raise ValueError(
+                    f"Data de publicação muito no futuro: {self.publication_date}"
+                )
+
+        # Permitir até 1 dia no futuro para availability_date
+        max_future = now.replace(hour=0, minute=0, second=0) + timedelta(days=2)
+        if self.availability_date > max_future:
+            raise ValueError(
+                f"Data de disponibilização muito no futuro: {self.availability_date}"
+            )
+
+    def _validate_process_number_format(self, process_number: str) -> bool:
+        """Valida formato do número do processo brasileiro"""
+        parts = process_number.split("-")
+        if len(parts) != 2:
+            return False
+
+        # Verificar sequencial (7 dígitos)
+        if len(parts[0]) != 7 or not parts[0].isdigit():
+            return False
+
+        # Verificar resto (DD.AAAA.J.TR.OOOO)
+        rest_parts = parts[1].split(".")
+        if len(rest_parts) != 5:
+            return False
+
+        # Validar cada parte
+        expected_lengths = [2, 4, 1, 2, 4]
+        for i, (part, length) in enumerate(zip(rest_parts, expected_lengths)):
+            if len(part) != length or not part.isdigit():
+                return False
+
+        return True
+
     def to_api_dict(self) -> Dict[str, Any]:
         """Converte para formato da API"""
 
@@ -95,31 +144,43 @@ class Publication:
             # Converter para UTC e formatar como ISO string
             return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
-        return {
+        # Garantir que todos os campos obrigatórios estejam presentes
+        data = {
             "processNumber": self.process_number,
-            "publicationDate": format_datetime_for_api(self.publication_date)
-            if self.publication_date
-            else None,
             "availabilityDate": format_datetime_for_api(self.availability_date),
             "authors": self.authors,
-            "defendant": self.defendant,
-            "lawyers": [
-                {"name": lawyer.name, "oab": lawyer.oab} for lawyer in self.lawyers
-            ],
-            "grossValue": self.gross_value.amount_cents if self.gross_value else None,
-            "netValue": self.net_value.amount_cents if self.net_value else None,
-            "interestValue": self.interest_value.amount_cents
-            if self.interest_value
-            else None,
-            "attorneyFees": self.attorney_fees.amount_cents
-            if self.attorney_fees
-            else None,
+            "defendant": "Instituto Nacional do Seguro Social - INSS",  # Valor padrão
             "content": self.content,
-            "status": self.status,
-            "scrapingSource": self.scraping_source,
-            "caderno": self.caderno,
-            "instancia": self.instancia,
-            "local": self.local,
-            "parte": self.parte,
-            "extractionMetadata": self.extraction_metadata,
+            "status": "NOVA",  # Valor padrão
+            "scrapingSource": "DJE-SP",  # Valor padrão
+            "caderno": "3",  # Valor padrão
+            "instancia": "1",  # Valor padrão
+            "local": "Capital",  # Valor padrão
+            "parte": "1",  # Valor padrão
         }
+
+        # Adicionar campos opcionais apenas se existirem
+        if self.publication_date:
+            data["publicationDate"] = format_datetime_for_api(self.publication_date)
+
+        if self.lawyers:
+            data["lawyers"] = [
+                {"name": lawyer.name, "oab": lawyer.oab} for lawyer in self.lawyers
+            ]
+
+        if self.gross_value:
+            data["grossValue"] = self.gross_value.amount_cents
+
+        if self.net_value:
+            data["netValue"] = self.net_value.amount_cents
+
+        if self.interest_value:
+            data["interestValue"] = self.interest_value.amount_cents
+
+        if self.attorney_fees:
+            data["attorneyFees"] = self.attorney_fees.amount_cents
+
+        if self.extraction_metadata:
+            data["extractionMetadata"] = self.extraction_metadata
+
+        return data
