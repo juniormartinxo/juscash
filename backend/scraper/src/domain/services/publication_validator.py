@@ -24,10 +24,13 @@ class PublicationValidator:
     @staticmethod
     def contains_required_terms(content: str, required_terms: List[str]) -> bool:
         """
-        Verifica se o conteúdo contém todos os termos obrigatórios
+        Verifica se o conteúdo contém pelo menos um dos termos obrigatórios
+        Se não há termos obrigatórios, retorna True
         """
+        if not required_terms:
+            return True
         content_lower = content.lower()
-        return all(term.lower() in content_lower for term in required_terms)
+        return any(term.lower() in content_lower for term in required_terms)
 
     @staticmethod
     def validate_publication(
@@ -43,16 +46,11 @@ class PublicationValidator:
         if not PublicationValidator.validate_process_number(publication.process_number):
             return False, f"Número do processo inválido: '{publication.process_number}'"
 
-        # Verificar termos obrigatórios no conteúdo
+        # Verificar termos obrigatórios no conteúdo (pelo menos um deve estar presente)
         if not PublicationValidator.contains_required_terms(
             publication.content, required_terms
         ):
-            missing_terms = []
-            content_lower = publication.content.lower()
-            for term in required_terms:
-                if term.lower() not in content_lower:
-                    missing_terms.append(term)
-            return False, f"Termos obrigatórios ausentes: {missing_terms}"
+            return False, f"Nenhum dos termos obrigatórios encontrado: {required_terms}"
 
         # Verificar campos obrigatórios
         if not publication.authors:
