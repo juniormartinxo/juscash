@@ -5,7 +5,8 @@ import {
   PublicationResult,
   CreatePublicationData
 } from '@/domain/repositories/publication.repository'
-import { PrismaClient } from '@/generated/prisma/index'
+import { PrismaClient, Prisma } from '@/generated/prisma/index'
+import { ConflictError } from '@/shared/utils/error-handler'
 
 export class PrismaPublicationRepository implements PublicationRepository {
   constructor(private prisma: PrismaClient) { }
@@ -41,11 +42,24 @@ export class PrismaPublicationRepository implements PublicationRepository {
     if (data.attorneyFees) createData.attorney_fees = data.attorneyFees
     if (data.extractionMetadata) createData.extraction_metadata = data.extractionMetadata
 
-    const publication = await this.prisma.publication.create({
-      data: createData
-    })
+    try {
+      const publication = await this.prisma.publication.create({
+        data: createData
+      })
 
-    return this.toDomain(publication)
+      return this.toDomain(publication)
+    } catch (error) {
+      // Tratar erro de constraint única (publicação duplicada)
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const fields = error.meta?.target as string[]
+        if (fields?.includes('process_number')) {
+          throw new ConflictError(`Publication with process number '${data.processNumber}' already exists`)
+        }
+      }
+
+      // Re-lançar outros erros
+      throw error
+    }
   }
 
   async findMany(params: FindPublicationsParams): Promise<PublicationResult> {
