@@ -10,6 +10,7 @@ export class LoginUserUseCase {
   async execute(input: LoginUserInput): Promise<LoginUserOutput> {
     // Buscar usuário com senha
     const user = await this.userRepository.findByEmailWithPassword(input.email)
+
     if (!user) {
       throw new Error('Invalid credentials')
     }
