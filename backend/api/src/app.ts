@@ -108,29 +108,29 @@ class Application {
     }
 
     // Performance monitoring
-    this.app.use(this.container.performanceMiddleware.middleware)
+    // this.app.use(this.container.performanceMiddleware.middleware)
 
     // Request logging
-    this.app.use(LoggingMiddleware.requestLogger)
+    // this.app.use(LoggingMiddleware.requestLogger)
 
     // Metrics collection
-    if (config.monitoring.enableMetrics) {
-      this.app.use((req, res, next) => {
-        const startTime = Date.now()
+    // if (config.monitoring.enableMetrics) {
+    //   this.app.use((req, res, next) => {
+    //     const startTime = Date.now()
 
-        res.on('finish', () => {
-          const responseTime = Date.now() - startTime
-          this.metricsCollector.recordRequest(
-            req.method,
-            req.route?.path || req.path,
-            res.statusCode,
-            responseTime
-          )
-        })
+    //     res.on('finish', () => {
+    //       const responseTime = Date.now() - startTime
+    //       this.metricsCollector.recordRequest(
+    //         req.method,
+    //         req.route?.path || req.path,
+    //         res.statusCode,
+    //         responseTime
+    //       )
+    //     })
 
-        next()
-      })
-    }
+    //     next()
+    //   })
+    // }
   }
 
   private setupRoutes(): void {
@@ -225,6 +225,11 @@ class Application {
     // Favicon
     this.app.get('/favicon.ico', (req, res) => {
       res.status(204).end()
+    })
+
+    // Simple test endpoint
+    this.app.post('/test', (req, res) => {
+      res.json({ success: true, message: 'Test endpoint working', body: req.body })
     })
   }
 
@@ -421,7 +426,14 @@ class Application {
 const application = new Application()
 
 // Start server only if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// More robust check for different environments (works better in containers)
+const isMainModule = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` ||
+  import.meta.url.endsWith(process.argv[1]) ||
+  process.argv[1].endsWith('src/app.ts')
+)
+
+if (isMainModule) {
   application.start().catch((error) => {
     console.error('Failed to start application:', error)
     process.exit(1)
