@@ -4,8 +4,6 @@ import { ZodError, ZodSchema } from 'zod'
 export class ValidationMiddleware {
   static validateBody(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
-      console.log('req.body', req.body)
-      console.log('res', res)
       try {
         req.body = schema.parse(req.body)
         next()
@@ -34,7 +32,6 @@ export class ValidationMiddleware {
 
   static validateQuery(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
-      console.log('req.query', req.query)
       try {
         req.query = schema.parse(req.query)
         next()
