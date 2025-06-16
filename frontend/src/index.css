@@ -16,6 +16,7 @@
 	--color-destructive: #ef4444;
 	--color-destructive-foreground: #ffffff;
 	--color-border-input: #BBC0C4;
+	--color-kanban-background: #F1F3F4;
 }
 
 @layer utilities {
