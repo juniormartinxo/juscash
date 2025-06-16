@@ -5,6 +5,7 @@ import { UpdatePublicationStatusUseCase } from '@/application/usecases/publicati
 import { CreatePublicationUseCase, ValidationError } from '@/application/usecases/publications/create-publication.usecase'
 import { asyncHandler } from '@/shared/utils/async-handler'
 import { ApiResponseBuilder } from '@/shared/utils/api-response'
+import { ConflictError } from '@/shared/utils/error-handler'
 import { Request, Response } from 'express'
 
 export class PublicationController {
@@ -23,6 +24,10 @@ export class PublicationController {
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json(ApiResponseBuilder.error(error.message))
+        return
+      }
+      if (error instanceof ConflictError) {
+        res.status(409).json(ApiResponseBuilder.error(error.message))
         return
       }
       throw error
@@ -65,6 +70,20 @@ export class PublicationController {
 
       if (error instanceof ValidationError) {
         res.status(400).json(ApiResponseBuilder.error(error.message))
+        return
+      }
+      if (error instanceof ConflictError) {
+        // Para o scraper, tratar duplicatas como sucesso (200) ao invés de conflito
+        console.log('Publication already exists (SCRAPER):', {
+          processNumber: req.body?.processNumber,
+          message: 'Publication skipped - already exists',
+          source: 'SCRAPER'
+        })
+        res.status(200).json(ApiResponseBuilder.success({
+          message: 'Publication already exists',
+          processNumber: req.body?.processNumber,
+          skipped: true
+        }))
         return
       }
       throw error
