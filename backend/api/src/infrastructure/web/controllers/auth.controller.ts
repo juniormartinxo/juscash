@@ -17,6 +17,11 @@ export class AuthController {
   register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { name, email, password } = req.body
 
+    if (!name || !email || !password) {
+      res.status(400).json(ApiResponseBuilder.error('Name, email and password are required'))
+      return
+    }
+
     const result = await this.registerUserUseCase.execute({
       name,
       email,
