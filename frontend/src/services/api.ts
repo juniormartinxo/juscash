@@ -25,7 +25,7 @@ class ApiService {
         endpoint: string,
         options: RequestInit = {}
     ): Promise<T> {
-        const url = `${this.baseURL}${endpoint}`
+        const url = `${this.baseURL}/api${endpoint}`
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -90,6 +90,8 @@ class ApiService {
             await this.request('/auth/logout', {
                 method: 'POST',
             })
+        } catch (error) {
+            console.error('Logout failed, but cleaning local data anyway.', error)
         } finally {
             this.token = null
             localStorage.removeItem('accessToken')
