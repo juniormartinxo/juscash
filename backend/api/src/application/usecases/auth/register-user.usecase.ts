@@ -17,6 +17,7 @@ export class RegisterUserUseCase {
     // Validar senha
     this.validatePassword(input.password)
 
+
     // Hash da senha
     const passwordHash = await this.authService.hashPassword(input.password)
 
