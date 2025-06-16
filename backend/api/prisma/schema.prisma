@@ -8,41 +8,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * A tabela User representa todos os usuários que têm acesso ao sistema,
- * incluindo funcionários das organizações clientes e administradores da plataforma.
- * É a entidade central de autenticação e autorização.
- */
+/// *
+///  * A tabela User representa todos os usuários que têm acesso ao sistema,
+///  * incluindo funcionários das organizações clientes e administradores da plataforma.
+///  * É a entidade central de autenticação e autorização.
 model User {
-  id                    String    @id @default(cuid(2)) // ID do usuário
-  name                  String // Nome do usuário
-  email                 String    @unique // Email do usuário
-  password_hash         String    @map("password_hash") // Hash da senha
-  last_password_change  DateTime? @default(now())
-  is_password_temporary Boolean?  @default(true)
-  is_active             Boolean   @default(true)
-  created_at            DateTime  @default(now()) @map("created_at") // Data de criação
-  updated_at            DateTime  @updatedAt @map("updated_at") // Data de atualização
-  deactivated_at        DateTime? @map("deactivated_at")
+  id                    String             @id @default(cuid(2))
+  name                  String
+  email                 String             @unique
+  password_hash         String             @map("password_hash")
+  last_password_change  DateTime?          @default(now())
+  is_password_temporary Boolean?           @default(true)
+  is_active             Boolean            @default(true)
+  created_at            DateTime           @default(now()) @map("created_at")
+  updated_at            DateTime           @updatedAt @map("updated_at")
+  deactivated_at        DateTime?          @map("deactivated_at")
+  AuthLog               AuthLog[]
+  PublicationLog        PublicationLog[]
+  UserRefreshToken      UserRefreshToken[]
+  UserSession           UserSession[]
 
-  UserRefreshToken UserRefreshToken[]
-  UserSession      UserSession[]
-  AuthLog          AuthLog[]
-  PublicationLog   PublicationLog[]
-
-  @@index([email]) // Índice para o email
-  @@index([created_at]) // Índice para a data de criação
+  @@index([email])
+  @@index([created_at])
   @@map("users")
 }
 
-/**
- * UserRefreshToken armazena cada refresh token gerado para um usuário autenticado.
- * Ele permite que o sistema valide e gerencie a renovação de tokens de acesso (access tokens),
- * oferecendo uma camada adicional de segurança e controle de sessões.
- */
+/// *
+///  * UserRefreshToken armazena cada refresh token gerado para um usuário autenticado.
+///  * Ele permite que o sistema valide e gerencie a renovação de tokens de acesso (access tokens),
+///  * oferecendo uma camada adicional de segurança e controle de sessões.
 model UserRefreshToken {
   id         String   @id @default(cuid(2))
-  User       User     @relation(fields: [user_id], references: [id])
   user_id    String
   token      String   @unique
   expires_at DateTime
@@ -51,24 +47,23 @@ model UserRefreshToken {
   revoked    Boolean  @default(false)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  User       User     @relation(fields: [user_id], references: [id])
 
   @@map("user_refresh_tokens")
 }
 
-/**
- * UserSession registra cada sessão iniciada por um usuário. Isso permite que o sistema tenha
- * controle sobre os acessos realizados e possibilita, se necessário, encerrar sessões ativas
- * manualmente, por exemplo, em casos de segurança.
- */
+/// *
+///  * UserSession registra cada sessão iniciada por um usuário. Isso permite que o sistema tenha
+///  * controle sobre os acessos realizados e possibilita, se necessário, encerrar sessões ativas
+///  * manualmente, por exemplo, em casos de segurança.
 model UserSession {
   id                String    @id @default(cuid(2))
-  User              User      @relation(fields: [user_id], references: [id])
   user_id           String
   refresh_token     String    @unique
   token_expires_at  DateTime
-  device_type       String // ex: "mobile", "desktop", "tablet"
-  device_name       String? // ex: "iPhone 13", "Chrome em Windows"
-  device_identifier String? // fingerprint do dispositivo
+  device_type       String
+  device_name       String?
+  device_identifier String?
   ip_address        String?
   user_agent        String?
   is_active         Boolean   @default(true)
@@ -77,98 +72,93 @@ model UserSession {
   updated_at        DateTime  @updatedAt
   revoked_at        DateTime?
   revoked_by_user   Boolean?  @default(false)
+  User              User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id, is_active])
   @@map("user_sessions")
 }
 
-/**
- * AuthLog registra cada tentativa de autenticação, seja ela bem-sucedida ou falha. Isso permite monitorar e
- * auditar acessos ao sistema, detectar padrões de ataques, monitorar tentativas suspeitas e oferecer
- * relatórios completos de segurança.
- */
+/// *
+///  * AuthLog registra cada tentativa de autenticação, seja ela bem-sucedida ou falha. Isso permite monitorar e
+///  * auditar acessos ao sistema, detectar padrões de ataques, monitorar tentativas suspeitas e oferecer
+///  * relatórios completos de segurança.
 model AuthLog {
   id             String         @id @default(cuid(2))
   ip_address     String?
   user_agent     String?
-  email          String // Email usado na tentativa
-  user_id        String? // Pode ser null se o usuário não existe
-  User           User?          @relation(fields: [user_id], references: [id])
+  email          String
+  user_id        String?
   action         EAuthLogAction
   status         EAuthLogStatus
-  failure_reason String? // Razão da falha (se houver)
-  device_info    Json? // Informações adicionais do dispositivo
-  location_info  Json? // Informações de geolocalização baseadas no IP
-  session_id     String? // ID da sessão criada (se login bem-sucedido)
+  failure_reason String?
+  device_info    Json?
+  location_info  Json?
+  session_id     String?
   created_at     DateTime       @default(now())
+  User           User?          @relation(fields: [user_id], references: [id])
 
   @@index([user_id, created_at])
   @@index([email, created_at])
   @@map("auth_logs")
 }
 
-/**
- * A tabela Publication representa cada publicação de processo judicial.
- * Ela armazena informações detalhadas sobre o processo, como número, data de publicação,
- * data de disponibilidade, autores, réu, valor bruto, valor líquido, valor do juros, valor dos honorários,
- * conteúdo da publicação e status.
- */
+/// *
+///  * A tabela Publication representa cada publicação de processo judicial.
+///  * Ela armazena informações detalhadas sobre o processo, como número, data de publicação,
+///  * data de disponibilidade, autores, réu, valor bruto, valor líquido, valor do juros, valor dos honorários,
+///  * conteúdo da publicação e status.
 model Publication {
-  id                String            @id @default(cuid(2))
-  process_number    String            @unique @map("process_number") // Número do processo
-  publication_date  DateTime?         @map("publication_date") @db.Date // Data de publicação
-  availability_date DateTime          @map("availability_date") @db.Date // Data de disponibilidade
-  authors           String[] // Array de autores
-  defendant         String            @default("Instituto Nacional do Seguro Social - INSS") // Réu
-  lawyers           Json? // JSON: [{"name": "João", "oab": "123456"}]
-  gross_value       Int?              @map("gross_value") // Valor bruto em centavos (100000 = R$ 1000,00)
-  net_value         Int?              @map("net_value") // Valor líquido em centavos (100000 = R$ 1000,00)
-  interest_value    Int?              @map("interest_value") // Valor do juros em centavos (100000 = R$ 1000,00)
-  attorney_fees     Int?              @map("attorney_fees") // Valor dos honorários em centavos (100000 = R$ 1000,00)
-  content           String            @db.Text // Conteúdo da publicação
-  status            PublicationStatus @default(NOVA) // Status da publicação
-  created_at        DateTime          @default(now()) @map("created_at") // Data de criação
-  updated_at        DateTime          @updatedAt @map("updated_at") // Data de atualização
-
-  // Novos campos específicos para o sistema de scraping
-  scraping_source     String @default("DJE-SP") @map("scraping_source") // Fonte do scraping
-  caderno             String @default("3") // Caderno 3 - Judicial - 1ª Instância
-  instancia           String @default("1") @map("instancia") // 1ª Instância
-  local               String @default("Capital") // Capital
-  parte               String @default("1") // Parte 1
-  extraction_metadata Json?  @map("extraction_metadata") // Metadados da extração
-
+  id                    String             @id @default(cuid(2))
+  process_number        String             @unique @map("process_number")
+  publication_date      DateTime?          @map("publication_date") @db.Date
+  availability_date     DateTime           @map("availability_date") @db.Date
+  authors               String[]
+  defendant             String             @default("Instituto Nacional do Seguro Social - INSS")
+  lawyers               Json?
+  gross_value           Int?               @map("gross_value")
+  net_value             Int?               @map("net_value")
+  interest_value        Int?               @map("interest_value")
+  attorney_fees         Int?               @map("attorney_fees")
+  content               String
+  status                PublicationStatus  @default(NOVA)
+  created_at            DateTime           @default(now()) @map("created_at")
+  updated_at            DateTime           @updatedAt @map("updated_at")
+  scraping_source       String             @default("DJE-SP") @map("scraping_source")
+  caderno               String             @default("3")
+  instancia             String             @default("1") @map("instancia")
+  local                 String             @default("Capital")
+  parte                 String             @default("1")
+  extraction_metadata   Json?              @map("extraction_metadata")
+  scraping_execution_id String?            @map("scraping_execution_id")
   PublicationLog        PublicationLog[]
   ScrapingExecution     ScrapingExecution? @relation(fields: [scraping_execution_id], references: [id])
-  scraping_execution_id String?            @map("scraping_execution_id")
 
-  @@index([process_number]) // Índice para o número do processo
-  @@index([status]) // Índice para o status
-  @@index([availability_date]) // Índice para a data de disponibilidade
-  @@index([created_at]) // Índice para a data de criação
-  @@index([status, availability_date]) // Índice para o status e a data de disponibilidade
-  @@index([availability_date, created_at]) // Índice composto
-  @@index([scraping_source, caderno]) // Índice para fonte e caderno
-  @@index([defendant]) // Índice para réu (sempre INSS)
+  @@index([process_number])
+  @@index([status])
+  @@index([availability_date])
+  @@index([created_at])
+  @@index([status, availability_date])
+  @@index([availability_date, created_at])
+  @@index([scraping_source, caderno])
+  @@index([defendant])
   @@map("publications")
 }
 
-/**
- * A tabela PublicationLog registra cada ação realizada na publicação através da interface web,
- * como visualização, mudança de status, etc. Complementa o sistema de scraping com auditoria
- * das interações dos usuários.
- */
+/// *
+///  * A tabela PublicationLog registra cada ação realizada na publicação através da interface web,
+///  * como visualização, mudança de status, etc. Complementa o sistema de scraping com auditoria
+///  * das interações dos usuários.
 model PublicationLog {
   id             String                @id @default(cuid(2))
   publication_id String
-  publication    Publication           @relation(fields: [publication_id], references: [id])
   user_id        String
-  user           User                  @relation(fields: [user_id], references: [id])
   action         EPublicationLogAction
-  old_data       Json? // Dados antigos (para mudanças de status)
-  new_data       Json? // Dados novos (para mudanças de status)
-  notes          String? // Notas do usuário sobre a ação
+  old_data       Json?
+  new_data       Json?
+  notes          String?
   created_at     DateTime              @default(now()) @map("created_at")
+  publication    Publication           @relation(fields: [publication_id], references: [id])
+  user           User                  @relation(fields: [user_id], references: [id])
 
   @@index([publication_id, created_at])
   @@index([user_id, created_at])
@@ -176,37 +166,28 @@ model PublicationLog {
   @@map("publication_logs")
 }
 
-/**
- * A tabela ScrapingExecution registra cada execução do sistema de scraping Python,
- * permitindo rastrear estatísticas, performance e resultados de cada execução
- * automática ou manual do processo.
- */
+/// *
+///  * A tabela ScrapingExecution registra cada execução do sistema de scraping Python,
+///  * permitindo rastrear estatísticas, performance e resultados de cada execução
+///  * automática ou manual do processo.
 model ScrapingExecution {
-  id                     String                   @id @default(uuid())
-  execution_type         EScrapingExecutionType   @map("execution_type") // Tipo de execução
-  status                 EScrapingExecutionStatus @default(RUNNING) // Status da execução
-  started_at             DateTime                 @default(now()) @map("started_at")
-  finished_at            DateTime?                @map("finished_at")
-  execution_time_seconds Int?                     @map("execution_time_seconds")
-
-  // Estatísticas da execução
-  publications_found      Int @default(0) @map("publications_found")
-  publications_new        Int @default(0) @map("publications_new")
-  publications_duplicated Int @default(0) @map("publications_duplicated")
-  publications_failed     Int @default(0) @map("publications_failed")
-  publications_saved      Int @default(0) @map("publications_saved")
-
-  // Configurações da execução
-  criteria_used          Json? @map("criteria_used") // Critérios de busca utilizados
-  max_publications_limit Int?  @map("max_publications_limit")
-
-  // Informações técnicas
-  scraper_version    String? @map("scraper_version")
-  browser_user_agent String? @map("browser_user_agent")
-  error_details      Json?   @map("error_details") // Detalhes de erros se houver
-
-  // Relacionamentos
-  Publications Publication[]
+  id                      String                   @id @default(uuid())
+  execution_type          EScrapingExecutionType   @map("execution_type")
+  status                  EScrapingExecutionStatus @default(RUNNING)
+  started_at              DateTime                 @default(now()) @map("started_at")
+  finished_at             DateTime?                @map("finished_at")
+  execution_time_seconds  Int?                     @map("execution_time_seconds")
+  publications_found      Int                      @default(0) @map("publications_found")
+  publications_new        Int                      @default(0) @map("publications_new")
+  publications_duplicated Int                      @default(0) @map("publications_duplicated")
+  publications_failed     Int                      @default(0) @map("publications_failed")
+  publications_saved      Int                      @default(0) @map("publications_saved")
+  criteria_used           Json?                    @map("criteria_used")
+  max_publications_limit  Int?                     @map("max_publications_limit")
+  scraper_version         String?                  @map("scraper_version")
+  browser_user_agent      String?                  @map("browser_user_agent")
+  error_details           Json?                    @map("error_details")
+  Publications            Publication[]
 
   @@index([execution_type, started_at])
   @@index([status, started_at])
@@ -214,18 +195,17 @@ model ScrapingExecution {
   @@map("scraping_executions")
 }
 
-/**
- * A tabela ScrapingLog registra logs detalhados do processo de scraping,
- * complementando os logs de arquivo com persistência em banco para
- * análise e monitoramento via interface web.
- */
+/// *
+///  * A tabela ScrapingLog registra logs detalhados do processo de scraping,
+///  * complementando os logs de arquivo com persistência em banco para
+///  * análise e monitoramento via interface web.
 model ScrapingLog {
   id                    String            @id @default(uuid())
   scraping_execution_id String?           @map("scraping_execution_id")
   level                 EScrapingLogLevel @default(INFO)
-  message               String            @db.Text
-  context               Json? // Contexto adicional (URL, seletores, etc.)
-  error_stack           String?           @map("error_stack") @db.Text
+  message               String
+  context               Json?
+  error_stack           String?           @map("error_stack")
   created_at            DateTime          @default(now()) @map("created_at")
 
   @@index([scraping_execution_id, created_at])
@@ -234,15 +214,14 @@ model ScrapingLog {
   @@map("scraping_logs")
 }
 
-/**
- * A tabela ScrapingConfiguration permite armazenar configurações dinâmicas
- * do sistema de scraping, permitindo ajustes sem necessidade de redeploy.
- */
+/// *
+///  * A tabela ScrapingConfiguration permite armazenar configurações dinâmicas
+///  * do sistema de scraping, permitindo ajustes sem necessidade de redeploy.
 model ScrapingConfiguration {
   id          String   @id @default(cuid(2))
-  key         String   @unique // Chave da configuração
-  value       String   @db.Text // Valor da configuração
-  description String?  @db.Text // Descrição da configuração
+  key         String   @unique
+  value       String
+  description String?
   is_active   Boolean  @default(true) @map("is_active")
   created_at  DateTime @default(now()) @map("created_at")
   updated_at  DateTime @updatedAt @map("updated_at")
@@ -251,42 +230,41 @@ model ScrapingConfiguration {
   @@map("scraping_configurations")
 }
 
-// ==================== ENUMS ====================
-
 enum EPublicationLogAction {
-  CRIADA // Publicação criada pelo scraper
-  ATUALIZADA // Dados atualizados
-  VISUALIZADA // Usuário visualizou no modal
-  STATUS_CHANGED // Status alterado no Kanban
-  MOVED_TO_COLUMN // Movida entre colunas do Kanban
-  EXPORTED // Exportada/baixada
+  CRIADA
+  ATUALIZADA
+  VISUALIZADA
+  STATUS_CHANGED
+  MOVED_TO_COLUMN
+  EXPORTED
 
   @@map("publication_log_action")
 }
+
 enum PublicationStatus {
-  NOVA // Publicação nova (scraping inicial)
-  LIDA // Publicação foi lida/revisada
-  ENVIADA_PARA_ADV // Enviada para advogado
-  CONCLUIDA // Processamento concluído
+  NOVA
+  LIDA
+  ENVIADA_PARA_ADV
+  CONCLUIDA
 
   @@map("publication_status")
 }
 
 enum EScrapingExecutionType {
-  SCHEDULED // Execução agendada (diária)
-  MANUAL // Execução manual/imediata
-  TEST // Execução de teste
-  RETRY // Reexecução após falha
+  SCHEDULED
+  MANUAL
+  TEST
+  RETRY
 
   @@map("scraping_execution_type")
 }
 
 enum EScrapingExecutionStatus {
-  RUNNING // Em execução
-  COMPLETED // Concluída com sucesso
-  FAILED // Falhou com erro
-  CANCELLED // Cancelada
-  TIMEOUT // Timeout
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMEOUT
 
   @@map("scraping_execution_status")
 }
