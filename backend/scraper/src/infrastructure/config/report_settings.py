@@ -14,13 +14,13 @@ class ReportSettings:
     """
 
     # Diretório de saída
-    output_directory: str = "./relatorios_extraidos"
+    output_directory: str = "./reports/txt"
 
     # Habilitar/desabilitar salvamento
     enabled: bool = True
 
     # Formato do nome do arquivo
-    filename_format: str = "relatorio_{process_number}_{timestamp}.txt"
+    filename_format: str = "{process_number}.txt"
 
     # Incluir metadados no relatório
     include_metadata: bool = True
@@ -62,11 +62,9 @@ def get_report_settings() -> ReportSettings:
         Configurações de relatório
     """
     return ReportSettings(
-        output_directory=os.getenv("REPORT_OUTPUT_DIR", "./relatorios_extraidos"),
+        output_directory=os.getenv("REPORT_OUTPUT_DIR", "./reports/txt"),
         enabled=os.getenv("REPORT_ENABLED", "true").lower() == "true",
-        filename_format=os.getenv(
-            "REPORT_FILENAME_FORMAT", "relatorio_{process_number}_{timestamp}.txt"
-        ),
+        filename_format=os.getenv("REPORT_FILENAME_FORMAT", "{process_number}.txt"),
         include_metadata=os.getenv("REPORT_INCLUDE_METADATA", "true").lower() == "true",
         include_monetary_values=os.getenv("REPORT_INCLUDE_VALUES", "true").lower()
         == "true",
