@@ -37,8 +37,7 @@ class ReportTxtSaver:
 
         # Criar subdiretórios por data se configurado
         if self.settings.organize_by_date:
-            today = datetime.now().strftime(self.settings.date_format)
-            self.daily_dir = self.output_dir / today
+            self.daily_dir = self.output_dir
             self.daily_dir.mkdir(parents=True, exist_ok=True)
         else:
             self.daily_dir = self.output_dir
@@ -61,7 +60,7 @@ class ReportTxtSaver:
         """
         # Verificar se o salvamento está habilitado
         if not self.settings.enabled:
-            logger.debug(f"🚫 Salvamento de relatórios desabilitado")
+            logger.debug("🚫 Salvamento de relatórios desabilitado")
             return None
 
         try:
