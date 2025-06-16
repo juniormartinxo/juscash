@@ -17,30 +17,27 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background min-w-[1000px]">
       {/* Navbar fixa */}
       <Navbar />
-      
+
       {/* Conteúdo principal */}
       <main className="pt-16"> {/* pt-16 para compensar a navbar fixa */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header da página */}
-          <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-2">
-              <Scale className="h-6 w-6 text-primary-500" />
-              <h1 className="text-2xl font-bold text-secondary-500">
+          <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <Scale className="h-6 w-6 text-secondary" />
+              <h1 className="text-3xl font-semibold text-secondary">
                 Publicações
               </h1>
             </div>
-            <p className="text-gray-600 text-sm">
-              Gerencie e acompanhe as publicações do Diário da Justiça Eletrônico
-            </p>
-          </div>
 
-          {/* Filtros de busca */}
-          <SearchFiltersComponent 
-            onFiltersChange={handleFiltersChange}
-          />
+            {/* Filtros de busca */}
+            <SearchFiltersComponent
+              onFiltersChange={handleFiltersChange}
+            />
+          </div>
 
           {/* Board Kanban */}
           <div className="h-[calc(100vh-300px)]"> {/* Altura fixa para o kanban */}
