@@ -21,9 +21,9 @@ API_PORT="8000"
 # CONFIGURAÇÕES DO FRONTEND - VITE
 # ===========================================
 VITE_CONTAINER_NAME="juscash-vite"
-VITE_PORT="3008"
-VITE_HOST_PORT="3001"
-VITE_API_URL="http://${API_CONTAINER_NAME}:${API_PORT}"
+VITE_PORT="5173"
+VITE_HOST_PORT="5173"
+VITE_API_URL="http://localhost:${API_HOST_PORT}"
 
 # ===========================================
 # CONFIGURAÇÕES DO BANCO DE DADOS
@@ -62,7 +62,7 @@ API_TIMEOUT=30
 API_BASE_URL='http://${API_CONTAINER_NAME}:${API_PORT}'
 
 # Configurações de segurança e limites
-CORS_ORIGIN=''
+CORS_ORIGIN='http://localhost:5173'
 JWT_ACCESS_SECRET='fUXZOvvcAit2HcrAcXsaY3AnZ5PihzyL'
 JWT_REFRESH_SECRET='FjOkrtGSfalZaPdfyNJEynzYrGmZFRdW'
 RATE_LIMIT_WINDOW_MS=900000
