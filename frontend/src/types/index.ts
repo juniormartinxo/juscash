@@ -1,3 +1,5 @@
+import { ReactNode } from 'react'
+
 // Tipos baseados no schema Prisma
 export interface User {
     id: string
@@ -82,7 +84,7 @@ export interface AuthResponse {
 // Tipos para o Kanban
 export interface KanbanColumn {
     id: PublicationStatus
-    title: string
+    title: ReactNode
     publications: Publication[]
     count: number
 }
