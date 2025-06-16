@@ -1,35 +1,49 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { SignupPage } from "@/pages/SignupPage";
+import {
+	Navigate,
+	Route,
+	BrowserRouter as Router,
+	Routes,
+} from "react-router-dom";
 
 function App() {
-  const [count, setCount] = useState(0)
+	return (
+		<AuthProvider>
+			<Router>
+				<div className="App">
+					<Routes>
+						{/* Rotas públicas */}
+						<Route path="/login" element={<LoginPage />} />
+						<Route path="/signup" element={<SignupPage />} />
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+						{/* Rotas protegidas */}
+						<Route
+							path="/dashboard"
+							element={
+								<ProtectedRoute>
+									<DashboardPage />
+								</ProtectedRoute>
+							}
+						/>
+
+						{/* Rota raiz - redireciona para dashboard ou login */}
+						<Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+						{/* Rota 404 - redireciona para dashboard */}
+						<Route path="*" element={<Navigate to="/dashboard" replace />} />
+					</Routes>
+
+					{/* Toast notifications */}
+					<Toaster />
+				</div>
+			</Router>
+		</AuthProvider>
+	);
 }
 
-export default App
+export default App;
