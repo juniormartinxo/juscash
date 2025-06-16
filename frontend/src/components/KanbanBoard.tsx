@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { CheckSquare } from 'lucide-react'
 import { PublicationCard } from './PublicationCard'
 import { PublicationModal } from './PublicationModal'
 import { useToast } from '@/hooks/use-toast'
@@ -10,11 +11,11 @@ interface KanbanBoardProps {
   filters: SearchFilters
 }
 
-const COLUMN_CONFIG: Record<PublicationStatus, { title: string; color: string }> = {
-  NOVA: { title: 'Nova Publicação', color: 'bg-blue-50 border-blue-200' },
-  LIDA: { title: 'Publicação Lida', color: 'bg-yellow-50 border-yellow-200' },
-  ENVIADA_PARA_ADV: { title: 'Enviar para Advogado Responsável', color: 'bg-orange-50 border-orange-200' },
-  CONCLUIDA: { title: 'Concluído', color: 'bg-green-50 border-green-200' },
+const COLUMN_CONFIG: Record<PublicationStatus, { title: React.ReactNode; color: string }> = {
+  NOVA: { title: 'Nova Publicação', color: 'bg-kanban-background border-transparent' },
+  LIDA: { title: 'Publicação Lida', color: 'bg-kanban-background border-transparent' },
+  ENVIADA_PARA_ADV: { title: 'Enviar para Advogado Responsável', color: 'bg-kanban-background border-transparent' },
+  CONCLUIDA: { title: <span className="flex flex-row items-center gap-1 text-primary"><CheckSquare className="inline-block -mt-1 mr-1" size={16} /> Concluído</span>, color: 'bg-kanban-background border-transparent' },
 }
 
 const ITEMS_PER_PAGE = 30
@@ -42,7 +43,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     ENVIADA_PARA_ADV: 1,
     CONCLUIDA: 1,
   })
-  
+
   const { toast } = useToast()
 
   const loadPublications = useCallback(async (status: PublicationStatus, page: number = 1, reset: boolean = false) => {
@@ -61,7 +62,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       setColumns(prev => {
         const newColumns = [...prev]
         const columnIndex = newColumns.findIndex(col => col.id === status)
-        
+
         if (columnIndex >= 0) {
           const existingPublications = reset ? [] : newColumns[columnIndex].publications
           newColumns[columnIndex] = {
@@ -77,7 +78,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
             count: response.total,
           })
         }
-        
+
         return newColumns
       })
 
@@ -129,7 +130,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
 
   const loadMoreItems = (status: PublicationStatus) => {
     if (!hasMore[status] || loadingMore[status]) return
-    
+
     const nextPage = currentPage[status] + 1
     loadPublications(status, nextPage, false)
   }
@@ -168,7 +169,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     // Atualizar estado local otimisticamente
     setColumns(prev => {
       const newColumns = [...prev]
-      
+
       // Remover da coluna origem
       const sourceIndex = newColumns.findIndex(col => col.id === sourceStatus)
       if (sourceIndex >= 0) {
@@ -184,7 +185,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         const updatedPublication = { ...publication, status: destStatus }
         const destPublications = [...newColumns[destIndex].publications]
         destPublications.splice(destination.index, 0, updatedPublication)
-        
+
         newColumns[destIndex] = {
           ...newColumns[destIndex],
           publications: destPublications,
@@ -204,7 +205,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         description: "Não foi possível atualizar o status da publicação.",
         variant: "destructive",
       })
-      
+
       // Recarregar dados
       loadPublications(sourceStatus, 1, true)
       loadPublications(destStatus, 1, true)
@@ -238,7 +239,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   return (
     <div className="h-full">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 h-full">
+        <div className="grid grid-cols-4 gap-6 h-full">
           {Object.values(PublicationStatus).map((status) => {
             const column = columns.find(col => col.id === status) || {
               id: status,
@@ -250,11 +251,11 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
             return (
               <div key={status} className="flex flex-col h-full">
                 {/* Header da coluna */}
-                <div className={`rounded-t-lg border-2 ${COLUMN_CONFIG[status].color} p-4`}>
-                  <h3 className="font-semibold text-sm text-gray-700">
+                <div className={`rounded-t-lg border border-gray-200 bg-kanban-background p-4 flex flex-row justify-start items-center gap-4`}>
+                  <h3 className="font-semibold text-sm text-secondary">
                     {column.title}
                   </h3>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-1">
                     {column.publications.length}
                   </span>
                 </div>
@@ -301,14 +302,14 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                             )}
                           </Draggable>
                         ))}
-                        
+
                         {/* Loading indicator */}
                         {loadingMore[status] && (
                           <div className="flex justify-center py-4">
                             <div className="spinner" />
                           </div>
                         )}
-                        
+
                         {/* Empty state */}
                         {column.publications.length === 0 && !loadingMore[status] && (
                           <div className="text-center py-8 text-gray-500 text-sm">
