@@ -15,14 +15,14 @@ const COLUMN_CONFIG: Record<PublicationStatus, { title: React.ReactNode; color: 
   NOVA: { title: 'Nova Publicação', color: 'bg-kanban-background border-transparent' },
   LIDA: { title: 'Publicação Lida', color: 'bg-kanban-background border-transparent' },
   ENVIADA_PARA_ADV: { title: 'Enviar para Advogado Responsável', color: 'bg-kanban-background border-transparent' },
-  CONCLUIDA: { 
+  CONCLUIDA: {
     title: (
       <span className="flex flex-row items-center gap-1 text-primary">
-        <CheckSquare className="inline-block -mt-1 mr-1" size={16} /> 
+        <CheckSquare className="inline-block -mt-1 mr-1" size={16} />
         Concluído
       </span>
-    ), 
-    color: 'bg-kanban-background border-transparent' 
+    ),
+    color: 'bg-kanban-background border-transparent'
   },
 }
 
@@ -56,8 +56,8 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   ], [])
 
   const loadPublications = useCallback(async (
-    status: PublicationStatus, 
-    page: number = 1, 
+    status: PublicationStatus,
+    page: number = 1,
     reset: boolean = false
   ) => {
     if (page === 1) {
@@ -130,7 +130,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   const loadMoreItems = useCallback((status: PublicationStatus) => {
     const hasMoreItems = hasMore.get(status)
     const isLoading = loadingMore.has(status)
-    
+
     if (!hasMoreItems || isLoading) return
 
     const nextPage = (currentPage.get(status) || 1) + 1
@@ -166,7 +166,10 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     const sourceColumn = columns.get(sourceStatus)
     const publication = sourceColumn?.publications.find(pub => pub.id === draggableId)
 
-    if (!publication) return
+    if (!publication) {
+      console.warn(`Publicação não encontrada: ${draggableId}`)
+      return
+    }
 
     // Atualização otimística
     setColumns(prev => {
@@ -207,7 +210,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         variant: "destructive",
       })
 
-      // Recarregar em caso de erro
+      // Reverter mudanças e recarregar em caso de erro
       await Promise.allSettled([
         loadPublications(sourceStatus, 1, true),
         loadPublications(destStatus, 1, true),
@@ -280,27 +283,29 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                       }}
                     >
                       <div className="space-y-3">
-                        {column.publications.map((publication, index) => (
-                          <Draggable
-                            key={publication.id}
-                            draggableId={publication.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                              >
-                                <PublicationCard
-                                  publication={publication}
-                                  onClick={() => handleCardClick(publication)}
-                                  isDragging={snapshot.isDragging}
-                                />
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                        {column.publications
+                          .filter(publication => publication && publication.id)
+                          .map((publication, index) => (
+                            <Draggable
+                              key={`${status}-${publication.id}`}
+                              draggableId={publication.id}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                >
+                                  <PublicationCard
+                                    publication={publication}
+                                    onClick={() => handleCardClick(publication)}
+                                    isDragging={snapshot.isDragging}
+                                  />
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
 
                         {isLoadingMore && (
                           <div className="flex justify-center py-4">
@@ -309,7 +314,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                         )}
 
                         {column.publications.length === 0 && !isLoadingMore && (
-                          <div className="text-center py-8 text-gray-500 text-sm">
+                          <div className="text-center py-8 text-secondary/75 text-sm">
                             Nenhum card encontrado
                           </div>
                         )}
