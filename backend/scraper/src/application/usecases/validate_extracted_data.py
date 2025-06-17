@@ -46,7 +46,7 @@ class ValidateExtractedDataUseCase:
                 "weight": 0.1,
             },
             "dates": {
-                "availability_date_required": True,
+                "availabilityDate_required": True,
                 "max_future_days": 7,
                 "weight": 0.1,
             },
