@@ -26,7 +26,7 @@ export class LoginUserUseCase {
     }
 
     // Gerar tokens
-    const tokens = await this.authService.generateTokens(user.id)
+    const tokens = await this.authService.generateTokens(user)
 
     return {
       user: {
