@@ -75,7 +75,7 @@ def test_real_dje_content():
         # Converter para formato da API
         api_data = publication.to_api_dict()
         logger.info("📤 Dados para API:")
-        logger.info(f"   processNumber: {api_data['processNumber']}")
+        logger.info(f"   process_number: {api_data['process_number']}")
         logger.info(f"   authors: {api_data['authors']}")
         logger.info(f"   grossValue: {api_data['grossValue']} centavos")
 
