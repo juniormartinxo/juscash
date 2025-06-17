@@ -43,6 +43,7 @@ services:
       context: ./backend/scraper
       dockerfile: .docker/Dockerfile
     container_name: ${SCRAPER_CONTAINER_NAME}
+    entrypoint: ./backend/scraper/.docker/entrypoint.sh
     env_file:
       - .env    # Variáveis globais compartilhadas
     volumes:
