@@ -74,7 +74,7 @@ class TestPublication:
         """Testa conversão para dicionário da API"""
         api_dict = sample_publication.to_api_dict()
 
-        assert api_dict["processNumber"] == sample_publication.process_number
+        assert api_dict["process_number"] == sample_publication.process_number
         assert api_dict["authors"] == sample_publication.authors
         assert api_dict["defendant"] == sample_publication.defendant
         assert api_dict["grossValue"] == 150000  # R$ 1500.00 em centavos
