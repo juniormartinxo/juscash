@@ -40,7 +40,7 @@ def test_publication_to_api_dict():
     print(json.dumps(api_data, indent=2, ensure_ascii=False))
 
     # Verificar campos obrigatórios
-    required_fields = ["process_number", "availabilityDate", "authors", "content"]
+    required_fields = ["process_number", "availability_date", "authors", "content"]
 
     print("\n🔍 Verificação de Campos Obrigatórios:")
     for field in required_fields:
@@ -58,16 +58,16 @@ def test_publication_to_api_dict():
     else:
         print(f"   ❌ process_number: {type(api_data.get('process_number'))}")
 
-    # availabilityDate deve ser string (ISO format)
-    if isinstance(api_data.get("availabilityDate"), str):
-        print("   ✅ availabilityDate: string")
+    # availability_date deve ser string (ISO format)
+    if isinstance(api_data.get("availability_date"), str):
+        print("   ✅ availability_date: string")
         try:
-            datetime.fromisoformat(api_data["availabilityDate"].replace("Z", "+00:00"))
-            print("   ✅ availabilityDate: formato ISO válido")
+            datetime.fromisoformat(api_data["availability_date"].replace("Z", "+00:00"))
+            print("   ✅ availability_date: formato ISO válido")
         except:
-            print("   ❌ availabilityDate: formato ISO inválido")
+            print("   ❌ availability_date: formato ISO inválido")
     else:
-        print(f"   ❌ availabilityDate: {type(api_data.get('availabilityDate'))}")
+        print(f"   ❌ availability_date: {type(api_data.get('availability_date'))}")
 
     # authors deve ser array de strings
     authors = api_data.get("authors")
@@ -86,12 +86,12 @@ def test_publication_to_api_dict():
     else:
         print(f"   ❌ content: {type(api_data.get('content'))}")
 
-    # grossValue deve ser number (int) se presente
-    if "grossValue" in api_data:
-        if isinstance(api_data["grossValue"], int):
-            print("   ✅ grossValue: integer")
+    # gross_value deve ser number (int) se presente
+    if "gross_value" in api_data:
+        if isinstance(api_data["gross_value"], int):
+            print("   ✅ gross_value: integer")
         else:
-            print(f"   ❌ grossValue: {type(api_data['grossValue'])}")
+            print(f"   ❌ gross_value: {type(api_data['gross_value'])}")
 
     return api_data
 
@@ -105,22 +105,22 @@ def test_schema_compliance():
     expected_schema = {
         "process_number": "string (obrigatório)",
         "publicationDate": "string datetime (opcional)",
-        "availabilityDate": "string datetime (obrigatório)",
+        "availability_date": "string datetime (obrigatório)",
         "authors": "array de strings (obrigatório, min 1)",
         "defendant": "string (opcional)",
         "lawyers": "array de objetos {name, oab} (opcional)",
-        "grossValue": "number int positive (opcional)",
-        "netValue": "number int positive (opcional)",
-        "interestValue": "number int positive (opcional)",
-        "attorneyFees": "number int positive (opcional)",
+        "gross_value": "number int positive (opcional)",
+        "net_value": "number int positive (opcional)",
+        "interest_value": "number int positive (opcional)",
+        "attorney_fees": "number int positive (opcional)",
         "content": "string (obrigatório)",
         "status": "enum ['NOVA', 'LIDA', 'ENVIADA_PARA_ADV', 'CONCLUIDA'] (opcional)",
-        "scrapingSource": "string (opcional)",
+        "scraping_source": "string (opcional)",
         "caderno": "string (opcional)",
         "instancia": "string (opcional)",
         "local": "string (opcional)",
         "parte": "string (opcional)",
-        "extractionMetadata": "any (opcional)",
+        "extraction_metadata": "any (opcional)",
     }
 
     print("📋 Schema Esperado pela API:")
@@ -133,7 +133,7 @@ def test_schema_compliance():
     print("\n🔍 Verificação de Conformidade:")
 
     # Verificar se todos os campos obrigatórios estão presentes
-    required_fields = ["process_number", "availabilityDate", "authors", "content"]
+    required_fields = ["process_number", "availability_date", "authors", "content"]
     for field in required_fields:
         if field in api_data and api_data[field]:
             print(f"   ✅ {field}: presente e não vazio")
@@ -148,7 +148,7 @@ def test_schema_compliance():
         print("   ❌ authors: array vazio")
 
     # Verificar se valores monetários são inteiros positivos
-    monetary_fields = ["grossValue", "netValue", "interestValue", "attorneyFees"]
+    monetary_fields = ["gross_value", "net_value", "interest_value", "attorney_fees"]
     for field in monetary_fields:
         if field in api_data:
             value = api_data[field]
