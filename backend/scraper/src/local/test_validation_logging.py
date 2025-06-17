@@ -45,7 +45,7 @@ def create_invalid_publication(error_type: str) -> Publication:
         base_args["authors"] = ["Jo"]  # Nome muito curto
     elif error_type == "empty_author":
         base_args["authors"] = [""]  # Autor vazio
-    elif error_type == "no_availability_date":
+    elif error_type == "no_availabilityDate":
         base_args["availability_date"] = None
 
     return Publication(**base_args)
@@ -67,7 +67,7 @@ def test_validation_errors():
         "empty_content",
         "short_author",
         "empty_author",
-        "no_availability_date",
+        "no_availabilityDate",
     ]
 
     for error_type in error_types:
