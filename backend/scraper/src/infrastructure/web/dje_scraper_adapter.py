@@ -45,6 +45,7 @@ class DJEScraperAdapter(WebScraperPort):
         self.report_saver = ReportTxtSaver()
         # Instanciar o salvador de relatórios JSON
         from infrastructure.files.report_json_saver import ReportJsonSaver
+
         self.json_saver = ReportJsonSaver()
 
     async def initialize(self) -> None:
@@ -347,7 +348,7 @@ class DJEScraperAdapter(WebScraperPort):
                                             yield publication
                             except Exception as e:
                                 logger.warning(
-                                    f"⚠️ Erro ao processar elemento onclick {i+1}: {e}"
+                                    f"⚠️ Erro ao processar elemento onclick {i + 1}: {e}"
                                 )
                                 continue
 
@@ -391,7 +392,7 @@ class DJEScraperAdapter(WebScraperPort):
                                         yield publication
 
                     except Exception as e:
-                        logger.warning(f"⚠️ Erro ao processar elemento {i+1}: {e}")
+                        logger.warning(f"⚠️ Erro ao processar elemento {i + 1}: {e}")
                         continue
 
                 # Tentar navegar para próxima página
@@ -517,30 +518,12 @@ class DJEScraperAdapter(WebScraperPort):
                                 content, pdf_url
                             )
                             for publication in publications:
-                                # Salvar relatório como arquivo TXT
+                                # Salvar como JSON
                                 try:
-                                    saved_path = (
-                                        await self.report_saver.save_publication_report(
+                                    json_path = (
+                                        await self.json_saver.save_publication_json(
                                             publication
                                         )
-                                    )
-                                    if saved_path:
-                                        logger.info(
-                                            f"📄 Relatório TXT salvo (HTML fallback): {saved_path}"
-                                        )
-                                    else:
-                                        logger.warning(
-                                            f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                                        )
-                                except Exception as txt_error:
-                                    logger.error(
-                                        f"❌ Erro ao salvar relatório TXT (HTML fallback): {txt_error}"
-                                    )
-
-                                # Salvar também como JSON
-                                try:
-                                    json_path = await self.json_saver.save_publication_json(
-                                        publication
                                     )
                                     if json_path:
                                         logger.info(
@@ -554,13 +537,6 @@ class DJEScraperAdapter(WebScraperPort):
                                     logger.error(
                                         f"❌ Erro ao salvar JSON (HTML fallback): {json_error}"
                                     )
-
-                                yield publication
-                            return  # Sucesso, sair do loop de retry
-                        else:
-                            logger.warning(
-                                "⚠️ Nenhum download detectado e conteúdo insuficiente"
-                            )
 
                 finally:
                     await pdf_page.close()
@@ -647,25 +623,7 @@ class DJEScraperAdapter(WebScraperPort):
                                 f"✅ Publicação extraída (aprimorado): {publication.process_number}"
                             )
 
-                            # Salvar relatório como arquivo TXT
-                            try:
-                                saved_path = (
-                                    await self.report_saver.save_publication_report(
-                                        publication
-                                    )
-                                )
-                                if saved_path:
-                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                                    )
-                            except Exception as txt_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
-                                )
-
-                            # Salvar também como JSON
+                            # Salvar como JSON
                             try:
                                 json_path = await self.json_saver.save_publication_json(
                                     publication
@@ -677,9 +635,7 @@ class DJEScraperAdapter(WebScraperPort):
                                         f"⚠️ Falha ao salvar JSON para {publication.process_number}"
                                     )
                             except Exception as json_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar JSON: {json_error}"
-                                )
+                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
 
                             yield publication
                         logger.info(
@@ -690,25 +646,7 @@ class DJEScraperAdapter(WebScraperPort):
                                 f"✅ Publicação extraída (aprimorado): {publication.process_number}"
                             )
 
-                            # Salvar relatório como arquivo TXT
-                            try:
-                                saved_path = (
-                                    await self.report_saver.save_publication_report(
-                                        publication
-                                    )
-                                )
-                                if saved_path:
-                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                                    )
-                            except Exception as txt_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
-                                )
-
-                            # Salvar também como JSON
+                            # Salvar como JSON
                             try:
                                 json_path = await self.json_saver.save_publication_json(
                                     publication
@@ -720,9 +658,7 @@ class DJEScraperAdapter(WebScraperPort):
                                         f"⚠️ Falha ao salvar JSON para {publication.process_number}"
                                     )
                             except Exception as json_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar JSON: {json_error}"
-                                )
+                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
 
                             yield publication
                     else:
@@ -737,25 +673,7 @@ class DJEScraperAdapter(WebScraperPort):
                                 f"✅ Publicação extraída (tradicional): {publication.process_number}"
                             )
 
-                            # Salvar relatório como arquivo TXT
-                            try:
-                                saved_path = (
-                                    await self.report_saver.save_publication_report(
-                                        publication
-                                    )
-                                )
-                                if saved_path:
-                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                                    )
-                            except Exception as txt_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
-                                )
-
-                            # Salvar também como JSON
+                            # Salvar como JSON
                             try:
                                 json_path = await self.json_saver.save_publication_json(
                                     publication
@@ -767,9 +685,7 @@ class DJEScraperAdapter(WebScraperPort):
                                         f"⚠️ Falha ao salvar JSON para {publication.process_number}"
                                     )
                             except Exception as json_error:
-                                logger.error(
-                                    f"❌ Erro ao salvar JSON: {json_error}"
-                                )
+                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
 
                             yield publication
 
@@ -787,25 +703,7 @@ class DJEScraperAdapter(WebScraperPort):
                             f"✅ Publicação extraída (fallback): {publication.process_number}"
                         )
 
-                        # Salvar relatório como arquivo TXT
-                        try:
-                            saved_path = (
-                                await self.report_saver.save_publication_report(
-                                    publication
-                                )
-                            )
-                            if saved_path:
-                                logger.info(f"📄 Relatório TXT salvo: {saved_path}")
-                            else:
-                                logger.warning(
-                                    f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                                )
-                        except Exception as txt_error:
-                            logger.error(
-                                f"❌ Erro ao salvar relatório TXT: {txt_error}"
-                            )
-
-                        # Salvar também como JSON
+                        # Salvar como JSON
                         try:
                             json_path = await self.json_saver.save_publication_json(
                                 publication
@@ -817,9 +715,7 @@ class DJEScraperAdapter(WebScraperPort):
                                     f"⚠️ Falha ao salvar JSON para {publication.process_number}"
                                 )
                         except Exception as json_error:
-                            logger.error(
-                                f"❌ Erro ao salvar JSON: {json_error}"
-                            )
+                            logger.error(f"❌ Erro ao salvar JSON: {json_error}")
 
                         yield publication
             else:
