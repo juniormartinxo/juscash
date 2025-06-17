@@ -46,18 +46,18 @@ for file in "${required_files[@]}"; do
 done
 
 # Construir a imagem Docker
-echo -e "${YELLOW}Construindo imagem Docker...${NC}"
+echo -e "${YELLOW}Construindo imagem da API com Docker...${NC}"
 docker build -t juscash-api -f .docker/Dockerfile .
 
 # Verificar se a construção foi bem-sucedida
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Imagem Docker construída com sucesso!${NC}"
+    echo -e "${GREEN}Imagem da API construída com sucesso!${NC}"
 else
-    echo "Erro ao construir a imagem Docker."
+    echo "Erro ao construir a imagem da API."
     exit 1
 fi
 
 cd ../../
 
-echo -e "${GREEN}Setup concluído com sucesso!${NC}"
-echo -e "Para iniciar a API em modo de desenvolvimento, execute: ${YELLOW}docker run -p 3000:3000 juscash-api${NC}"
+echo -e "${GREEN}Setup da API concluído com sucesso!${NC}"
+echo ""
