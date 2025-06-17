@@ -52,6 +52,7 @@ declare -A PORTS_TO_CHECK=(
     ["$VITE_HOST_PORT"]="Frontend Vite"
     ["$POSTGRES_HOST_PORT"]="PostgreSQL Database"
     ["$REDIS_HOST_PORT"]="Redis Cache"
+    ["$SCRAPER_API_PORT"]="Scraper API"
 )
 
 # Função para verificar se uma porta está em uso
