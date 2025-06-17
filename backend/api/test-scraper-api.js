@@ -52,7 +52,7 @@ function logWarning(message) {
 
 // Dados de exemplo para teste
 const samplePublicationData = {
-  processNumber: `TEST-${Date.now()}-89.2024.8.26.0100`,
+  process_number: `TEST-${Date.now()}-89.2024.8.26.0100`,
   publicationDate: '2024-03-15T00:00:00.000Z',
   availabilityDate: '2024-03-17T00:00:00.000Z',
   authors: ['João Silva Santos - TESTE', 'Maria Oliveira - TESTE'],
@@ -140,7 +140,7 @@ async function testDataValidation() {
   try {
     const invalidData = {
       // Dados inválidos - sem campos obrigatórios
-      processNumber: '',
+      process_number: '',
       authors: [],
       content: ''
     };
@@ -179,7 +179,7 @@ async function testSuccessfulCreation() {
     if (response.status === 201 && response.data.success) {
       logSuccess('Publicação criada com sucesso via scraper');
       log(`   📄 ID: ${response.data.data.publication.id}`);
-      log(`   📋 Processo: ${response.data.data.publication.processNumber}`);
+      log(`   📋 Processo: ${response.data.data.publication.process_number}`);
       log(`   👥 Autores: ${response.data.data.publication.authors.join(', ')}`);
       return true;
     } else {
@@ -227,7 +227,7 @@ async function testRateLimit() {
     for (let i = 0; i < 5; i++) {
       const testData = {
         ...samplePublicationData,
-        processNumber: `RATE-TEST-${Date.now()}-${i}-89.2024.8.26.0100`
+        process_number: `RATE-TEST-${Date.now()}-${i}-89.2024.8.26.0100`
       };
 
       promises.push(
