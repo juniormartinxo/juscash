@@ -128,8 +128,11 @@ async def test_exact_image_criteria():
 
         # 4. CAPTURAR SCREENSHOT DO FORMULÁRIO PREENCHIDO
         print("📸 4. Capturando screenshot do formulário...")
-        await scraper.page.screenshot(path="exact_criteria_form.png", full_page=True)
-        print("   ✅ Screenshot salvo: exact_criteria_form.png")
+        debug_dir = Path("logs/debug_images")
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        form_screenshot_path = debug_dir / "exact_criteria_form.png"
+        await scraper.page.screenshot(path=str(form_screenshot_path), full_page=True)
+        print(f"   ✅ Screenshot salvo: {form_screenshot_path}")
 
         # 5. SUBMETER PESQUISA
         print("🔍 5. Executando pesquisa...")
@@ -150,10 +153,11 @@ async def test_exact_image_criteria():
                 print(f"   🌐 URL final: {final_url}")
 
                 # Capturar screenshot dos resultados
+                results_screenshot_path = debug_dir / "exact_criteria_results.png"
                 await scraper.page.screenshot(
-                    path="exact_criteria_results.png", full_page=True
+                    path=str(results_screenshot_path), full_page=True
                 )
-                print("   ✅ Screenshot dos resultados: exact_criteria_results.png")
+                print(f"   ✅ Screenshot dos resultados: {results_screenshot_path}")
 
             else:
                 print("   ❌ Botão Pesquisar não encontrado")
@@ -182,7 +186,7 @@ async def test_exact_image_criteria():
             for i, element in enumerate(onclick_elements[:5]):
                 onclick_attr = await element.get_attribute("onclick")
                 if onclick_attr and "consultaSimples.do" in onclick_attr:
-                    print(f"   {i+1}. {onclick_attr[:100]}...")
+                    print(f"   {i + 1}. {onclick_attr[:100]}...")
 
         # Verificar se há mensagens de erro ou "nenhum resultado"
         page_text = await scraper.page.inner_text("body")
@@ -215,7 +219,7 @@ if __name__ == "__main__":
     if success:
         print("\n🎉 TESTE PASSOU!")
         print("✅ Links de PDF encontrados com os critérios exatos")
-        print("📋 Verifique os screenshots:")
+        print("📋 Verifique os screenshots em logs/debug_images/:")
         print("   • exact_criteria_form.png - Formulário preenchido")
         print("   • exact_criteria_results.png - Resultados da pesquisa")
     else:
