@@ -19,27 +19,27 @@ export const loginSchema = z.object({
 
 // Publication schemas
 export const createPublicationSchema = z.object({
-  processNumber: z.string().min(1, 'Número do processo é obrigatório'),
-  publicationDate: z.string().datetime().transform(date => new Date(date)).optional(),
-  availabilityDate: z.string().datetime().transform(date => new Date(date)),
+  process_number: z.string().min(1, 'Número do processo é obrigatório'),
+  publication_date: z.string().datetime().transform(date => { if (date === null) return "00:00:00Z"; return new Date(date) }).optional(),
+  availability_date: z.string().datetime().transform(date => { if (date === null) return "00:00:00Z"; return new Date(date) }),
   authors: z.array(z.string().min(1, 'Nome do autor não pode estar vazio')).min(1, 'Pelo menos um autor é obrigatório'),
   defendant: z.string().optional(),
   lawyers: z.array(z.object({
     name: z.string().min(1, 'Nome do advogado é obrigatório'),
     oab: z.string().min(1, 'OAB é obrigatória')
   })).optional(),
-  grossValue: z.number().int().positive().optional(),
-  netValue: z.number().int().positive().optional(),
-  interestValue: z.number().int().positive().optional(),
-  attorneyFees: z.number().int().positive().optional(),
+  gross_value: z.number().int().optional(),
+  net_value: z.number().int().optional(),
+  interest_value: z.number().int().optional(),
+  attorney_fees: z.number().int().optional(),
   content: z.string().min(1, 'Conteúdo é obrigatório'),
   status: z.enum(['NOVA', 'LIDA', 'ENVIADA_PARA_ADV', 'CONCLUIDA']).optional(),
-  scrapingSource: z.string().optional(),
+  scraping_source: z.string().optional(),
   caderno: z.string().optional(),
   instancia: z.string().optional(),
   local: z.string().optional(),
   parte: z.string().optional(),
-  extractionMetadata: z.any().optional(),
+  extraction_metadata: z.any().optional(),
 })
 
 export const updatePublicationStatusSchema = z.object({
