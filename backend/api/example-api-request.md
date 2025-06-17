@@ -43,7 +43,7 @@ curl -X POST http://localhost:3000/api/publications \
   -d '{
     "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
-    "availabilityDate": "2024-03-17T00:00:00.000Z",
+    "availability_date": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "lawyers": [
@@ -56,10 +56,10 @@ curl -X POST http://localhost:3000/api/publications \
         "oab": "789012"
       }
     ],
-    "grossValue": 150000,
-    "netValue": 135000,
-    "interestValue": 10000,
-    "attorneyFees": 5000,
+    "gross_value": 150000,
+    "net_value": 135000,
+    "interest_value": 10000,
+    "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação do DJE sobre aposentadoria por invalidez...",
     "status": "NOVA",
     "scrapingSource": "DJE-SP",
@@ -67,7 +67,7 @@ curl -X POST http://localhost:3000/api/publications \
     "instancia": "1",
     "local": "Capital",
     "parte": "1",
-    "extractionMetadata": {
+    "extraction_metadata": {
       "extraction_date": "2024-03-17T10:30:00.000Z",
       "source_url": "https://dje.tjsp.jus.br/...",
       "confidence_score": 0.95
@@ -94,17 +94,17 @@ async function createPublication() {
     const publicationData = {
       process_number: '1234567-89.2024.8.26.0100',
       publicationDate: '2024-03-15T00:00:00.000Z',
-      availabilityDate: '2024-03-17T00:00:00.000Z',
+      availability_date: '2024-03-17T00:00:00.000Z',
       authors: ['João Silva Santos', 'Maria Oliveira'],
       defendant: 'Instituto Nacional do Seguro Social - INSS',
       lawyers: [
         { name: 'Dr. Carlos Advogado', oab: '123456' },
         { name: 'Dra. Ana Jurista', oab: '789012' }
       ],
-      grossValue: 150000, // R$ 1.500,00 em centavos
-      netValue: 135000,   // R$ 1.350,00 em centavos
-      interestValue: 10000, // R$ 100,00 em centavos
-      attorneyFees: 5000,   // R$ 50,00 em centavos
+      gross_value: 150000, // R$ 1.500,00 em centavos
+      net_value: 135000,   // R$ 1.350,00 em centavos
+      interest_value: 10000, // R$ 100,00 em centavos
+      attorney_fees: 5000,   // R$ 50,00 em centavos
       content: 'Conteúdo completo da publicação do DJE sobre aposentadoria por invalidez...',
       status: 'NOVA'
     };
@@ -134,7 +134,7 @@ createPublication();
 Os seguintes campos são **obrigatórios**:
 
 - `process_number`: Número do processo (string)
-- `availabilityDate`: Data de disponibilidade (ISO string)
+- `availability_date`: Data de disponibilidade (ISO string)
 - `authors`: Array com pelo menos um autor (array de strings)
 - `content`: Conteúdo da publicação (string)
 
@@ -174,16 +174,16 @@ Os valores monetários devem ser enviados em **centavos**:
       "id": "cm123456789",
       "process_number": "1234567-89.2024.8.26.0100",
       "publicationDate": "2024-03-15T00:00:00.000Z",
-      "availabilityDate": "2024-03-17T00:00:00.000Z",
+      "availability_date": "2024-03-17T00:00:00.000Z",
       "authors": ["João Silva Santos", "Maria Oliveira"],
       "defendant": "Instituto Nacional do Seguro Social - INSS",
       "lawyers": [
         { "name": "Dr. Carlos Advogado", "oab": "123456" }
       ],
-      "grossValue": 150000,
-      "netValue": 135000,
-      "interestValue": 10000,
-      "attorneyFees": 5000,
+      "gross_value": 150000,
+      "net_value": 135000,
+      "interest_value": 10000,
+      "attorney_fees": 5000,
       "content": "Conteúdo completo da publicação...",
       "status": "NOVA",
       "createdAt": "2024-03-17T10:30:00.000Z",
@@ -206,7 +206,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
   -d '{
     "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
-    "availabilityDate": "2024-03-17T00:00:00.000Z",
+    "availability_date": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "lawyers": [
@@ -215,14 +215,14 @@ curl -X POST http://localhost:3000/api/scraper/publications \
         "oab": "123456"
       }
     ],
-    "grossValue": 150000,
-    "netValue": 135000,
-    "interestValue": 10000,
-    "attorneyFees": 5000,
+    "gross_value": 150000,
+    "net_value": 135000,
+    "interest_value": 10000,
+    "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação...",
     "status": "NOVA",
     "scrapingSource": "DJE-SP",
-    "extractionMetadata": {
+    "extraction_metadata": {
       "extraction_date": "2024-03-17T10:30:00.000Z",
       "source_url": "https://dje.tjsp.jus.br/...",
       "confidence_score": 0.95
