@@ -10,7 +10,7 @@ from src.shared.value_objects import DJEUrl, ScrapingCriteria
 @pytest.mark.unit
 class TestPlaywrightScraperAdapter:
     """Testes unitários para o adaptador Playwright."""
-    
+
     @patch('src.adapters.secondary.playwright_scraper.async_playwright')
     async def test_initialize_success(self, mock_playwright):
         """Testa inicialização bem-sucedida do Playwright."""
@@ -18,39 +18,39 @@ class TestPlaywrightScraperAdapter:
         mock_pw = AsyncMock()
         mock_playwright.return_value.start.return_value = mock_pw
         mock_pw.chromium.launch.return_value = AsyncMock()
-        
+
         # Executar
         scraper = PlaywrightScraperAdapter()
         await scraper.initialize()
-        
+
         # Verificar
         assert scraper.playwright is not None
         mock_pw.chromium.launch.assert_called_once()
-    
+
     async def test_navigate_to_dje(self, mock_playwright_page):
         """Testa navegação para DJE."""
         scraper = PlaywrightScraperAdapter()
         scraper.page = mock_playwright_page
-        
+
         # Configurar mock
         mock_playwright_page.goto.return_value = MagicMock(status=200)
         mock_playwright_page.title.return_value = "DJE - Diário da Justiça"
-        
+
         # Executar
         dje_url = DJEUrl()
         result = await scraper.navigate_to_dje(dje_url)
-        
+
         # Verificar
         assert result is True
         mock_playwright_page.goto.assert_called_once_with(
             dje_url.get_main_url(),
             wait_until='networkidle'
         )
-    
+
     async def test_extract_basic_info_from_content(self):
         """Testa extração de informações básicas do conteúdo."""
         scraper = PlaywrightScraperAdapter()
-        
+
         content = """
         Processo nº 1234567-89.2024.8.26.0100
         Data de disponibilização: 15/03/2024
@@ -59,10 +59,10 @@ class TestPlaywrightScraperAdapter:
         Valor principal: R$ 15.000,50
         Juros moratórios: R$ 2.500,25
         """
-        
+
         publication = Publication()
         await scraper._extract_basic_info(publication, content)
-        
+
         # Verificar extrações
         assert str(publication.process_number) == "1234567-89.2024.8.26.0100"
         assert publication.availability_date.date() == datetime(2024, 3, 15).date()
