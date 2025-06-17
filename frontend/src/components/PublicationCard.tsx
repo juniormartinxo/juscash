@@ -1,11 +1,11 @@
-import { formatDate } from "@/lib/utils";
-import type { Publication } from "@/types";
-import { Clock } from "lucide-react";
+import { cn, formatDate } from "@/lib/utils"
+import type { Publication } from "@/types"
+import { Clock } from "lucide-react"
 
 interface PublicationCardProps {
-	publication: Publication;
-	onClick: () => void;
-	isDragging?: boolean;
+	publication: Publication
+	onClick: () => void
+	isDragging?: boolean
 }
 
 export function PublicationCard({
@@ -15,35 +15,29 @@ export function PublicationCard({
 }: PublicationCardProps) {
 	return (
 		<div
-			className={`
-        kanban-card 
-        bg-white 
-        rounded-lg 
-        border 
-        border-gray-200 
-        p-4 
-        shadow-sm 
-        cursor-pointer
-        ${isDragging ? "rotate-2 shadow-lg" : "hover:shadow-md"}
-      `}
+			className={cn(
+				"kanban-card bg-background-kanban rounded-lg border border-gray-200 p-4 shadow-sm cursor-pointer",
+				isDragging ? "rotate-2 shadow-lg" : "hover:shadow-md",
+				"flex flex-col gap-2"
+			)}
 			onClick={onClick}
 		>
 			{/* Número do processo */}
-			<div className="font-semibold text-secondary text-sm mb-3">
+			<div className="font-normal text-secondary/85 text-xs">
 				{publication.process_number}
 			</div>
 
 			{/* Datas */}
-			<div className="space-y-2">
+			<div className="flex flex-row gap-8">
 				{/* Data de atualização */}
-				<div className="flex items-center text-xs text-gray-500">
-					<Clock className="h-3 w-3 mr-1" />
-					<span>3h</span>{" "}
+				<div className="flex flex-row items-center text-xs text-secondary/75">
+					<Clock className="h-2 w-2 mr-1" />
+					<span>3h</span>
 					{/* Tempo desde a última atualização - simplificado */}
 				</div>
 
 				{/* Data de disponibilização */}
-				<div className="flex items-center text-xs text-gray-600">
+				<div className="flex flex-row items-center text-xs text-secondary/75">
 					<svg
 						className="h-3 w-3 mr-1"
 						fill="none"
@@ -66,19 +60,6 @@ export function PublicationCard({
 					<span>{formatDate(publication.availability_date)}</span>
 				</div>
 			</div>
-
-			{/* Status visual - pequena barra colorida */}
-			<div className="mt-3 pt-3 border-t border-gray-100">
-				<div
-					className={`
-            h-1 w-full rounded-full
-            ${publication.status === "NOVA" ? "bg-blue-400" : ""}
-            ${publication.status === "LIDA" ? "bg-yellow-400" : ""}
-            ${publication.status === "ENVIADA_PARA_ADV" ? "bg-orange-400" : ""}
-            ${publication.status === "CONCLUIDA" ? "bg-green-400" : ""}
-          `}
-				/>
-			</div>
 		</div>
-	);
+	)
 }
