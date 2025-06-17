@@ -59,6 +59,11 @@ class RedisSettings:
         self.batch_size = int(os.getenv("REDIS_BATCH_SIZE", "10"))
         self.worker_timeout = int(os.getenv("REDIS_WORKER_TIMEOUT", "300"))
 
+        # Add redis_url property
+        self.url = os.getenv("REDIS_URL", f"redis://{self.host}:{self.port}/{self.db}")
+        if self.password:
+            self.url = f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
+
 
 class LogSettings(BaseSettings):
     """Configurações de logging"""
@@ -67,6 +72,14 @@ class LogSettings(BaseSettings):
     dir: Path = Field(default=Path("./logs"), env="LOG_DIR")
     rotation_days: int = Field(default=7, env="LOG_ROTATION_DAYS")
     max_size_mb: int = Field(default=10, env="LOG_MAX_SIZE_MB")
+
+
+class SchedulerSettings(BaseSettings):
+    """Configurações do scheduler"""
+
+    daily_execution_hour: int = Field(default=6, env="SCHEDULER_DAILY_HOUR")
+    daily_execution_minute: int = Field(default=0, env="SCHEDULER_DAILY_MINUTE")
+    start_date: str = Field(default="2025-03-17", env="SCHEDULER_START_DATE")
 
 
 class Settings(BaseSettings):
@@ -79,8 +92,14 @@ class Settings(BaseSettings):
     api: ApiSettings = ApiSettings()
     redis: RedisSettings = RedisSettings()
     logging: LogSettings = LogSettings()
+    scheduler: SchedulerSettings = SchedulerSettings()
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
+
+    @property
+    def redis_url(self) -> str:
+        """Get Redis URL from redis settings"""
+        return self.redis.url
 
 
 def get_settings() -> Settings:
