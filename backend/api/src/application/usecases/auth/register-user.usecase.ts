@@ -29,14 +29,10 @@ export class RegisterUserUseCase {
     })
 
     // Gerar tokens
-    const tokens = await this.authService.generateTokens(user.id)
+    const tokens = await this.authService.generateTokens(user)
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      user,
       tokens,
     }
   }
