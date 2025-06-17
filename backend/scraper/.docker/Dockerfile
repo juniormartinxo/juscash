@@ -37,6 +37,7 @@ COPY . .
 RUN chown -R scraper:scraper /app
 USER scraper
 CMD ["python", "-m", "src.main"]
+CMD ["python", "monitor_json_files.py"]
 
 # Stage de produção
 FROM base AS production
@@ -45,3 +46,4 @@ COPY *.py ./
 RUN chown -R scraper:scraper /app
 USER scraper
 CMD ["python", "-m", "src.main"]
+CMD ["python", "monitor_json_files.py"]
