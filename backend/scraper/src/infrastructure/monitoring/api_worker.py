@@ -440,9 +440,6 @@ class APIWorker:
             # Handle different response codes
             if response.status_code in [200, 201, 202]:
                 logger.info(f"✅ Successfully sent {file_name} to API")
-
-                # Apagar o arquivo JSON após sucesso
-                self.delete_json_file(file_name)
                 return True, None, None
 
             elif response.status_code == 400:
@@ -461,8 +458,6 @@ class APIWorker:
             elif response.status_code == 409:
                 # Duplicate - don't retry, consider as success
                 logger.warning(f"⚠️ Duplicate publication {file_name} (already exists)")
-
-                self.delete_json_file(file_name)
                 return True, None, None
 
             elif response.status_code == 429:
@@ -539,6 +534,8 @@ class APIWorker:
         success, error_message, error_code = self._send_to_api(json_data, file_name)
 
         if success:
+            # Delete JSON file after successful processing
+            self.delete_json_file(file_path)
             return True
 
         # Handle retry logic
@@ -554,6 +551,13 @@ class APIWorker:
                 queue_item, error_message or "Processing failed", error_code
             )
             self.redis_client.lpush(self.failed_queue, json.dumps(queue_item))
+
+            # Delete JSON file for specific error codes to prevent accumulation
+            if error_code in ["VALIDATION_ERROR", "BAD_REQUEST", "CLIENT_ERROR"]:
+                logger.info(
+                    f"🗑️ Excluindo arquivo devido a erro não recuperável: {error_code}"
+                )
+                self.delete_json_file(file_path)
 
             if not self._should_retry(error_code):
                 logger.error(
@@ -694,9 +698,22 @@ class APIWorker:
 
             processed_count = 0
             success_count = 0
+            last_cleanup_time = time.time()
+            cleanup_interval = 3600  # 1 hour in seconds
 
             while True:
                 try:
+                    # Periodic cleanup of orphaned JSON files
+                    current_time = time.time()
+                    if current_time - last_cleanup_time > cleanup_interval:
+                        logger.info(
+                            "🧹 Starting periodic cleanup of orphaned JSON files..."
+                        )
+                        cleaned_files = self.cleanup_orphaned_json_files(
+                            max_age_hours=2
+                        )
+                        last_cleanup_time = current_time
+
                     # Use blocking pop with timeout
                     result = self.redis_client.brpoplpush(
                         self.queue_name,
@@ -811,10 +828,116 @@ class APIWorker:
 
     def delete_json_file(self, file_path: str) -> None:
         """Delete a JSON file."""
-        file_path = Path(file_path)
-        if file_path.exists():
-            file_path.unlink()
-            logger.info(f"🗑️ Arquivo JSON excluído: {file_path}")
+        try:
+            file_path = Path(file_path)
+            if file_path.exists():
+                file_path.unlink()
+                logger.info(f"🗑️ Arquivo JSON excluído: {file_path}")
+            else:
+                logger.warning(
+                    f"⚠️ Arquivo JSON não encontrado para exclusão: {file_path}"
+                )
+        except PermissionError as e:
+            logger.error(
+                f"❌ Erro de permissão ao excluir arquivo JSON {file_path}: {e}"
+            )
+        except Exception as e:
+            logger.error(f"❌ Erro inesperado ao excluir arquivo JSON {file_path}: {e}")
+
+    def cleanup_orphaned_json_files(self, max_age_hours: int = 24) -> int:
+        """
+        Clean up orphaned JSON files that are older than max_age_hours.
+
+        Args:
+            max_age_hours: Maximum age in hours for JSON files to be considered orphaned
+
+        Returns:
+            Number of files cleaned up
+        """
+        try:
+            # Get the monitored directory from the file monitor
+            # We'll use a default path based on the script structure
+            script_dir = Path(__file__).parent.parent.parent.parent
+            json_dir = script_dir / "reports" / "json"
+
+            if not json_dir.exists():
+                logger.warning(f"📁 JSON directory not found: {json_dir}")
+                return 0
+
+            import time
+
+            current_time = time.time()
+            max_age_seconds = max_age_hours * 3600
+
+            cleaned_count = 0
+            json_files = list(json_dir.glob("*.json"))
+
+            logger.info(
+                f"🧹 Checking {len(json_files)} JSON files for cleanup (max age: {max_age_hours}h)"
+            )
+
+            for json_file in json_files:
+                try:
+                    file_age = current_time - json_file.stat().st_mtime
+
+                    if file_age > max_age_seconds:
+                        # Check if file is currently in any Redis queue
+                        if not self._is_file_in_queue(json_file.name):
+                            logger.info(
+                                f"🗑️ Cleaning orphaned file: {json_file.name} (age: {file_age / 3600:.1f}h)"
+                            )
+                            json_file.unlink()
+                            cleaned_count += 1
+                        else:
+                            logger.debug(
+                                f"⏳ File still in queue, skipping: {json_file.name}"
+                            )
+
+                except Exception as e:
+                    logger.error(f"❌ Error checking file {json_file}: {e}")
+
+            if cleaned_count > 0:
+                logger.info(
+                    f"🧹 Cleanup completed: {cleaned_count} orphaned files removed"
+                )
+            else:
+                logger.info("🧹 No orphaned files found for cleanup")
+
+            return cleaned_count
+
+        except Exception as e:
+            logger.error(f"❌ Error during cleanup: {e}")
+            return 0
+
+    def _is_file_in_queue(self, file_name: str) -> bool:
+        """Check if a file is currently in any Redis queue."""
+        try:
+            queues_to_check = [
+                self.queue_name,
+                self.processing_queue,
+                self.failed_queue,
+            ]
+
+            for queue in queues_to_check:
+                queue_length = self.redis_client.llen(queue)
+                if queue_length > 0:
+                    # Check a sample of items (max 100 to avoid performance issues)
+                    sample_size = min(queue_length, 100)
+                    items = self.redis_client.lrange(queue, 0, sample_size - 1)
+
+                    for item in items:
+                        try:
+                            queue_item = json.loads(item)
+                            if queue_item.get("file_name") == file_name:
+                                return True
+                        except json.JSONDecodeError:
+                            continue
+
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Error checking queues for file {file_name}: {e}")
+            return True  # Assume it's in queue to be safe
 
 
 def main():
