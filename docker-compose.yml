@@ -52,6 +52,8 @@ services:
       - ./backend/scraper/reports/log:/app/reports/log
       - ./backend/scraper/reports/pdf:/app/reports/pdf
     command: python monitor_json_files.py --api-endpoint ${API_BASE_URL:-http://juscash-api:8000/api}
+    ports:
+      - ${SCRAPER_API_PORT}:${SCRAPER_API_PORT}
     depends_on:
       - api
     networks:
