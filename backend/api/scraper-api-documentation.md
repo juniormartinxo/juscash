@@ -115,7 +115,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sua-api-key-aqui" \
   -d '{
-    "processNumber": "1234567-89.2024.8.26.0100",
+    "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
     "availabilityDate": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
@@ -153,7 +153,7 @@ const axios = require('axios');
 async function createPublicationFromScraper() {
   try {
     const publicationData = {
-      processNumber: '1234567-89.2024.8.26.0100',
+      process_number: '1234567-89.2024.8.26.0100',
       publicationDate: '2024-03-15T00:00:00.000Z',
       availabilityDate: '2024-03-17T00:00:00.000Z',
       authors: ['João Silva Santos', 'Maria Oliveira'],
@@ -211,7 +211,7 @@ def create_publication_from_scraper():
     }
     
     data = {
-        "processNumber": "1234567-89.2024.8.26.0100",
+        "process_number": "1234567-89.2024.8.26.0100",
         "publicationDate": "2024-03-15T00:00:00.000Z",
         "availabilityDate": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos", "Maria Oliveira"],
@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
 ```txt
 Publication creation from SCRAPER: {
-  processNumber: "1234567-89.2024.8.26.0100",
+  process_number: "1234567-89.2024.8.26.0100",
   source: "SCRAPER",
   timestamp: "2024-03-17T10:30:00.000Z",
   ip: "192.168.1.100"
@@ -355,7 +355,7 @@ Publication creation from SCRAPER: {
 ```txt
 Publication creation failed from SCRAPER: {
   error: "Process number is required",
-  processNumber: undefined,
+  process_number: undefined,
   source: "SCRAPER",
   ip: "192.168.1.100"
 }
@@ -402,7 +402,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
 curl -X POST http://localhost:3000/api/scraper/publications \
   -H "X-API-Key: sua-api-key-aqui" \
   -H "Content-Type: application/json" \
-  -d '{"processNumber": "123", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
+  -d '{"process_number": "123", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
 ```
 
 ### 3. Teste de Rate Limiting
@@ -413,7 +413,7 @@ for i in {1..1001}; do
   curl -X POST http://localhost:3000/api/scraper/publications \
     -H "X-API-Key: sua-api-key-aqui" \
     -H "Content-Type: application/json" \
-    -d '{"processNumber": "'$i'", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
+    -d '{"process_number": "'$i'", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
 done
 ```
 
