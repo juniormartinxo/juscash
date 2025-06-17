@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { AuthService, TokenPair, TokenPayload } from '@/domain/services/auth.service'
+import logger from '@/shared/utils/logger'
 
 export class JwtAuthService implements AuthService {
   private readonly accessTokenSecret: string
@@ -14,8 +15,8 @@ export class JwtAuthService implements AuthService {
     this.refreshTokenSecret = refreshTokenSecret
   }
 
-  async generateTokens(userId: string): Promise<TokenPair> {
-    const payload = { userId }
+  async generateTokens(user: { id: string, email: string }): Promise<TokenPair> {
+    const payload: TokenPayload = { userId: user.id, email: user.email }
 
     const accessToken = jwt.sign(payload, this.accessTokenSecret, {
       expiresIn: this.accessTokenExpiry,
@@ -43,21 +44,31 @@ export class JwtAuthService implements AuthService {
 
   async validateToken(token: string): Promise<TokenPayload | null> {
     try {
+      logger.debug('Validating token...')
+
       // Check if token is blacklisted
       if (this.blacklistedTokens.has(token)) {
+        logger.warn('Token is blacklisted')
         return null
       }
 
+      logger.debug('Token not blacklisted, verifying JWT...')
       const decoded = jwt.verify(token, this.accessTokenSecret, {
         issuer: 'dje-api',
         audience: 'dje-client',
       }) as any
 
-      return {
+      logger.debug('JWT decoded successfully:', decoded)
+
+      const payload: TokenPayload = {
         userId: decoded.userId,
         email: decoded.email,
       }
+
+      logger.debug('Returning payload:', payload)
+      return payload
     } catch (error) {
+      logger.error('Token validation error:', error)
       return null
     }
   }
