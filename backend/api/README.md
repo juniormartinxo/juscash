@@ -293,14 +293,14 @@ interface Publication {
   id: string;
   process_number: string;
   publicationDate?: Date;
-  availabilityDate: Date;
+  availability_date: Date;
   authors: string[];
   defendant: string; // Sempre "INSS"
   lawyers?: Array<{ name: string; oab: string }>;
-  grossValue?: number; // Em centavos
-  netValue?: number;
-  interestValue?: number;
-  attorneyFees?: number;
+  gross_value?: number; // Em centavos
+  net_value?: number;
+  interest_value?: number;
+  attorney_fees?: number;
   content: string;
   status: 'NOVA' | 'LIDA' | 'ENVIADA_PARA_ADV' | 'CONCLUIDA';
   createdAt: Date;
