@@ -133,6 +133,7 @@ SCRAPER_MAX_PAGES=20
 SCRAPER_TARGET_URL=https://dje.tjsp.jus.br/cdje/index.do
 SCRAPER_SEARCH_TERMS=aposentadoria,benefício,INSS
 SCRAPER_API_KEY='scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP'
+SCRAPER_API_PORT=5000
 
 # Configurações do navegador
 BROWSER_HEADLESS=false
