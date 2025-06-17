@@ -1,13 +1,13 @@
-import { PublicationEntity } from '@/domain/entities/publication.entity'
+import { PublicationEntity, PublicationJsonEntity } from '@/domain/entities/publication.entity'
 
 export interface PublicationRepository {
-  findById(id: string): Promise<PublicationEntity | null>
-  findByProcessNumber(process_number: string): Promise<PublicationEntity | null>
-  findMany(params: FindPublicationsParams): Promise<PublicationResult>
-  updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationEntity>
-  search(query: string): Promise<PublicationEntity[]>
-  create(data: CreatePublicationData): Promise<PublicationEntity>
-  upsert(data: CreatePublicationData): Promise<PublicationEntity>
+  findById(id: string): Promise<PublicationJsonEntity | null>
+  findByProcessNumber(process_number: string): Promise<PublicationJsonEntity | null>
+  findMany(params: FindPublicationsParams): Promise<PublicationJsonResult>
+  updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationJsonEntity>
+  search(query: string): Promise<PublicationJsonEntity[]>
+  create(data: CreatePublicationData): Promise<PublicationJsonEntity>
+  upsert(data: CreatePublicationData): Promise<PublicationJsonEntity>
 }
 
 export interface CreatePublicationData {
@@ -40,8 +40,8 @@ export interface FindPublicationsParams {
   searchTerm?: string
 }
 
-export interface PublicationResult {
-  publications: PublicationEntity[]
+export interface PublicationJsonResult {
+  publications: PublicationJsonEntity[]
   total: number
   page: number
   totalPages: number
