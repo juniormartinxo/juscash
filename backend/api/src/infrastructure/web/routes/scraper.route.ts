@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createPublicationSchema } from '@/shared/validation/schemas'
+import { createPublicationSchema, updatePublicationStatusSchema } from '@/shared/validation/schemas'
 import { PublicationController } from '@/infrastructure/web/controllers/publication.controller'
 import { ApiKeyMiddleware } from '@/infrastructure/web/middleware/api-key.middleware'
 import { ValidationMiddleware } from '@/infrastructure/web/middleware/validation.middleware'
@@ -39,6 +39,11 @@ export function createScraperRoutes(
   router.post('/publications',
     ValidationMiddleware.validateBody(createPublicationSchema),
     publicationController.createPublicationFromScraper
+  )
+
+  router.put('/publications/:id/status',
+    ValidationMiddleware.validateBody(updatePublicationStatusSchema),
+    publicationController.updateStatus
   )
 
   return router
