@@ -24,14 +24,6 @@ if [ ! -f "backend/scraper/.docker/Dockerfile" ]; then
     exit 1
 fi
 
-# Verifica se o arquivo entrypoint.sh do scraper existe
-if [ ! -f "backend/scraper/.docker/entrypoint.sh" ]; then
-    echo "❌ Arquivo entrypoint.sh do scraper não encontrado."
-    exit 1
-else
-    chmod +x backend/scraper/.docker/entrypoint.sh
-fi
-
 log_info "Executando scraper via Docker..."
 
 # Construir e executar apenas o scraper
