@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from infrastructure.logging.logger import setup_logger
 from infrastructure.scheduler.scheduler_adapter import SchedulerAdapter
 from infrastructure.config.settings import get_settings
-from infrastructure.queue.publication_worker import PublicationWorker
+
 from application.services.scraping_orchestrator import ScrapingOrchestrator
 from shared.container import Container
 
@@ -29,127 +29,99 @@ class ScraperApplication:
         self.container = Container()
         self.scheduler = SchedulerAdapter()
         self.orchestrator = ScrapingOrchestrator(self.container)
-        self.publication_worker = PublicationWorker()
         self._shutdown_event = asyncio.Event()
 
     async def start(self):
         """Inicia a aplicação do scraper"""
         try:
             logger.info("🚀 Iniciando DJE Scraper Application")
-            logger.info("📅 Execução programada diária a partir de 17/03/2025")
+            logger.info(f"📅 Execução programada diária a partir de {self.settings.scheduler.start_date}")
             logger.info(f"🎯 Target: {self.settings.scraper.target_url}")
-            logger.info("📤 Usando fila Redis para processamento assíncrono")
+            logger.info("💾 Salvando publicações em arquivos locais (TXT e JSON)")
 
             # Registrar handlers de shutdown graceful
             self._register_signal_handlers()
 
-            # Iniciar worker Redis em background
-            worker_task = asyncio.create_task(self._start_worker())
-
             # Configurar e iniciar scheduler
             await self._setup_scheduler()
 
-            # Manter aplicação rodando
+            # Aguardar shutdown
             await self._shutdown_event.wait()
-
-            # Aguardar worker finalizar
-            await worker_task
 
         except Exception as error:
             logger.error(f"❌ Erro fatal na aplicação: {error}")
             raise
-        finally:
-            await self._cleanup()
-
-    async def _start_worker(self):
-        """Inicia o worker Redis para processar a fila de publicações"""
-        try:
-            logger.info("🔄 Iniciando Publication Worker")
-            await self.publication_worker.start()
-        except Exception as error:
-            logger.error(f"❌ Erro no Publication Worker: {error}")
-            raise
 
     async def _setup_scheduler(self):
-        """Configura o agendamento diário do scraper"""
+        """Configura o scheduler para execução diária"""
         # Agendar execução diária
         self.scheduler.schedule_daily_scraping(
-            start_date="2025-03-17",
-            hour=8,  # 08:00 da manhã
-            minute=0,
-            scraping_function=self._execute_scraping,
+            start_date=self.settings.scheduler.start_date,
+            hour=self.settings.scheduler.daily_execution_hour,
+            minute=self.settings.scheduler.daily_execution_minute,
+            scraping_function=self._run_daily_scraping
         )
 
-        # Permitir execução manual para testes
-        if self.settings.environment == "development":
-            logger.info("🧪 Modo desenvolvimento: permitindo execução imediata")
-            # Executar uma vez para teste
-            await self._execute_scraping()
+        logger.info(
+            f"⏰ Scheduler configurado para execução diária às "
+            f"{self.settings.scheduler.daily_execution_hour:02d}:"
+            f"{self.settings.scheduler.daily_execution_minute:02d}"
+        )
 
-    async def _execute_scraping(self):
-        """Executa o processo de scraping"""
+    async def _run_daily_scraping(self):
+        """Executa o scraping diário"""
         try:
-            logger.info("🕷️  Iniciando processo de scraping DJE-SP")
-
+            logger.info("🔄 Iniciando execução diária do scraping")
             result = await self.orchestrator.execute_daily_scraping()
 
-            logger.info(
-                f"✅ Scraping concluído: {result.publications_found} publicações encontradas"
-            )
-            logger.info(
-                f"📊 Enfileiradas: {result.publications_new}, Falhas: {result.publications_failed}"
-            )
-
-            # Mostrar estatísticas da fila
-            worker_stats = self.publication_worker.get_stats()
-            logger.info(f"📈 Estado da fila: {worker_stats['queue_stats']}")
+            logger.info(f"✅ Execução diária concluída: {result.execution_id}")
+            logger.info(f"📊 Publicações encontradas: {result.publications_found}")
+            logger.info(f"💾 Publicações salvas: {result.publications_saved}")
 
         except Exception as error:
-            logger.error(f"❌ Erro durante scraping: {error}")
-            raise
+            logger.error(f"❌ Erro na execução diária: {error}")
 
     def _register_signal_handlers(self):
         """Registra handlers para shutdown graceful"""
+        for sig in [signal.SIGTERM, signal.SIGINT]:
+            signal.signal(sig, self._handle_shutdown)
 
-        def signal_handler(signum, frame):
-            logger.info(f"📡 Sinal {signum} recebido, iniciando shutdown graceful...")
-            asyncio.create_task(self._shutdown_gracefully())
+    def _handle_shutdown(self, signum, frame):
+        """Handler para shutdown graceful"""
+        logger.info(f"🛑 Sinal de shutdown recebido: {signum}")
+        asyncio.create_task(self.shutdown())
 
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+    async def shutdown(self):
+        """Shutdown graceful da aplicação"""
+        logger.info("🔄 Iniciando shutdown graceful...")
 
-    async def _shutdown_gracefully(self):
-        """Shutdown graceful dos componentes"""
-        logger.info("⏹️  Iniciando shutdown graceful...")
+        # Parar scheduler
+        await self.scheduler.shutdown()
 
-        # Parar worker Redis
-        await self.publication_worker.stop()
+        # Cleanup do container
+        await self.container.cleanup()
 
-        # Sinalizar shutdown para o loop principal
+        # Sinalizar shutdown completo
         self._shutdown_event.set()
 
-    async def _cleanup(self):
-        """Limpeza de recursos"""
-        logger.info("🧹 Executando limpeza de recursos...")
+        logger.info("✅ Shutdown graceful concluído")
 
-        # Fechar conexões Redis
-        if hasattr(self.publication_worker, "queue"):
-            self.publication_worker.queue.close()
-
-        await self.container.cleanup()
-        logger.info("✅ Aplicação finalizada")
+        logger.info("✅ Shutdown graceful concluído")
 
 
 async def main():
     """Função principal"""
     app = ScraperApplication()
+
     try:
         await app.start()
     except KeyboardInterrupt:
-        logger.info("⚠️  Interrupção pelo usuário")
+        logger.info("⌨️ Interrupção por teclado detectada")
     except Exception as error:
         logger.error(f"❌ Erro não tratado: {error}")
-        sys.exit(1)
+        raise
+    finally:
+        await app.shutdown()
 
 
 if __name__ == "__main__":
