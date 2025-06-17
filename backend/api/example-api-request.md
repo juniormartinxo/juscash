@@ -41,7 +41,7 @@ curl -X POST http://localhost:3000/api/publications \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_ACCESS_TOKEN_AQUI" \
   -d '{
-    "processNumber": "1234567-89.2024.8.26.0100",
+    "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
     "availabilityDate": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
@@ -92,7 +92,7 @@ async function createPublication() {
 
     // 2. Criar publicação
     const publicationData = {
-      processNumber: '1234567-89.2024.8.26.0100',
+      process_number: '1234567-89.2024.8.26.0100',
       publicationDate: '2024-03-15T00:00:00.000Z',
       availabilityDate: '2024-03-17T00:00:00.000Z',
       authors: ['João Silva Santos', 'Maria Oliveira'],
@@ -133,7 +133,7 @@ createPublication();
 
 Os seguintes campos são **obrigatórios**:
 
-- `processNumber`: Número do processo (string)
+- `process_number`: Número do processo (string)
 - `availabilityDate`: Data de disponibilidade (ISO string)
 - `authors`: Array com pelo menos um autor (array de strings)
 - `content`: Conteúdo da publicação (string)
@@ -172,7 +172,7 @@ Os valores monetários devem ser enviados em **centavos**:
   "data": {
     "publication": {
       "id": "cm123456789",
-      "processNumber": "1234567-89.2024.8.26.0100",
+      "process_number": "1234567-89.2024.8.26.0100",
       "publicationDate": "2024-03-15T00:00:00.000Z",
       "availabilityDate": "2024-03-17T00:00:00.000Z",
       "authors": ["João Silva Santos", "Maria Oliveira"],
@@ -204,7 +204,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sua-api-key-do-scraper-aqui" \
   -d '{
-    "processNumber": "1234567-89.2024.8.26.0100",
+    "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
     "availabilityDate": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
