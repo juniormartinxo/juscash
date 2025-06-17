@@ -1,0 +1,31 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements-monitoring.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-monitoring.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY monitor_json_files.py .
+COPY docker-entrypoint-monitoring.sh .
+
+# Make entrypoint executable
+RUN chmod +x docker-entrypoint-monitoring.sh
+
+# Create directories
+RUN mkdir -p /app/reports/json /app/reports/log /app/logs
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Use entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint-monitoring.sh"]
