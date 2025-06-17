@@ -330,7 +330,7 @@ flowchart TD
 
 ```typescript
 interface ScrapedPublication {
-  processNumber: string;
+  process_number: string;
   availabilityDate: Date;
   authors: string[];
   content: string;
