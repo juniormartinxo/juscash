@@ -47,6 +47,11 @@ services:
       - .env    # Variáveis globais compartilhadas
     volumes:
       - ./backend/scraper:/app
+      - ./backend/scraper/reports/json:/app/reports/json
+      - ./backend/scraper/reports/txt:/app/reports/txt
+      - ./backend/scraper/reports/log:/app/reports/log
+      - ./backend/scraper/reports/pdf:/app/reports/pdf
+    command: python monitor_json_files.py --api-endpoint ${API_BASE_URL:-http://juscash-api:8000/api}
     depends_on:
       - api
     networks:
@@ -103,15 +108,19 @@ services:
       --bind 0.0.0.0
       --protected-mode no
       --maxclients 10000
-      --tcp-keepalive 60"
+      --tcp-keepalive 60
+      --timeout 300
+      --tcp-backlog 511
+      --io-threads 4
+      --io-threads-do-reads yes"
     networks:
       - juscash-net
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 30s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
 volumes:
   postgres-data:
