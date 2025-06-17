@@ -111,7 +111,7 @@ model Publication {
   id                    String             @id @default(cuid(2))
   process_number        String             @unique @map("process_number")
   publication_date      DateTime?          @map("publication_date") @db.Date
-  availability_date     DateTime           @map("availability_date") @db.Date
+  availability_date     DateTime?           @map("availability_date") @db.Date
   authors               String[]
   defendant             String             @default("Instituto Nacional do Seguro Social - INSS")
   lawyers               Json?
