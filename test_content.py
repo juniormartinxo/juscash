@@ -49,7 +49,7 @@ print(f"Conteúdo limpo: {len(clean_content)} chars")
 
 # Testar com conteúdo limpo
 payload = {
-    "processNumber": "0000007-00.2024.8.26.0001",
+    "process_number": "0000007-00.2024.8.26.0001",
     "availabilityDate": "2025-06-15T19:01:41.356Z",
     "authors": ["Veriss Imo Ursulino Do Nascimento"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
