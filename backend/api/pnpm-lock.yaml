@@ -51,7 +51,7 @@ importers:
         version: 3.17.0
       zod:
         specifier: ^3.22.4
-        version: 3.25.65
+        version: 3.25.67
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -2232,8 +2232,8 @@ packages:
     engines: {node: '>=8.0.0'}
     hasBin: true
 
-  zod@3.25.65:
-    resolution: {integrity: sha512-kMyE2qsXK1p+TAvO7zsf5wMFiCejU3obrUDs9bR1q5CBKykfvp7QhhXrycUylMoOow0iEUSyjLlZZdCsHwSldQ==}
+  zod@3.25.67:
+    resolution: {integrity: sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==}
 
 snapshots:
 
@@ -4637,4 +4637,4 @@ snapshots:
     optionalDependencies:
       commander: 9.5.0
 
-  zod@3.25.65: {}
+  zod@3.25.67: {}
