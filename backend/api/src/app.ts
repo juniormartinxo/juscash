@@ -69,7 +69,7 @@ class Application {
       origin: config.cors.origin,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
     }))
 
     // Request parsing
@@ -195,6 +195,7 @@ class Application {
           },
           scraper: {
             createPublication: 'POST /api/scraper/publications (requires X-API-Key header)',
+            updateStatus: 'PUT /api/scraper/publications/:id/status (requires X-API-Key header)',
           },
         },
       }))
