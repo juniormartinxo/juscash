@@ -122,12 +122,20 @@ class MultiDateScraper:
 
     def _initialize_progress_data(self):
         """Inicializa dados de progresso para todas as datas"""
+        logger.info(
+            f"🔧 Inicializando datas de {self.start_date.strftime('%d/%m/%Y')} até {self.end_date.strftime('%d/%m/%Y')}"
+        )
+
         current_date = self.start_date
+        count = 0
         while current_date <= self.end_date:
             date_str = current_date.strftime("%d/%m/%Y")
             if date_str not in self.progress_data:
                 self.progress_data[date_str] = DateProcessingStatus(date=date_str)
+                count += 1
             current_date += timedelta(days=1)
+
+        logger.info(f"✅ Inicializadas {count} datas para processamento")
 
     def _save_progress(self):
         """Salva progresso no arquivo JSON"""
@@ -196,11 +204,14 @@ class MultiDateScraper:
     async def _worker(self, worker_id: str):
         """Worker que processa datas da fila"""
         self.workers_progress[worker_id] = WorkerProgress(worker_id=worker_id)
-        orchestrator = ScrapingOrchestrator(self.container)
+        orchestrator = None
 
         logger.info(f"👷 Worker {worker_id} iniciado")
 
         try:
+            # Criar orchestrator específico para este worker
+            orchestrator = ScrapingOrchestrator(self.container)
+
             while not self.shutdown_event.is_set():
                 try:
                     # Pegar próxima data da fila com timeout
@@ -217,19 +228,55 @@ class MultiDateScraper:
                 self.workers_progress[worker_id].current_date = date_str
                 self.workers_progress[worker_id].status = "working"
 
-                # Processar data
-                await self._process_date(worker_id, date_str, orchestrator)
+                try:
+                    # Processar data com timeout
+                    await asyncio.wait_for(
+                        self._process_date(worker_id, date_str, orchestrator),
+                        timeout=300,  # 5 minutos por data
+                    )
 
-                # Marcar tarefa como concluída
-                self.date_queue.task_done()
-                self.workers_progress[worker_id].dates_processed += 1
-                self.workers_progress[worker_id].current_date = None
-                self.workers_progress[worker_id].status = "idle"
+                    # Marcar tarefa como concluída
+                    self.date_queue.task_done()
+                    self.workers_progress[worker_id].dates_processed += 1
+
+                except asyncio.TimeoutError:
+                    logger.error(
+                        f"⏰ Timeout processando data {date_str} no worker {worker_id}"
+                    )
+                    self.progress_data[date_str].error = "Timeout durante processamento"
+                    self.progress_data[date_str].retry_count += 1
+
+                    # Recolocar na fila se não excedeu tentativas
+                    if self.progress_data[date_str].retry_count < 3:
+                        await self.date_queue.put(date_str)
+
+                    self.date_queue.task_done()
+
+                except Exception as e:
+                    logger.error(
+                        f"❌ Erro processando data {date_str} no worker {worker_id}: {e}"
+                    )
+                    self.date_queue.task_done()
+
+                finally:
+                    self.workers_progress[worker_id].current_date = None
+                    self.workers_progress[worker_id].status = "idle"
+
+                    # Delay entre processamentos para evitar sobrecarga
+                    await asyncio.sleep(2)
 
         except Exception as e:
-            logger.error(f"❌ Erro no worker {worker_id}: {e}")
+            logger.error(f"❌ Erro crítico no worker {worker_id}: {e}")
             self.workers_progress[worker_id].status = "error"
         finally:
+            # Cleanup do orchestrator
+            if orchestrator and hasattr(orchestrator.container, "cleanup"):
+                try:
+                    await orchestrator.container.cleanup()
+                    logger.debug(f"🧹 Cleanup worker {worker_id} concluído")
+                except Exception as e:
+                    logger.warning(f"⚠️ Erro no cleanup do worker {worker_id}: {e}")
+
             self.workers_progress[worker_id].status = "completed"
             logger.info(f"👷 Worker {worker_id} finalizado")
 
@@ -448,10 +495,10 @@ class MultiDateScraper:
 async def main():
     """Função principal"""
     # Parâmetros de entrada
-    START_DATE = "17/03/2025"
+    START_DATE = "17/03/2025"  # Ajustado para o ano atual do sistema
     END_DATE = "NOW"  # Hoje
     JSON_FILE_PATH = "src/scrap_workrs.json"
-    NUM_WORKERS = 3
+    NUM_WORKERS = 1  # Reduzido para evitar sobrecarga de recursos
 
     # Converter END_DATE para data atual se for "NOW"
     if END_DATE == "NOW":
