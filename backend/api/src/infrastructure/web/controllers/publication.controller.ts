@@ -91,7 +91,7 @@ export class PublicationController {
   });
 
   getPublications = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { page, limit, status, startDate, endDate, search } = req.query as any
+    const { page, limit, status, startDate, endDate, search } = (req as any).validatedQuery || req.query
 
     const result = await this.getPublicationsUseCase.execute({
       page,
