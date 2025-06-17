@@ -115,10 +115,10 @@ model Publication {
   authors               String[]
   defendant             String             @default("Instituto Nacional do Seguro Social - INSS")
   lawyers               Json?
-  gross_value           Int?               @map("gross_value")
-  net_value             Int?               @map("net_value")
-  interest_value        Int?               @map("interest_value")
-  attorney_fees         Int?               @map("attorney_fees")
+  gross_value           BigInt?            @map("gross_value")
+  net_value             BigInt?            @map("net_value")
+  interest_value        BigInt?            @map("interest_value")
+  attorney_fees         BigInt?            @map("attorney_fees")
   content               String
   status                PublicationStatus  @default(NOVA)
   created_at            DateTime           @default(now()) @map("created_at")
