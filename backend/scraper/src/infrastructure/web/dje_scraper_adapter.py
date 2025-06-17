@@ -16,7 +16,8 @@ from domain.ports.web_scraper import WebScraperPort
 from domain.entities.publication import Publication, Lawyer, MonetaryValue
 from infrastructure.web.content_parser import DJEContentParser
 from infrastructure.web.enhanced_content_parser import EnhancedDJEContentParser
-from infrastructure.files.report_txt_saver import ReportTxtSaver
+
+# from infrastructure.files.report_txt_saver import ReportTxtSaver  # Temporariamente desabilitado
 from infrastructure.logging.logger import setup_logger
 from infrastructure.config.settings import get_settings
 
@@ -42,7 +43,7 @@ class DJEScraperAdapter(WebScraperPort):
         # Controle de PDFs problemáticos
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
         # Instanciar o salvador de relatórios TXT
-        self.report_saver = ReportTxtSaver()
+        # self.report_saver = ReportTxtSaver()  # Temporariamente desabilitado
         # Instanciar o salvador de relatórios JSON
         from infrastructure.files.report_json_saver import ReportJsonSaver
 
