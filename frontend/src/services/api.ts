@@ -12,9 +12,32 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+interface QueuedRequest {
+    resolve: (value: any) => void
+    reject: (error: any) => void
+    url: string
+    config: RequestInit
+}
+
+interface RetryConfig {
+    maxRetries: number
+    baseDelay: number
+    maxDelay: number
+    backoffFactor: number
+}
+
 class ApiService {
     private baseURL: string
     private isLoggingOut = false
+    private requestQueue: QueuedRequest[] = []
+    private isProcessingQueue = false
+    private readonly rateLimitDelay = 200 // ms entre requisições
+    private readonly retryConfig: RetryConfig = {
+        maxRetries: 3,
+        baseDelay: 1000,
+        maxDelay: 10000,
+        backoffFactor: 2
+    }
 
     constructor() {
         this.baseURL = API_BASE_URL
@@ -26,15 +49,68 @@ class ApiService {
         return token
     }
 
-    private async request<T>(
+    private async sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    private calculateRetryDelay(attempt: number): number {
+        const delay = Math.min(
+            this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffFactor, attempt),
+            this.retryConfig.maxDelay
+        )
+        // Adiciona jitter para evitar thundering herd
+        return delay + Math.random() * 1000
+    }
+
+    private async processQueue(): Promise<void> {
+        if (this.isProcessingQueue || this.requestQueue.length === 0) {
+            return
+        }
+
+        this.isProcessingQueue = true
+
+        while (this.requestQueue.length > 0) {
+            const request = this.requestQueue.shift()
+            if (!request) break
+
+            try {
+                const response = await fetch(request.url, request.config)
+                const data = await response.json()
+
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP error! status: ${response.status}`)
+                }
+
+                request.resolve(data)
+            } catch (error) {
+                request.reject(error)
+            }
+
+            // Rate limiting - delay entre requisições
+            if (this.requestQueue.length > 0) {
+                await this.sleep(this.rateLimitDelay)
+            }
+        }
+
+        this.isProcessingQueue = false
+    }
+
+    private async queueRequest<T>(url: string, config: RequestInit): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.requestQueue.push({ resolve, reject, url, config })
+            this.processQueue()
+        })
+    }
+
+    private async requestWithRetry<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        attempt: number = 0
     ): Promise<T> {
         const url = `${this.baseURL}/api${endpoint}`
         const token = this.getToken()
 
-        console.log('[API Service] Making request to:', url)
-        console.log('[API Service] Token available:', !!token)
+        console.log(`[API Service] Making request to: ${url} (attempt ${attempt + 1})`)
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -43,12 +119,7 @@ class ApiService {
 
         if (token) {
             headers.Authorization = `Bearer ${token}`
-            console.log('[API Service] Authorization header added')
-        } else {
-            console.log('[API Service] No token available - Authorization header NOT added')
         }
-
-        console.log('[API Service] Final headers:', headers)
 
         const config: RequestInit = {
             ...options,
@@ -56,26 +127,60 @@ class ApiService {
         }
 
         try {
-            console.log('[API Service] Sending request with config:', config)
-            const response = await fetch(url, config)
+            // Para requisições GET, usar queue para rate limiting
+            // Para outras requisições críticas (POST/PUT), fazer diretamente
+            const response = options.method === 'GET' || !options.method
+                ? await this.queueRequest<T>(url, config)
+                : await fetch(url, config).then(async (res) => {
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}))
+                        throw new Error(errorData.message || `HTTP error! status: ${res.status}`)
+                    }
+                    return await res.json()
+                })
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}))
+            return response
+        } catch (error: any) {
+            const isRetryableError = this.isRetryableError(error)
+            const shouldRetry = attempt < this.retryConfig.maxRetries && isRetryableError
 
-                if (response.status === 401 && !endpoint.includes('/auth/login') && !this.isLoggingOut) {
-                    this.isLoggingOut = true
-                    await this.logout()
-                    window.location.href = '/login'
-                }
-
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+            if (shouldRetry) {
+                const delay = this.calculateRetryDelay(attempt)
+                console.warn(`[API Service] Request failed, retrying in ${delay}ms:`, error.message)
+                await this.sleep(delay)
+                return this.requestWithRetry<T>(endpoint, options, attempt + 1)
             }
 
-            return await response.json()
-        } catch (error) {
-            console.error('API request failed:', error)
+            // Handle 401 errors for auth redirect
+            if (error.message.includes('401') && !endpoint.includes('/auth/login') && !this.isLoggingOut) {
+                this.isLoggingOut = true
+                await this.logout()
+                window.location.href = '/login'
+            }
+
+            console.error(`[API Service] Request failed after ${attempt + 1} attempts:`, error)
             throw error
         }
+    }
+
+    private isRetryableError(error: any): boolean {
+        const message = error.message?.toLowerCase() || ''
+
+        // Erros que devem ser retentados
+        return message.includes('429') || // Rate limit
+            message.includes('502') || // Bad Gateway
+            message.includes('503') || // Service Unavailable
+            message.includes('504') || // Gateway Timeout
+            message.includes('network') ||
+            message.includes('timeout') ||
+            message.includes('fetch')
+    }
+
+    private async request<T>(
+        endpoint: string,
+        options: RequestInit = {}
+    ): Promise<T> {
+        return this.requestWithRetry<T>(endpoint, options)
     }
 
     // Métodos de autenticação
@@ -85,15 +190,11 @@ class ApiService {
             body: JSON.stringify(credentials),
         })
 
-        console.log('[API Service] Login response:', response)
-        console.log('[API Service] Access token received:', response.data.tokens?.accessToken ? `${response.data.tokens.accessToken.substring(0, 20)}...` : 'null')
+        console.log('[API Service] Login response received')
 
         localStorage.setItem('accessToken', response.data.tokens.accessToken)
         localStorage.setItem('refreshToken', response.data.tokens.refreshToken)
         localStorage.setItem('user', JSON.stringify(response.data.user))
-
-        console.log('[API Service] Token saved to localStorage')
-        console.log('[API Service] Verifying saved token:', localStorage.getItem('accessToken') ? 'Token exists' : 'Token NOT saved')
 
         return response.data
     }
@@ -130,12 +231,42 @@ class ApiService {
         }
     }
 
-    // Métodos de publicações
+    // Métodos de publicações com cache simples
+    private publicationsCache = new Map<string, { data: any; timestamp: number }>()
+    private readonly cacheTimeout = 30000 // 30 segundos
+
+    private getCacheKey(page: number, limit: number, filters?: SearchFilters): string {
+        return `publications_${page}_${limit}_${JSON.stringify(filters || {})}`
+    }
+
+    private getFromCache<T>(key: string): T | null {
+        const cached = this.publicationsCache.get(key)
+        if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+            return cached.data
+        }
+        return null
+    }
+
+    private setCache(key: string, data: any): void {
+        this.publicationsCache.set(key, {
+            data,
+            timestamp: Date.now()
+        })
+    }
+
     async getPublications(
         page: number = 1,
         limit: number = 30,
         filters?: SearchFilters
     ): Promise<PaginatedResponse<Publication>> {
+        const cacheKey = this.getCacheKey(page, limit, filters)
+        const cached = this.getFromCache<PaginatedResponse<Publication>>(cacheKey)
+
+        if (cached) {
+            console.log('[API Service] Returning cached publications')
+            return cached
+        }
+
         const params = new URLSearchParams({
             page: page.toString(),
             limit: limit.toString(),
@@ -154,11 +285,28 @@ class ApiService {
             params.append('status', filters.status)
         }
 
-        const response = await this.request<ApiResponse<PaginatedResponse<Publication>>>(
-            `/publications?${params.toString()}`
-        )
+        // Backend retorna estrutura diferente, vamos converter
+        const response = await this.request<ApiResponse<{
+            publications: Publication[]
+            pagination: {
+                current: number
+                total: number
+                count: number
+                perPage: number
+            }
+        }>>(`/publications?${params.toString()}`)
 
-        return response.data
+        // Converter para o formato esperado pelo frontend
+        const convertedResponse: PaginatedResponse<Publication> = {
+            data: response.data.publications || [],
+            total: response.data.pagination.count || 0,
+            page: response.data.pagination.current || page,
+            limit: response.data.pagination.perPage || limit,
+            totalPages: response.data.pagination.total || 1,
+        }
+
+        this.setCache(cacheKey, convertedResponse)
+        return convertedResponse
     }
 
     async getPublicationById(id: string): Promise<Publication> {
@@ -170,6 +318,9 @@ class ApiService {
         id: string,
         status: PublicationStatus
     ): Promise<Publication> {
+        // Limpar cache relacionado quando atualizar status
+        this.publicationsCache.clear()
+
         const response = await this.request<ApiResponse<Publication>>(
             `/publications/${id}/status`,
             {
@@ -178,6 +329,11 @@ class ApiService {
             }
         )
         return response.data
+    }
+
+    // Método para limpar cache manualmente
+    clearCache(): void {
+        this.publicationsCache.clear()
     }
 
     // Método para verificar se o usuário está autenticado
