@@ -37,19 +37,15 @@ class ReportJsonSaver:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Criar subdiretório para JSONs
-        self.json_dir = self.output_dir / "json"
+        self.json_dir = Path("/app/reports/json")  # Path absoluto
         self.json_dir.mkdir(parents=True, exist_ok=True)
 
-        # Criar subdiretórios por data se configurado
-        if self.settings.organize_by_date:
-            today = datetime.now().strftime("%Y-%m-%d")
-            self.daily_json_dir = self.json_dir / today
-            self.daily_json_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            self.daily_json_dir = self.json_dir
+        logger.info(f"📁 Diretório de JSONs: {self.output_dir}")
+
+        # Não criar subdiretórios por data
+        self.daily_json_dir = self.json_dir
 
         logger.info(f"📁 Diretório de JSONs: {self.json_dir}")
-        logger.info(f"📅 JSONs do dia: {self.daily_json_dir}")
 
     async def save_publication_json(self, publication: Publication) -> Optional[str]:
         """
