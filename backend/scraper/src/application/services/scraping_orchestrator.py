@@ -7,7 +7,9 @@ from datetime import datetime
 from uuid import uuid4
 
 from application.usecases.extract_publications import ExtractPublicationsUseCase
-from application.usecases.save_publications_to_files import SavePublicationsToFilesUseCase
+from application.usecases.save_publications_to_files import (
+    SavePublicationsToFilesUseCase,
+)
 from domain.entities.scraping_execution import ScrapingExecution, ExecutionType
 from infrastructure.logging.logger import setup_logger
 
@@ -22,7 +24,9 @@ class ScrapingOrchestrator:
     def __init__(self, container):
         self.container = container
         self.extract_usecase = ExtractPublicationsUseCase(container.web_scraper)
-        self.save_usecase = SavePublicationsToFilesUseCase()  # Agora salva em arquivos locais
+        self.save_usecase = (
+            SavePublicationsToFilesUseCase()
+        )  # Agora salva em arquivos locais
 
     async def execute_daily_scraping(self) -> ScrapingExecution:
         """
@@ -46,8 +50,8 @@ class ScrapingOrchestrator:
         try:
             logger.info(f"🚀 Iniciando execução {execution.execution_id}")
 
-            # Termos de busca obrigatórios (podem vir de configuração)
-            search_terms = ["RPV", "pagamento pelo INSS"]  # Configurável
+            # Termos de busca obrigatórios
+            search_terms = ["RPV", "pagamento pelo INSS"]
 
             # Extrair publicações
             publications = []
@@ -57,13 +61,16 @@ class ScrapingOrchestrator:
                 publications.append(publication)
                 execution.publications_found += 1
 
-            # Salvar publicações em arquivos locais (TXT e JSON)
+            # Salvar publicações em JSON para posterior processamento pelo API
             if publications:
                 save_stats = await self.save_usecase.execute(publications)
                 execution.publications_new = save_stats["saved"]
                 execution.publications_failed = save_stats["failed"]
                 execution.publications_saved = save_stats["saved"]
-                execution.publications_duplicated = 0  # Não há verificação de duplicação local
+
+                # TODO: Implementar verificação de duplicação local
+                # 0 = Não há verificação de duplicação local, 1 = há verificação de duplicação local
+                execution.publications_duplicated = 0
 
                 # Log das estatísticas dos arquivos
                 file_stats = self.save_usecase.get_file_stats()
@@ -72,7 +79,7 @@ class ScrapingOrchestrator:
             execution.mark_as_completed()
             logger.info(f"✅ Execução {execution.execution_id} concluída com sucesso")
             logger.info(f"📤 {execution.publications_found} publicações extraídas")
-            logger.info(f"💾 {execution.publications_saved} publicações salvas em arquivos")
+            logger.info(f"💾 {execution.publications_saved} publicações salvas em JSON")
 
         except Exception as error:
             logger.error(f"❌ Erro na execução {execution.execution_id}: {error}")
