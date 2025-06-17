@@ -152,17 +152,15 @@ class APIWorker:
         Retorna string no formato: "YYYY-MM-DDTHH:MM:SS.sssZ"
         """
         if not date_field or date_field is None:
-            logger.warning(
-                f"Campo {field_name} está vazio em {file_name}, usando data atual"
-            )
-            return datetime.now().isoformat() + "Z"
+            logger.warning(f"Campo {field_name} está vazio em {file_name}, usando None")
+            return None  # datetime.now().isoformat() + "Z"
 
         try:
             # Se já é string, processar
             if isinstance(date_field, str):
                 date_field = date_field.strip()
                 if not date_field or date_field.lower() in ["none", "null", ""]:
-                    return datetime.now().isoformat() + "Z"
+                    return None  # datetime.now().isoformat() + "Z"
 
                 # Se já está no formato datetime ISO, validar e retornar
                 if "T" in date_field:
@@ -224,13 +222,13 @@ class APIWorker:
 
             # Se chegou até aqui, formato não reconhecido
             logger.warning(
-                f"Formato de data não reconhecido para {field_name} em {file_name}: {date_field}, usando data atual"
+                f"Formato de data não reconhecido para {field_name} em {file_name}: {date_field}, usando None"
             )
-            return datetime.now().isoformat() + "Z"
+            return None  # datetime.now().isoformat() + "Z"
 
         except Exception as e:
             logger.error(f"Erro ao processar data {field_name} em {file_name}: {e}")
-            return datetime.now().isoformat() + "Z"
+            return None  # datetime.now().isoformat() + "Z"
 
     def _safe_numeric_value(self, value: Any, default: int = 0) -> int:
         """Converte valor para inteiro de forma segura respeitando limites INT4."""
@@ -424,9 +422,9 @@ class APIWorker:
             url = f"{self.api_endpoint.rstrip('/')}/api/scraper/publications"
 
             # CORREÇÃO: Log detalhado para debug
-            logger.debug(f"🚀 Enviando para API: {url}")
-            logger.debug(f"📄 Arquivo: {file_name}")
-            logger.debug(f"📊 Dados: {json.dumps(data, indent=2, default=str)}")
+            # logger.debug(f"🚀 Enviando para API: {url}")
+            # logger.debug(f"📄 Arquivo: {file_name}")
+            # logger.debug(f"📊 Dados: {json.dumps(data, indent=2, default=str)}")
 
             # Send request
             response = self.session.post(
@@ -442,6 +440,9 @@ class APIWorker:
             # Handle different response codes
             if response.status_code in [200, 201, 202]:
                 logger.info(f"✅ Successfully sent {file_name} to API")
+
+                # Apagar o arquivo JSON após sucesso
+                self.delete_json_file(file_name)
                 return True, None, None
 
             elif response.status_code == 400:
@@ -450,7 +451,7 @@ class APIWorker:
                     error_data = response.json()
                     error_msg = error_data.get("message", response.text)
                     error_code = error_data.get("code", "BAD_REQUEST")
-                except:
+                except (json.JSONDecodeError, ValueError, KeyError):
                     error_msg = response.text
                     error_code = "BAD_REQUEST"
 
@@ -460,6 +461,8 @@ class APIWorker:
             elif response.status_code == 409:
                 # Duplicate - don't retry, consider as success
                 logger.warning(f"⚠️ Duplicate publication {file_name} (already exists)")
+
+                self.delete_json_file(file_name)
                 return True, None, None
 
             elif response.status_code == 429:
@@ -805,6 +808,13 @@ class APIWorker:
             }
         except Exception as e:
             return {"error": str(e)}
+
+    def delete_json_file(self, file_path: str) -> None:
+        """Delete a JSON file."""
+        file_path = Path(file_path)
+        if file_path.exists():
+            file_path.unlink()
+            logger.info(f"🗑️ Arquivo JSON excluído: {file_path}")
 
 
 def main():
