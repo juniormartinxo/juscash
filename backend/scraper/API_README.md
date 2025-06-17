@@ -5,6 +5,7 @@ Esta API permite controlar o scraper e o serviço de monitoramento através de e
 ## Instalação
 
 1. Instale as dependências adicionais:
+
 ```bash
 pip install fastapi uvicorn
 ```
@@ -22,6 +23,7 @@ A API estará disponível em `http://localhost:8000`.
 ## Documentação da API
 
 A documentação interativa da API estará disponível em:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
@@ -34,6 +36,7 @@ A documentação interativa da API estará disponível em:
 Executa um comando do scraper em background.
 
 Exemplo de requisição para iniciar o monitoramento:
+
 ```json
 {
     "command": "monitor",
@@ -44,6 +47,7 @@ Exemplo de requisição para iniciar o monitoramento:
 ```
 
 Exemplo de requisição para executar o scraper:
+
 ```json
 {
     "command": "scraper",
@@ -60,6 +64,7 @@ Exemplo de requisição para executar o scraper:
 Retorna o status dos serviços do scraper.
 
 Exemplo de resposta:
+
 ```json
 {
     "monitor": true,
@@ -72,31 +77,36 @@ Exemplo de resposta:
 **POST** `/stop/{service}`
 
 Para um serviço específico. O parâmetro `service` pode ser:
+
 - `monitor`: Para o serviço de monitoramento
 - `scraper`: Para o scraper
 
 ## Exemplos de Uso com cURL
 
 1. Iniciar o monitoramento:
-```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d '{"command": "monitor", "args": {"api_endpoint": "http://localhost:8000"}}'
-```
+
+    ```bash
+    curl -X POST http://localhost:8000/run \
+    -H "Content-Type: application/json" \
+    -d '{"command": "monitor", "args": {"api_endpoint": "http://localhost:8000"}}'
+    ```
 
 2. Executar o scraper:
-```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d '{"command": "scraper", "args": {"date": "2025-06-15"}}'
-```
+
+    ```bash
+    curl -X POST http://localhost:8000/run \
+    -H "Content-Type: application/json" \
+    -d '{"command": "scraper", "args": {"date": "2025-06-15"}}'
+    ```
 
 3. Verificar status:
-```bash
-curl http://localhost:8000/status
-```
+
+    ```bash
+    curl http://localhost:8000/status
+    ```
 
 4. Parar o monitoramento:
-```bash
-curl -X POST http://localhost:8000/stop/monitor
-``` 
+
+    ```bash
+    curl -X POST http://localhost:8000/stop/monitor
+    ```
