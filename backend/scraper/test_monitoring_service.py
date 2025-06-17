@@ -25,16 +25,16 @@ def create_test_json_file(directory: Path, index: int) -> Path:
         "test_metadata": {
             "created_at": datetime.now().isoformat(),
             "test_index": index,
-            "test_run": True
-        }
+            "test_run": True,
+        },
     }
-    
+
     filename = f"test_publication_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{index}.json"
     file_path = directory / filename
-    
+
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(test_data, f, indent=2, ensure_ascii=False)
-    
+
     return file_path
 
 
