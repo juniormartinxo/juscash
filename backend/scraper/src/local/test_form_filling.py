@@ -88,7 +88,7 @@ async def test_form_filling_detailed():
             for i, option in enumerate(options[:10]):  # Mostrar primeiras 10
                 value = await option.get_attribute("value")
                 text = await option.inner_text()
-                print(f"      {i+1}. value='{value}' text='{text}'")
+                print(f"      {i + 1}. value='{value}' text='{text}'")
 
             # Verificar valor atual
             current_value = await caderno_element.get_attribute("value")
@@ -123,8 +123,11 @@ async def test_form_filling_detailed():
 
         # 4. Capturar screenshot do formulário preenchido
         print("\n📸 Capturando screenshot do formulário...")
-        await scraper.page.screenshot(path="form_filled_debug.png", full_page=True)
-        print("   ✅ Screenshot salvo: form_filled_debug.png")
+        debug_dir = Path("logs/debug_images")
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        screenshot_path = debug_dir / "form_filled_debug.png"
+        await scraper.page.screenshot(path=str(screenshot_path), full_page=True)
+        print(f"   ✅ Screenshot salvo: {screenshot_path}")
 
         # 5. Executar pesquisa
         print("\n🔍 EXECUTANDO PESQUISA:")
@@ -142,8 +145,11 @@ async def test_form_filling_detailed():
             print(f"   🌐 URL após pesquisa: {current_url}")
 
             # Capturar screenshot dos resultados
-            await scraper.page.screenshot(path="results_debug.png", full_page=True)
-            print("   ✅ Screenshot dos resultados: results_debug.png")
+            results_screenshot_path = debug_dir / "results_debug.png"
+            await scraper.page.screenshot(
+                path=str(results_screenshot_path), full_page=True
+            )
+            print(f"   ✅ Screenshot dos resultados: {results_screenshot_path}")
 
             # Verificar elementos encontrados
             ementa_elements = await scraper.page.query_selector_all("tr.ementaClass")
@@ -160,7 +166,7 @@ async def test_form_filling_detailed():
                 for i, element in enumerate(onclick_elements[:5]):
                     onclick_attr = await element.get_attribute("onclick")
                     if onclick_attr and "consultaSimples.do" in onclick_attr:
-                        print(f"      {i+1}. {onclick_attr[:100]}...")
+                        print(f"      {i + 1}. {onclick_attr[:100]}...")
         else:
             print("   ❌ Botão Pesquisar não encontrado")
 
@@ -186,7 +192,7 @@ if __name__ == "__main__":
 
     if success:
         print("\n✅ TESTE CONCLUÍDO")
-        print("📋 Verifique os screenshots gerados:")
+        print("📋 Verifique os screenshots gerados em logs/debug_images/:")
         print("   • form_filled_debug.png - Formulário preenchido")
         print("   • results_debug.png - Resultados da pesquisa")
         print("💡 Compare com os critérios que você está usando manualmente")
