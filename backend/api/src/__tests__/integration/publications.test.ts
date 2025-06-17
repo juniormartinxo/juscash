@@ -136,7 +136,7 @@ describe('Publications Integration Tests', () => {
         .expect(200)
 
       expect(response.body.data.publications).toHaveLength(1)
-      expect(response.body.data.publications[0].processNumber).toBe('2234567-89.2024.8.26.0100')
+      expect(response.body.data.publications[0].process_number).toBe('2234567-89.2024.8.26.0100')
     })
 
     it('should search publications by content', async () => {
@@ -187,7 +187,7 @@ describe('Publications Integration Tests', () => {
 
       expect(response.body.success).toBe(true)
       expect(response.body.data.publication.id).toBe(publication.id)
-      expect(response.body.data.publication.processNumber).toBe('1234567-89.2024.8.26.0100')
+      expect(response.body.data.publication.process_number).toBe('1234567-89.2024.8.26.0100')
       expect(response.body.data.publication.grossValue).toBe(150000)
     })
 
