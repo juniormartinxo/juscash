@@ -21,7 +21,7 @@ async def test_direct_api():
 
     # Criar publicação de teste
     publication_data = {
-        "processNumber": f"TEST-DIRECT-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
+        "process_number": f"TEST-DIRECT-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
         "availabilityDate": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos", "Maria Oliveira"],
         "defendant": "Instituto Nacional do Seguro Social - INSS",
@@ -52,7 +52,7 @@ async def test_direct_api():
 
     print(f"📤 Enviando para: {API_BASE_URL}/api/scraper/publications")
     print(f"🔑 API Key: {API_KEY[:20]}...")
-    print(f"📋 Processo: {publication_data['processNumber']}")
+    print(f"📋 Processo: {publication_data['process_number']}")
     print(f"👥 Autores: {len(publication_data['authors'])}")
     print(f"⚖️ Advogados: {len(publication_data['lawyers'])}")
     print(f"💰 Valor bruto: R$ {publication_data['grossValue'] / 100:.2f}")
@@ -73,7 +73,7 @@ async def test_direct_api():
                 publication_id = data["data"]["publication"]["id"]
                 print(f"✅ SUCESSO! Publicação criada com ID: {publication_id}")
                 print(
-                    f"🎯 Processo salvo: {data['data']['publication']['processNumber']}"
+                    f"🎯 Processo salvo: {data['data']['publication']['process_number']}"
                 )
                 return True
             else:
