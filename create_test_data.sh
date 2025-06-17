@@ -25,7 +25,7 @@ curl -s -X POST http://localhost:8000/api/publications \
   -H "Content-Type: application/json" \
   -d '{
     "process_number": "1000001-12.2024.8.26.0001",
-    "availabilityDate": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
+    "availability_date": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
     "authors": ["João Silva", "Maria Santos"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": "Publicação de teste para status NOVA - Processo de aposentadoria por invalidez",
@@ -38,7 +38,7 @@ curl -s -X POST http://localhost:8000/api/publications \
   -H "Content-Type: application/json" \
   -d '{
     "process_number": "1000002-12.2024.8.26.0001",
-    "availabilityDate": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
+    "availability_date": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
     "authors": ["Pedro Oliveira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": "Publicação de teste para status NOVA - Auxílio doença",
@@ -51,7 +51,7 @@ curl -s -X POST http://localhost:8000/api/publications \
   -H "Content-Type: application/json" \
   -d '{
     "process_number": "1000003-12.2024.8.26.0001",
-    "availabilityDate": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
+    "availability_date": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
     "authors": ["Ana Costa"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": "Publicação de teste para status LIDA - Benefício por incapacidade",
@@ -64,7 +64,7 @@ curl -s -X POST http://localhost:8000/api/publications \
   -H "Content-Type: application/json" \
   -d '{
     "process_number": "1000004-12.2024.8.26.0001",
-    "availabilityDate": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
+    "availability_date": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
     "authors": ["Carlos Ferreira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": "Publicação de teste para status ENVIADA_PARA_ADV - Revisão de benefício",
@@ -77,7 +77,7 @@ curl -s -X POST http://localhost:8000/api/publications \
   -H "Content-Type: application/json" \
   -d '{
     "process_number": "1000005-12.2024.8.26.0001",
-    "availabilityDate": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
+    "availability_date": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
     "authors": ["Lucia Mendes"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": "Publicação de teste para status CONCLUIDA - Processo finalizado",
