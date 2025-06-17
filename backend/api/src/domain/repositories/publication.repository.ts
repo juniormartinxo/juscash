@@ -17,13 +17,13 @@ export interface CreatePublicationData {
   authors: string[]
   defendant?: string
   lawyers?: Array<{ name: string; oab: string }>
-  gross_value?: number
-  net_value?: number
-  interest_value?: number
-  attorney_fees?: number
+  gross_value?: bigint
+  net_value?: bigint
+  interest_value?: bigint
+  attorney_fees?: bigint
   content: string
   status?: PublicationEntity['status']
-  scrapingSource?: string
+  scraping_source?: string
   caderno?: string
   instancia?: string
   local?: string
