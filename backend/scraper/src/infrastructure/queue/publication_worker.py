@@ -11,7 +11,8 @@ from typing import Dict, Any
 from domain.entities.publication import Publication, MonetaryValue
 from infrastructure.queue.redis_queue_adapter import RedisQueueAdapter
 from infrastructure.api.api_client_adapter import ApiClientAdapter
-from infrastructure.files.report_txt_saver import ReportTxtSaver
+
+# from infrastructure.files.report_txt_saver import ReportTxtSaver  # Temporariamente desabilitado
 from infrastructure.logging.logger import setup_logger
 from infrastructure.config.settings import get_settings
 
@@ -27,7 +28,7 @@ class PublicationWorker:
         self.settings = get_settings()
         self.queue = RedisQueueAdapter()
         self.api_client = ApiClientAdapter()
-        self.report_saver = ReportTxtSaver()
+        # self.report_saver = ReportTxtSaver()  # Temporariamente desabilitado
         self.is_running = False
         self._stop_event = asyncio.Event()
 
@@ -47,7 +48,7 @@ class PublicationWorker:
         self._stop_event.clear()
 
         logger.info("🚀 Iniciando Publication Worker")
-        logger.info(f"📊 Configurações:")
+        logger.info("📊 Configurações:")
         logger.info(f"   📝 Fila: {self.settings.redis.queue_name}")
         logger.info(f"   🔄 Max tentativas: {self.settings.redis.max_retries}")
         logger.info(f"   ⏰ Delay retry: {self.settings.redis.retry_delay}s")
@@ -135,18 +136,19 @@ class PublicationWorker:
                 return False
 
             # Salvar relatório como arquivo TXT
-            try:
-                saved_path = await self.report_saver.save_publication_report(
-                    publication
-                )
-                if saved_path:
-                    logger.debug(f"📄 Relatório TXT salvo (worker): {saved_path}")
-                else:
-                    logger.warning(
-                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-                    )
-            except Exception as txt_error:
-                logger.error(f"❌ Erro ao salvar relatório TXT (worker): {txt_error}")
+            # Temporariamente desabilitado até implementar ReportTxtSaver
+            # try:
+            #     saved_path = await self.report_saver.save_publication_report(
+            #         publication
+            #     )
+            #     if saved_path:
+            #         logger.debug(f"📄 Relatório TXT salvo (worker): {saved_path}")
+            #     else:
+            #         logger.warning(
+            #             f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+            #         )
+            # except Exception as txt_error:
+            #     logger.error(f"❌ Erro ao salvar relatório TXT (worker): {txt_error}")
 
             # Enviar para API
             logger.debug(f"📤 Processando: {publication.process_number}")
