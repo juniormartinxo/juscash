@@ -188,7 +188,7 @@ describe('Publications Integration Tests', () => {
       expect(response.body.success).toBe(true)
       expect(response.body.data.publication.id).toBe(publication.id)
       expect(response.body.data.publication.process_number).toBe('1234567-89.2024.8.26.0100')
-      expect(response.body.data.publication.grossValue).toBe(150000)
+      expect(response.body.data.publication.gross_value).toBe(150000)
     })
 
     it('should return 404 for non-existent publication', async () => {
