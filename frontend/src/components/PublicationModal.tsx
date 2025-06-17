@@ -1,16 +1,17 @@
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Publication } from "@/types";
+} from "@/components/ui/dialog"
+import { formatCurrency, formatDate } from "@/lib/utils"
+import type { Publication } from "@/types"
 
 interface PublicationModalProps {
-	publication: Publication | null;
-	isOpen: boolean;
-	onClose: () => void;
+	publication: Publication | null
+	isOpen: boolean
+	onClose: () => void
 }
 
 export function PublicationModal({
@@ -18,24 +19,27 @@ export function PublicationModal({
 	isOpen,
 	onClose,
 }: PublicationModalProps) {
-	if (!publication) return null;
+	if (!publication) return null
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="text-lg font-semibold text-secondary">
+					<DialogTitle className="text-md font-bold text-secondary mb-4">
 						Publicação - {publication.process_number}
 					</DialogTitle>
+					<DialogDescription className="sr-only">
+						Detalhes da publicação do processo {publication.process_number}
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-6">
 					{/* Data de publicação no DJE */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
-							Data de publicação no DJE:
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
+							Data de publicação no DJE
 						</h3>
-						<p className="text-sm">
+						<p className="text-sm text-secondary/75">
 							{publication.publication_date
 								? formatDate(publication.publication_date)
 								: formatDate(publication.availability_date)}
@@ -44,10 +48,10 @@ export function PublicationModal({
 
 					{/* Autor(es) */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
-							Autor (es):
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
+							Autor (es)
 						</h3>
-						<ul className="list-disc list-inside text-sm space-y-1">
+						<ul className="list-disc list-inside text-sm space-y-1 text-secondary/75">
 							{publication.authors.map((author, index) => (
 								<li key={index}>{author}</li>
 							))}
@@ -56,19 +60,19 @@ export function PublicationModal({
 
 					{/* Réu */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">Réu:</h3>
-						<ul className="list-disc list-inside text-sm">
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">Réu</h3>
+						<ul className="list-disc list-inside text-sm text-secondary/75">
 							<li>{publication.defendant}</li>
 						</ul>
 					</div>
 
 					{/* Advogado(s) */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
-							Advogado(s):
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
+							Advogado(s)
 						</h3>
 						{publication.lawyers && publication.lawyers.length > 0 ? (
-							<ul className="list-disc list-inside text-sm space-y-1">
+							<ul className="list-disc list-inside text-sm space-y-1 text-secondary/75">
 								{publication.lawyers.map((lawyer, index) => (
 									<li key={index}>
 										{lawyer.name} (OAB: {lawyer.oab})
@@ -82,10 +86,10 @@ export function PublicationModal({
 
 					{/* Valor principal bruto/líquido */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
 							Valor principal bruto/líquido
 						</h3>
-						<div className="text-sm space-y-1">
+						<div className="text-sm space-y-1 text-secondary/75">
 							{publication.gross_value && (
 								<p>Bruto: {formatCurrency(publication.gross_value)}</p>
 							)}
@@ -100,10 +104,10 @@ export function PublicationModal({
 
 					{/* Valor dos juros moratórios */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
-							Valor dos juros moratórios:
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
+							Valor dos juros moratórios
 						</h3>
-						<p className="text-sm">
+						<p className="text-sm text-secondary/75">
 							{publication.interest_value
 								? formatCurrency(publication.interest_value)
 								: "Não informado"}
@@ -112,10 +116,10 @@ export function PublicationModal({
 
 					{/* Valor dos honorários advocatícios */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-1">
-							Valor dos honorários advocatícios:
+						<h3 className="font-medium text-sm text-secondary/75 mb-1">
+							Valor dos honorários advocatícios
 						</h3>
-						<p className="text-sm">
+						<p className="text-sm text-secondary/75">
 							{publication.attorney_fees
 								? formatCurrency(publication.attorney_fees)
 								: "N/A"}
@@ -124,10 +128,10 @@ export function PublicationModal({
 
 					{/* Conteúdo da Publicação */}
 					<div>
-						<h3 className="font-medium text-sm text-gray-700 mb-2">
-							Conteúdo da Publicação:
+						<h3 className="font-medium text-sm text-secondary/75 mb-2">
+							Conteúdo da Publicação
 						</h3>
-						<div className="bg-gray-50 p-4 rounded-md max-h-60 overflow-y-auto">
+						<div className="rounded-md max-h-60 overflow-y-auto text-secondary/75">
 							<p className="text-sm whitespace-pre-wrap leading-relaxed">
 								{publication.content}
 							</p>
@@ -136,5 +140,5 @@ export function PublicationModal({
 				</div>
 			</DialogContent>
 		</Dialog>
-	);
+	)
 }
