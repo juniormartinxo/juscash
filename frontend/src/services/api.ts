@@ -11,6 +11,7 @@ import type {
 } from "@/types"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+console.log('🌐 API Base URL:', API_BASE_URL)
 
 interface QueuedRequest {
     resolve: (value: any) => void
