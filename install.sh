@@ -32,7 +32,7 @@ echo -e "${NC}"
 read -p "Deseja continuar com a instalação? (s/n): " confirm
 if [ "$confirm" != "s" ]; then
     echo ""
-    log_error "Instalação cancelada pelo usuário. Execute o script novamente para continuar."
+    log_error ">>> Instalação cancelada pelo usuário. Execute o script novamente para continuar."
     echo ""
     exit 1
 fi
@@ -47,27 +47,26 @@ fi
 
 # Banner de início
 echo ""
-log_success "╭───────────────── JusCash - Script de Instalação ─────────────────╮"
+log_success "╭───────────────── DJE JusCash - Script de Instalação ─────────────────╮"
 echo ""
 
 export COMPOSE_BAKE=true
 
 echo ""
-log_info "═════ 💡 Dando permissão de execução aos scripts da pasta scripts ═══════"
+log_info "═════ EXECUTANDO CHMOD +X PARA SCRIPTS ═══════"
 echo ""
 
 # Dando permissão de execução aos scripts da pasta scripts
 if [ -d "scripts" ]; then
     chmod +x scripts/*.sh
 else
-    echo ""
     log_error ">>> Pasta 'scripts' não encontrada."
     echo ""
     exit 1
 fi
 
 echo ""
-log_warning "══════ Limpeza do workspace ══════"
+log_warning "══════ LIMPANDO WORKSPACE ══════"
 echo ""
 
 # Limpar o projeto com o script ./scrpits/clean-workspace.sh
@@ -75,54 +74,26 @@ if [ -f "scripts/clean-workspace.sh" ]; then
     chmod +x scripts/clean-workspace.sh
     ./scripts/clean-workspace.sh
 else
-    echo ""
     log_error ">>> Script clean-workspace.sh não encontrado em scripts/"
     echo ""
     exit 1
 fi
 
 echo ""
-log_info "══════ Verificando argumentos da linha de comando ══════"
-echo ""
-
-# Verificar argumentos da linha de comando
-if [ "$1" = "--scraper-only" ]; then
-    log_info "Modo: Instalação apenas do Scraper"
-    if [ -f "scripts/install-scraper.sh" ]; then
-        chmod +x scripts/install-scraper.sh
-        exec ./scripts/install-scraper.sh
-    else
-        echo ""
-        log_error ">>> Script install-scraper.sh não encontrado em scripts/"
-        exit 1
-    fi
-elif [ "$1" = "--check-scraper" ]; then
-    log_info "Modo: Verificação do ambiente do Scraper"
-    if [ -f "scripts/check-scraper-env.sh" ]; then
-        chmod +x scripts/check-scraper-env.sh
-        exec ./scripts/check-scraper-env.sh
-    else
-        echo ""
-        log_error ">>> Script check-scraper-env.sh não encontrado em scripts/"
-        exit 1
-    fi
-fi
-
-echo ""
-log_info "══════ Verificando se estamos no diretório correto ══════"
+log_info "══════ VERIFICANDO SE ESTAMOS NO DIRETÓRIO CORRETO ══════"
 echo ""
 
 # Verificar se estamos no diretório correto
 if [ ! -f "docker-compose.yml" ]; then
-    echo ""
     log_error ">>> docker-compose.yml não encontrado. Execute o script a partir do diretório raiz do projeto."
+    echo ""
     exit 1
 fi
 
 # Verificar se a pasta scripts existe
 if [ ! -d "scripts" ]; then
-    echo ""
     log_error ">>> Pasta 'scripts' não encontrada."
+    echo ""
     exit 1
 fi
 
@@ -134,86 +105,91 @@ echo ""
 
 # 1. Verificar variáveis de ambiente
 echo ""
-log_info "══════ 1/7 - Verificando variáveis de ambiente ══════"
-echo ""
+log_info "═════ 1/7 - VERIFICANDO VARIÁVEIS DE AMBIENTE ═════"
 
 if [ -f "scripts/check-env.sh" ]; then
     chmod +x scripts/check-env.sh
     if ./scripts/check-env.sh; then
         log_success "Verificação de variáveis de ambiente concluída - todas as variáveis estão corretas!"
+        echo ""
     else
         log_warning "Algumas variáveis estão incorretas - verifique os valores antes de iniciar"
         log_info "Execute novamente: ./scripts/check-env.sh"
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script check-env.sh não encontrado em scripts/"
     exit 1
 fi
 
 echo ""
-log_success "══════════════════════════════ 1/7 ══════════════════════════════"
+log_success "═════ FIM DA VERIFICAÇÃO DE VARIÁVEIS DE AMBIENTE ═════"
 echo ""
 
 # 2. Verificar portas
 echo ""
-log_info "══════ 2/7 - Verificando conflitos de portas ══════"
+log_info "═════ 2/7 - VERIFICANDO CONFLITOS DE PORTAS ═════"
 echo ""
 
 if [ -f "scripts/check-ports.sh" ]; then
     chmod +x scripts/check-ports.sh
     if ./scripts/check-ports.sh; then
         log_success "Verificação de portas concluída - todas as portas estão livres!"
+        echo ""
     else
         log_warning "Algumas portas estão em uso - verifique os conflitos antes de iniciar"
         log_info "Execute novamente: ./scripts/check-ports.sh"
+        echo ""
     fi
 else
-    echo ""
     log_error ">>> Script check-ports.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 
 echo ""
-log_success "════════════════ 2/7 ════════════════"
+log_success "═════ FIM DA VERIFICAÇÃO DE CONFLITOS DE PORTAS ═════"
 echo ""
 
 # 3. Configurar Redis
 echo ""
-log_info "══════ 3/7 - Configurando Redis ══════"
+log_info "══════ 3/7 - CONFIGURANDO O REDIS ══════"
 if [ -f "scripts/setup-redis.sh" ]; then
     chmod +x scripts/setup-redis.sh
     if ./scripts/setup-redis.sh; then
         log_success "Redis configurado com sucesso!"
+        echo ""
     else
-        log_error "Falha ao configurar Redis"
+        log_error ">>> Falha ao configurar Redis"
+        echo ""
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script setup-redis.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 
 echo ""
-log_success "═════════════ 3/7 ═════════════"
+log_success "═════ FIM DA CONFIGURAÇÃO DO REDIS ═════"
 echo ""
 
 # 4. Configurar API
 echo ""
-log_info "══════ 4/7 - Configurando API ══════"
+log_info "══════ 4/7 - CONFIGURANDO A API ══════"
 if [ -f "scripts/setup-api.sh" ]; then
     chmod +x scripts/setup-api.sh
     if ./scripts/setup-api.sh; then
         log_success "API configurada com sucesso!"
+        echo ""
     else
-        log_error "Falha ao configurar API"
+        log_error ">>> Falha ao configurar API"
+        echo ""
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script setup-api.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 
@@ -223,63 +199,69 @@ echo ""
 
 # 5. Configurar banco de dados
 echo ""
-log_info "══════ 5/7 - Configurando banco de dados com Prisma ══════"
+log_info "══════ 5/7 - CONFIGURANDO BANCO DE DADOS COM PRISMA ══════"
 if [ -f "scripts/setup-database.sh" ]; then
     chmod +x scripts/setup-database.sh
     if ./scripts/setup-database.sh; then
         log_success "Banco de dados configurado com sucesso!"
+        echo ""
     else
-        log_error "Falha ao configurar banco de dados"
+        log_error ">>> Falha ao configurar banco de dados"
+        echo ""
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script setup-database.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 
 echo ""
-log_success "════════════════════ 5/7 ════════════════════"
+log_success "═════ FIM DA CONFIGURAÇÃO DA API ═════"
 echo ""
 
 # 6. Configurar Vite
 echo ""
-log_info "══════ 6/7 - Configurando Vite ══════"
+log_info "══════ 6/7 - CONFIGURANDO O VITE ══════"
 if [ -f "scripts/setup-vite.sh" ]; then
     chmod +x scripts/setup-vite.sh
     if ./scripts/setup-vite.sh; then
         log_success "Vite configurado com sucesso!"
+        echo ""
     else
-        log_error "Falha ao configurar Vite"
+        log_error ">>> Falha ao configurar Vite"
+        echo ""
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script setup-vite.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 
 echo ""
-log_success "════════════ 6/7 ═════════════"
+log_success "═════ FIM DA CONFIGURAÇÃO DO VITE ═════"
 echo ""
 
 # 7. Configurar scraper
-log_info "══════ 7/7 - Configurando scraper via Docker ══════"
+log_info "══════ 7/7 - CONFIGURANDO O SCRAPER ══════"
 if [ -f "scripts/setup-scraper.sh" ]; then
     chmod +x scripts/setup-scraper.sh
     if ./scripts/setup-scraper.sh; then
         log_success "Scraper configurado com sucesso!"
+        echo ""
     else
-        log_error "Falha ao configurar scraper"
+        log_error ">>> Falha ao configurar scraper"
+        echo ""
         exit 1
     fi
 else
-    echo ""
     log_error ">>> Script setup-scraper.sh não encontrado em scripts/"
+    echo ""
     exit 1
 fi
 echo ""
-log_success "════════════ 7/7 ═════════════"
+log_success "═════ FIM DA CONFIGURAÇÃO DO SCRAPER ═════"
 echo ""
 
 echo ""
