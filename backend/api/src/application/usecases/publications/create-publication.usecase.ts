@@ -9,10 +9,10 @@ export class CreatePublicationUseCase {
     this.validateDomainRules(input)
 
     // Verificar se já existe publicação com mesmo número de processo
-    const existingPublication = await this.publicationRepository.findByProcessNumber(input.process_number)
+    /*const existingPublication = await this.publicationRepository.findByProcessNumber(input.process_number)
     if (existingPublication) {
       throw new DuplicatePublicationError(`Publication with process number ${input.process_number} already exists`)
-    }
+    }*/
 
     // Preparar dados para criação
     const publicationData: CreatePublicationData = {
@@ -40,7 +40,7 @@ export class CreatePublicationUseCase {
 
     try {
       // Criar publicação
-      const publication = await this.publicationRepository.create(publicationData)
+      const publication = await this.publicationRepository.upsert(publicationData)
 
       return {
         publication,
@@ -68,7 +68,7 @@ export class CreatePublicationUseCase {
   }*/
 
   // Validar datas
-  /*if (!PublicationValidation.areValidDates(input.publicationDate, input.availabilityDate)) {
+  /*if (!PublicationValidation.areValidDates(input.publicationDate, input.availability_date)) {
     throw new ValidationError('Invalid dates: availability date cannot be in the future and must be after publication date')
   }*/
 
