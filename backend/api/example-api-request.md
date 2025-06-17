@@ -62,7 +62,7 @@ curl -X POST http://localhost:3000/api/publications \
     "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação do DJE sobre aposentadoria por invalidez...",
     "status": "NOVA",
-    "scrapingSource": "DJE-SP",
+    "scraping_source": "DJE-SP",
     "caderno": "3",
     "instancia": "1",
     "local": "Capital",
@@ -144,7 +144,7 @@ Todos os outros campos são opcionais e têm valores padrão:
 
 - `defendant`: Padrão "Instituto Nacional do Seguro Social - INSS"
 - `status`: Padrão "NOVA"
-- `scrapingSource`: Padrão "DJE-SP"
+- `scraping_source`: Padrão "DJE-SP"
 - `caderno`: Padrão "3"
 - `instancia`: Padrão "1"
 - `local`: Padrão "Capital"
@@ -221,7 +221,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
     "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação...",
     "status": "NOVA",
-    "scrapingSource": "DJE-SP",
+    "scraping_source": "DJE-SP",
     "extraction_metadata": {
       "extraction_date": "2024-03-17T10:30:00.000Z",
       "source_url": "https://dje.tjsp.jus.br/...",
