@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { CheckSquare } from 'lucide-react'
 import { PublicationCard } from './PublicationCard'
@@ -15,42 +15,55 @@ const COLUMN_CONFIG: Record<PublicationStatus, { title: React.ReactNode; color: 
   NOVA: { title: 'Nova Publicação', color: 'bg-kanban-background border-transparent' },
   LIDA: { title: 'Publicação Lida', color: 'bg-kanban-background border-transparent' },
   ENVIADA_PARA_ADV: { title: 'Enviar para Advogado Responsável', color: 'bg-kanban-background border-transparent' },
-  CONCLUIDA: { title: <span className="flex flex-row items-center gap-1 text-primary"><CheckSquare className="inline-block -mt-1 mr-1" size={16} /> Concluído</span>, color: 'bg-kanban-background border-transparent' },
+  CONCLUIDA: { 
+    title: (
+      <span className="flex flex-row items-center gap-1 text-primary">
+        <CheckSquare className="inline-block -mt-1 mr-1" size={16} /> 
+        Concluído
+      </span>
+    ), 
+    color: 'bg-kanban-background border-transparent' 
+  },
 }
 
 const ITEMS_PER_PAGE = 30
 
+// Regras de movimentação entre colunas
+const VALID_MOVES: Record<PublicationStatus, PublicationStatus[]> = {
+  NOVA: [PublicationStatus.LIDA],
+  LIDA: [PublicationStatus.ENVIADA_PARA_ADV],
+  ENVIADA_PARA_ADV: [PublicationStatus.CONCLUIDA, PublicationStatus.LIDA],
+  CONCLUIDA: [],
+}
+
 export function KanbanBoard({ filters }: KanbanBoardProps) {
-  const [columns, setColumns] = useState<KanbanColumn[]>([])
+  const [columns, setColumns] = useState<Map<PublicationStatus, KanbanColumn>>(new Map())
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState<Record<PublicationStatus, boolean>>({
-    NOVA: false,
-    LIDA: false,
-    ENVIADA_PARA_ADV: false,
-    CONCLUIDA: false,
-  })
-  const [hasMore, setHasMore] = useState<Record<PublicationStatus, boolean>>({
-    NOVA: true,
-    LIDA: true,
-    ENVIADA_PARA_ADV: true,
-    CONCLUIDA: true,
-  })
-  const [currentPage, setCurrentPage] = useState<Record<PublicationStatus, number>>({
-    NOVA: 1,
-    LIDA: 1,
-    ENVIADA_PARA_ADV: 1,
-    CONCLUIDA: 1,
-  })
+  const [loadingMore, setLoadingMore] = useState<Set<PublicationStatus>>(new Set())
+  const [hasMore, setHasMore] = useState<Map<PublicationStatus, boolean>>(new Map())
+  const [currentPage, setCurrentPage] = useState<Map<PublicationStatus, number>>(new Map())
 
   const { toast } = useToast()
 
-  const loadPublications = useCallback(async (status: PublicationStatus, page: number = 1, reset: boolean = false) => {
+  // Memoizar configurações das colunas
+  const columnOrder = useMemo(() => [
+    PublicationStatus.NOVA,
+    PublicationStatus.LIDA,
+    PublicationStatus.ENVIADA_PARA_ADV,
+    PublicationStatus.CONCLUIDA,
+  ], [])
+
+  const loadPublications = useCallback(async (
+    status: PublicationStatus, 
+    page: number = 1, 
+    reset: boolean = false
+  ) => {
     if (page === 1) {
       setLoading(true)
     } else {
-      setLoadingMore(prev => ({ ...prev, [status]: true }))
+      setLoadingMore(prev => new Set(prev).add(status))
     }
 
     try {
@@ -59,40 +72,29 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         status,
       })
 
-      setColumns(prev => {
-        const newColumns = [...prev]
-        const columnIndex = newColumns.findIndex(col => col.id === status)
+      // Verificação de segurança para garantir que data seja um array
+      const publications = Array.isArray(response.data) ? response.data : []
 
-        if (columnIndex >= 0) {
-          const existingPublications = reset ? [] : newColumns[columnIndex].publications
-          newColumns[columnIndex] = {
-            ...newColumns[columnIndex],
-            publications: [...existingPublications, ...response.data],
-            count: response.total,
-          }
-        } else {
-          newColumns.push({
-            id: status,
-            title: COLUMN_CONFIG[status].title,
-            publications: response.data,
-            count: response.total,
-          })
-        }
+      setColumns(prev => {
+        const newColumns = new Map(prev)
+        const existingColumn = newColumns.get(status)
+        const existingPublications = reset ? [] : existingColumn?.publications || []
+
+        newColumns.set(status, {
+          id: status,
+          title: COLUMN_CONFIG[status].title,
+          publications: [...existingPublications, ...publications],
+          count: response.total || 0,
+        })
 
         return newColumns
       })
 
-      setHasMore(prev => ({
-        ...prev,
-        [status]: response.page < response.totalPages,
-      }))
-
-      setCurrentPage(prev => ({
-        ...prev,
-        [status]: response.page,
-      }))
+      setHasMore(prev => new Map(prev).set(status, response.page < response.totalPages))
+      setCurrentPage(prev => new Map(prev).set(status, response.page))
 
     } catch (error) {
+      console.error('Erro ao carregar publicações:', error)
       toast({
         title: "Erro ao carregar publicações",
         description: "Não foi possível carregar as publicações. Tente novamente.",
@@ -100,57 +102,58 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       })
     } finally {
       setLoading(false)
-      setLoadingMore(prev => ({ ...prev, [status]: false }))
+      setLoadingMore(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(status)
+        return newSet
+      })
     }
   }, [filters, toast])
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais sequencialmente para evitar rate limiting
   useEffect(() => {
     const loadAllColumns = async () => {
       setLoading(true)
-      setColumns([])
-      setCurrentPage({
-        NOVA: 1,
-        LIDA: 1,
-        ENVIADA_PARA_ADV: 1,
-        CONCLUIDA: 1,
-      })
+      setColumns(new Map())
+      setCurrentPage(new Map(columnOrder.map(status => [status, 1])))
+      setHasMore(new Map(columnOrder.map(status => [status, true])))
 
-      // Carregar todas as colunas em paralelo
-      await Promise.all([
-        loadPublications(PublicationStatus.NOVA, 1, true),
-        loadPublications(PublicationStatus.LIDA, 1, true),
-        loadPublications(PublicationStatus.ENVIADA_PARA_ADV, 1, true),
-        loadPublications(PublicationStatus.CONCLUIDA, 1, true),
-      ])
+      // Carregar sequencialmente para evitar rate limiting
+      for (const status of columnOrder) {
+        await loadPublications(status, 1, true)
+      }
     }
 
     loadAllColumns()
-  }, [filters])
+  }, [filters, columnOrder, loadPublications])
 
-  const loadMoreItems = (status: PublicationStatus) => {
-    if (!hasMore[status] || loadingMore[status]) return
+  const loadMoreItems = useCallback((status: PublicationStatus) => {
+    const hasMoreItems = hasMore.get(status)
+    const isLoading = loadingMore.has(status)
+    
+    if (!hasMoreItems || isLoading) return
 
-    const nextPage = currentPage[status] + 1
+    const nextPage = (currentPage.get(status) || 1) + 1
     loadPublications(status, nextPage, false)
-  }
+  }, [hasMore, loadingMore, currentPage, loadPublications])
 
-  const handleDragEnd = async (result: DropResult) => {
+  const isValidMove = useCallback((from: PublicationStatus, to: PublicationStatus): boolean => {
+    return VALID_MOVES[from]?.includes(to) || false
+  }, [])
+
+  const handleDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result
 
-    if (!destination) return
-
-    if (
+    if (!destination || (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
-    ) {
+    )) {
       return
     }
 
     const sourceStatus = source.droppableId as PublicationStatus
     const destStatus = destination.droppableId as PublicationStatus
 
-    // Validar movimentos permitidos
     if (!isValidMove(sourceStatus, destStatus)) {
       toast({
         title: "Movimento não permitido",
@@ -160,73 +163,67 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       return
     }
 
-    // Encontrar a publicação
-    const sourceColumn = columns.find(col => col.id === sourceStatus)
+    const sourceColumn = columns.get(sourceStatus)
     const publication = sourceColumn?.publications.find(pub => pub.id === draggableId)
 
     if (!publication) return
 
-    // Atualizar estado local otimisticamente
+    // Atualização otimística
     setColumns(prev => {
-      const newColumns = [...prev]
+      const newColumns = new Map(prev)
 
-      // Remover da coluna origem
-      const sourceIndex = newColumns.findIndex(col => col.id === sourceStatus)
-      if (sourceIndex >= 0) {
-        newColumns[sourceIndex] = {
-          ...newColumns[sourceIndex],
-          publications: newColumns[sourceIndex].publications.filter(pub => pub.id !== draggableId),
-        }
+      // Remover da origem
+      const sourceCol = newColumns.get(sourceStatus)
+      if (sourceCol) {
+        newColumns.set(sourceStatus, {
+          ...sourceCol,
+          publications: sourceCol.publications.filter(pub => pub.id !== draggableId),
+        })
       }
 
-      // Adicionar na coluna destino
-      const destIndex = newColumns.findIndex(col => col.id === destStatus)
-      if (destIndex >= 0) {
+      // Adicionar no destino
+      const destCol = newColumns.get(destStatus)
+      if (destCol) {
         const updatedPublication = { ...publication, status: destStatus }
-        const destPublications = [...newColumns[destIndex].publications]
+        const destPublications = [...destCol.publications]
         destPublications.splice(destination.index, 0, updatedPublication)
 
-        newColumns[destIndex] = {
-          ...newColumns[destIndex],
+        newColumns.set(destStatus, {
+          ...destCol,
           publications: destPublications,
-        }
+        })
       }
 
       return newColumns
     })
 
-    // Atualizar no backend
     try {
       await apiService.updatePublicationStatus(publication.id, destStatus)
     } catch (error) {
-      // Reverter em caso de erro
+      console.error('Erro ao atualizar status:', error)
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status da publicação.",
         variant: "destructive",
       })
 
-      // Recarregar dados
-      loadPublications(sourceStatus, 1, true)
-      loadPublications(destStatus, 1, true)
+      // Recarregar em caso de erro
+      await Promise.allSettled([
+        loadPublications(sourceStatus, 1, true),
+        loadPublications(destStatus, 1, true),
+      ])
     }
-  }
+  }, [columns, isValidMove, toast, loadPublications])
 
-  const isValidMove = (from: PublicationStatus, to: PublicationStatus): boolean => {
-    const validMoves: Record<PublicationStatus, PublicationStatus[]> = {
-      NOVA: [PublicationStatus.NOVA],
-      LIDA: [PublicationStatus.ENVIADA_PARA_ADV],
-      ENVIADA_PARA_ADV: [PublicationStatus.CONCLUIDA, PublicationStatus.LIDA], // Permite voltar para LIDA
-      CONCLUIDA: [], // Não pode mover para nenhuma
-    }
-
-    return validMoves[from].includes(to)
-  }
-
-  const handleCardClick = (publication: Publication) => {
+  const handleCardClick = useCallback((publication: Publication) => {
     setSelectedPublication(publication)
     setIsModalOpen(true)
-  }
+  }, [])
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false)
+    setSelectedPublication(null)
+  }, [])
 
   if (loading) {
     return (
@@ -240,18 +237,20 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     <div className="h-full">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-4 gap-6 h-full">
-          {Object.values(PublicationStatus).map((status) => {
-            const column = columns.find(col => col.id === status) || {
+          {columnOrder.map((status) => {
+            const column = columns.get(status) || {
               id: status,
               title: COLUMN_CONFIG[status].title,
               publications: [],
               count: 0,
             }
 
+            const isLoadingMore = loadingMore.has(status)
+
             return (
               <div key={status} className="flex flex-col h-full">
                 {/* Header da coluna */}
-                <div className={`rounded-t-lg border border-gray-200 bg-kanban-background p-4 flex flex-row justify-start items-center gap-4`}>
+                <div className="rounded-t-lg border border-gray-200 bg-kanban-background p-4 flex flex-row justify-start items-center gap-4">
                   <h3 className="font-semibold text-sm text-secondary">
                     {column.title}
                   </h3>
@@ -275,7 +274,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                       style={{ minHeight: '500px' }}
                       onScroll={(e) => {
                         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-                        if (scrollTop + clientHeight >= scrollHeight - 5) {
+                        if (scrollTop + clientHeight >= scrollHeight - 10) {
                           loadMoreItems(status)
                         }
                       }}
@@ -303,15 +302,13 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                           </Draggable>
                         ))}
 
-                        {/* Loading indicator */}
-                        {loadingMore[status] && (
+                        {isLoadingMore && (
                           <div className="flex justify-center py-4">
                             <div className="spinner" />
                           </div>
                         )}
 
-                        {/* Empty state */}
-                        {column.publications.length === 0 && !loadingMore[status] && (
+                        {column.publications.length === 0 && !isLoadingMore && (
                           <div className="text-center py-8 text-gray-500 text-sm">
                             Nenhum card encontrado
                           </div>
@@ -327,11 +324,10 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         </div>
       </DragDropContext>
 
-      {/* Modal de detalhes */}
       <PublicationModal
         publication={selectedPublication}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
       />
     </div>
   )
