@@ -45,8 +45,8 @@ class Publication:
     process_number: str
 
     # Datas
-    publication_date: Optional[datetime]
-    availability_date: datetime
+    publication_date: Optional[datetime] = None
+    availability_date: Optional[datetime] = None
 
     # Partes do processo
     authors: List[str]
