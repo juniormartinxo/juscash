@@ -28,9 +28,14 @@ class Application {
     this.app = express()
     this.container = Container.getInstance()
     this.metricsCollector = new MetricsCollector()
+
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const windowMs = isDevelopment ? 15 * 60 * 1000 : config.rateLimit.windowMs
+    const maxRequests = isDevelopment ? 1000 : config.rateLimit.maxRequests
+
     this.rateLimiter = new RateLimitMiddleware(
-      config.rateLimit.windowMs,
-      config.rateLimit.maxRequests
+      windowMs,
+      maxRequests
     )
 
     this.setupMiddlewares()
