@@ -11,10 +11,10 @@ export interface CreatePublicationDTO {
     authors: string[]
     defendant?: string
     lawyers?: Array<{ name: string; oab: string }> | null
-    gross_value?: number | null
-    net_value?: number | null
-    interest_value?: number | null
-    attorney_fees?: number | null
+    gross_value?: number | null // Recebido como number mas convertido para bigint
+    net_value?: number | null // Recebido como number mas convertido para bigint
+    interest_value?: number | null // Recebido como number mas convertido para bigint
+    attorney_fees?: number | null // Recebido como number mas convertido para bigint
     content: string
     status?: 'NOVA' | 'LIDA' | 'ENVIADA_PARA_ADV' | 'CONCLUIDA'
     scraping_source?: string
@@ -57,7 +57,7 @@ export class CreatePublicationMapper {
             authors: dto.authors,
             defendant: dto.defendant || 'Instituto Nacional do Seguro Social - INSS',
             content: dto.content.trim(),
-            scrapingSource: dto.scraping_source || 'DJE-SP',
+            scraping_source: dto.scraping_source || 'DJE-SP',
             caderno: dto.caderno || '3',
             instancia: dto.instancia || '1',
             local: dto.local || 'Capital',
@@ -78,16 +78,16 @@ export class CreatePublicationMapper {
             input.lawyers = dto.lawyers
         }
         if (dto.gross_value !== undefined && dto.gross_value !== null) {
-            input.gross_value = dto.gross_value
+            input.gross_value = BigInt(dto.gross_value)
         }
         if (dto.net_value !== undefined && dto.net_value !== null) {
-            input.net_value = dto.net_value
+            input.net_value = BigInt(dto.net_value)
         }
         if (dto.interest_value !== undefined && dto.interest_value !== null) {
-            input.interest_value = dto.interest_value
+            input.interest_value = BigInt(dto.interest_value)
         }
         if (dto.attorney_fees !== undefined && dto.attorney_fees !== null) {
-            input.attorney_fees = dto.attorney_fees
+            input.attorney_fees = BigInt(dto.attorney_fees)
         }
         if (dto.extraction_metadata) {
             input.extraction_metadata = dto.extraction_metadata
