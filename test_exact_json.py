@@ -4,7 +4,7 @@ import requests
 
 # JSON exato do scraper
 payload = {
-    "processNumber": "0013168-70.2024.8.26.0053",
+    "process_number": "0013168-70.2024.8.26.0053",
     "availabilityDate": "2025-06-15T19:30:01.145Z",
     "authors": ["Sheila De Oliv Eira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
