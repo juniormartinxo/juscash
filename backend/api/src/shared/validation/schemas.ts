@@ -50,7 +50,7 @@ export const getPublicationsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   status: z.enum(['NOVA', 'LIDA', 'ENVIADA_PARA_ADV', 'CONCLUIDA']).optional(),
-  startDate: z.string().datetime().transform(date => new Date(date)).optional(),
-  endDate: z.string().datetime().transform(date => new Date(date)).optional(),
+  startDate: z.string().min(1).regex(/^\d{4}-\d{2}-\d{2}$/).transform(date => new Date(date + 'T00:00:00.000Z')).optional(),
+  endDate: z.string().min(1).regex(/^\d{4}-\d{2}-\d{2}$/).transform(date => new Date(date + 'T23:59:59.999Z')).optional(),
   search: z.string().optional(),
 })
