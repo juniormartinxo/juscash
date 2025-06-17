@@ -73,7 +73,7 @@ async def debug_api_validation():
         print(f"\n✅ Etapa 3: Validação de campos obrigatórios")
 
         required_fields = {
-            "processNumber": api_data.get("processNumber"),
+            "process_number": api_data.get("process_number"),
             "availabilityDate": api_data.get("availabilityDate"),
             "authors": api_data.get("authors"),
             "content": api_data.get("content"),
@@ -89,15 +89,15 @@ async def debug_api_validation():
 
         validations = []
 
-        # processNumber deve ser string não vazia
+        # process_number deve ser string não vazia
         if (
-            isinstance(api_data.get("processNumber"), str)
-            and api_data.get("processNumber").strip()
+            isinstance(api_data.get("process_number"), str)
+            and api_data.get("process_number").strip()
         ):
-            validations.append("✅ processNumber: string válida")
+            validations.append("✅ process_number: string válida")
         else:
             validations.append(
-                f"❌ processNumber: {type(api_data.get('processNumber'))} - {api_data.get('processNumber')}"
+                f"❌ process_number: {type(api_data.get('process_number'))} - {api_data.get('process_number')}"
             )
 
         # availabilityDate deve ser string datetime
