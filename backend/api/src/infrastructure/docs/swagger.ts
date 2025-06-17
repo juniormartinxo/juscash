@@ -76,7 +76,7 @@ const swaggerSpec = {
             format: 'uuid',
             description: 'ID único da publicação',
           },
-          processNumber: {
+          process_number: {
             type: 'string',
             description: 'Número do processo judicial',
             example: '1234567-89.2024.8.26.0100',
