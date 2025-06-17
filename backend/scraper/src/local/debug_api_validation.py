@@ -74,7 +74,7 @@ async def debug_api_validation():
 
         required_fields = {
             "process_number": api_data.get("process_number"),
-            "availabilityDate": api_data.get("availabilityDate"),
+            "availability_date": api_data.get("availability_date"),
             "authors": api_data.get("authors"),
             "content": api_data.get("content"),
         }
@@ -100,13 +100,13 @@ async def debug_api_validation():
                 f"❌ process_number: {type(api_data.get('process_number'))} - {api_data.get('process_number')}"
             )
 
-        # availabilityDate deve ser string datetime
-        availability_date = api_data.get("availabilityDate")
+        # availability_date deve ser string datetime
+        availability_date = api_data.get("availability_date")
         if isinstance(availability_date, str) and availability_date.endswith("Z"):
-            validations.append("✅ availabilityDate: formato ISO válido")
+            validations.append("✅ availability_date: formato ISO válido")
         else:
             validations.append(
-                f"❌ availabilityDate: {type(availability_date)} - {availability_date}"
+                f"❌ availability_date: {type(availability_date)} - {availability_date}"
             )
 
         # authors deve ser array não vazio
@@ -130,7 +130,12 @@ async def debug_api_validation():
             )
 
         # Verificar valores monetários
-        monetary_fields = ["grossValue", "netValue", "interestValue", "attorneyFees"]
+        monetary_fields = [
+            "gross_value",
+            "net_value",
+            "interest_value",
+            "attorney_fees",
+        ]
         for field in monetary_fields:
             value = api_data.get(field)
             if value is not None:
