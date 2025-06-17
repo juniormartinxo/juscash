@@ -58,7 +58,7 @@ describe('Complete User Flow E2E', () => {
       .set('Authorization', `Bearer ${userTokens.accessToken}`)
       .expect(200)
 
-    expect(detailResponse.body.data.publication.processNumber).toBe('1234567-89.2024.8.26.0100')
+    expect(detailResponse.body.data.publication.process_number).toBe('1234567-89.2024.8.26.0100')
 
     // 5. Update publication status (NOVA -> LIDA)
     const updateResponse = await request(app)
