@@ -69,7 +69,7 @@ SCRAPER_API_KEY="sua-chave-secreta-longa-e-segura-aqui"
 curl -X POST http://localhost:3000/api/scraper/publications \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sua-api-key-aqui" \
-  -d '{"process_number": "123...", "availabilityDate": "2024-03-17", ...}'
+  -d '{"process_number": "123...", "availability_date": "2024-03-17", ...}'
 ```
 
 ### JavaScript
