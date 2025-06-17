@@ -59,6 +59,18 @@ else
     exit 1
 fi
 
+# --- Adicione esta seção para iniciar o contêiner ---
+echo -e "${YELLOW}Iniciando o contêiner Docker...${NC}"
+docker run -d -p 5173:5173 --name juscash-frontend juscash-vite
+
+# Verificar se o contêiner iniciou
+if [ $? -eq 0 ]; then
+    print_success "Contêiner 'juscash-frontend' iniciado com sucesso!"
+    echo -e "Acesse a aplicação em ${YELLOW}http://localhost:5173${NC}"
+else
+    print_error "Falha ao iniciar o contêiner."
+fi
+
 cd ../
 
 echo -e "${GREEN}Setup do frontend concluído com sucesso!${NC}"
