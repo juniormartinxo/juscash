@@ -21,7 +21,7 @@ describe('UpdatePublicationStatusUseCase', () => {
   const mockPublication: PublicationEntity = {
     id: 'pub-123',
     process_number: '1234567-89.2024.8.26.0100',
-    availabilityDate: new Date('2024-03-17'),
+    availability_date: new Date('2024-03-17'),
     authors: ['João Silva'],
     defendant: 'Instituto Nacional do Seguro Social - INSS',
     content: 'Test content',
