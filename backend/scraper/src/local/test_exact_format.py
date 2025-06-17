@@ -14,7 +14,7 @@ async def test_exact_format():
 
     # Dados exatos da documentação
     publication_data = {
-        "processNumber": "1234567-89.2024.8.26.0100",
+        "process_number": "1234567-89.2024.8.26.0100",
         "publicationDate": "2024-03-15T00:00:00.000Z",
         "availabilityDate": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos", "Maria Oliveira"],
