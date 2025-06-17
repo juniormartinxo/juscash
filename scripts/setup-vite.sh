@@ -25,17 +25,17 @@ print_success() {
 
 # Navegar para o diretório do frontend
 cd frontend || {
-    print_error "Não foi possível acessar o diretório frontend"
+    print_error ">>> Não foi possível acessar o diretório frontend"
     exit 1
 }
 
 # Instalar dependências
-echo -e "${YELLOW}Instalando dependências do frontend...${NC}"
+echo -e "${YELLOW}Instalando dependências do vite...${NC}"
 if [ -d "node_modules" ]; then
-    echo -e "${GREEN}Dependências do frontend já instaladas!${NC}"
+    echo -e "${GREEN}Dependências do vite já instaladas!${NC}"
 else
     pnpm install
-    echo -e "${GREEN}Dependências do frontend instaladas com sucesso!${NC}"
+    echo -e "${GREEN}Dependências do vite instaladas com sucesso!${NC}"
 fi
 
 # Verificar arquivos necessários
@@ -47,11 +47,13 @@ for file in "${required_files[@]}"; do
     fi
 done
 
+cd ..
+
 # Construir a imagem Docker
 echo ""
-echo -e "${YELLOW}Construindo imagem Docker...${NC}"
+echo -e "${YELLOW}Construindo imagem do Vite com Docker...${NC}"
 echo ""
-docker compose up -d juscash-vite --build --remove-orphans
+docker compose up -d vite --build --remove-orphans
 
 # Verificar se o contêiner iniciou
 if [ $? -eq 0 ]; then
@@ -64,7 +66,5 @@ else
     echo ""
 fi
 
-cd ../
-
-echo -e "${GREEN}Setup do frontend concluído com sucesso!${NC}"
-echo -e "Para iniciar o frontend em modo de desenvolvimento, execute: ${YELLOW}docker run -p 5173:5173 juscash-vite${NC}"
+echo -e "${GREEN}Setup do Vite concluído com sucesso!${NC}"
+echo ""
