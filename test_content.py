@@ -50,18 +50,18 @@ print(f"Conteúdo limpo: {len(clean_content)} chars")
 # Testar com conteúdo limpo
 payload = {
     "process_number": "0000007-00.2024.8.26.0001",
-    "availabilityDate": "2025-06-15T19:01:41.356Z",
+    "availability_date": "2025-06-15T19:01:41.356Z",
     "authors": ["Veriss Imo Ursulino Do Nascimento"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "content": clean_content,
     "status": "NOVA",
-    "scrapingSource": "DJE-SP",
+    "scraping_source": "DJE-SP",
     "caderno": "3",
     "instancia": "1",
     "local": "Capital",
     "parte": "1",
     "lawyers": [],
-    "extractionMetadata": {"test": "value"},
+    "extraction_metadata": {"test": "value"},
 }
 
 print(f"\nTamanho do JSON: {len(json.dumps(payload))} chars")
