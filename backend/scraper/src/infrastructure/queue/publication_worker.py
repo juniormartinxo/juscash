@@ -135,21 +135,6 @@ class PublicationWorker:
                 )
                 return False
 
-            # Salvar relatório como arquivo TXT
-            # Temporariamente desabilitado até implementar ReportTxtSaver
-            # try:
-            #     saved_path = await self.report_saver.save_publication_report(
-            #         publication
-            #     )
-            #     if saved_path:
-            #         logger.debug(f"📄 Relatório TXT salvo (worker): {saved_path}")
-            #     else:
-            #         logger.warning(
-            #             f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
-            #         )
-            # except Exception as txt_error:
-            #     logger.error(f"❌ Erro ao salvar relatório TXT (worker): {txt_error}")
-
             # Enviar para API
             logger.debug(f"📤 Processando: {publication.process_number}")
 
