@@ -10,7 +10,7 @@ import { Router } from 'express'
 import { ValidationMiddleware } from '@/infrastructure/web/middleware/validation.middleware'
 
 const uuidSchema = z.object({
-  id: z.string().uuid('ID inválido'),
+  id: z.string().cuid2('ID CUID2 inválido'),
 })
 
 const searchQuerySchema = z.object({
