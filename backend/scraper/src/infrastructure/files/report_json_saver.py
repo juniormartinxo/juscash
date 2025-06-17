@@ -95,7 +95,7 @@ class ReportJsonSaver:
         # Formatar datas para ISO 8601 (YYYY-MM-DD)
         def format_date(dt: Optional[datetime]) -> Optional[str]:
             if dt:
-                return dt.strftime("%Y-%m-%d")
+                return dt.date().isoformat()
             return None
 
         # Converter advogados para formato JSON
@@ -109,26 +109,54 @@ class ReportJsonSaver:
         # Criar o objeto JSON seguindo o modelo Prisma
         json_data = {
             "process_number": publication.process_number,
-            "publication_date": format_date(publication.publication_date),
-            "availability_date": format_date(publication.availability_date),
-            "authors": publication.authors,
-            "defendant": publication.defendant,
-            "lawyers": lawyers_json,
-            "gross_value": publication.gross_value.amount_cents if publication.gross_value else None,
-            "net_value": publication.net_value.amount_cents if publication.net_value else None,
-            "interest_value": publication.interest_value.amount_cents if publication.interest_value else None,
-            "attorney_fees": publication.attorney_fees.amount_cents if publication.attorney_fees else None,
+            "publication_date": (
+                format_date(publication.publication_date)
+                if publication.publication_date
+                else ""
+            ),
+            "availability_date": (
+                format_date(publication.availability_date)
+                if publication.availability_date
+                else ""
+            ),
+            "authors": publication.authors if publication.authors else [],
+            "defendant": (
+                publication.defendant
+                if publication.defendant
+                else "Instituto Nacional do Seguro Social - INSS"
+            ),
+            "lawyers": lawyers_json if lawyers_json else [],
+            "gross_value": (
+                publication.gross_value.amount_cents if publication.gross_value else 0
+            ),
+            "net_value": (
+                publication.net_value.amount_cents if publication.net_value else 0
+            ),
+            "interest_value": (
+                publication.interest_value.amount_cents
+                if publication.interest_value
+                else 0
+            ),
+            "attorney_fees": (
+                publication.attorney_fees.amount_cents
+                if publication.attorney_fees
+                else 0
+            ),
             "content": publication.content,
-            "status": publication.status,
-            "scraping_source": publication.scraping_source,
-            "caderno": publication.caderno,
-            "instancia": publication.instancia,
-            "local": publication.local,
-            "parte": publication.parte,
-            "extraction_metadata": publication.extraction_metadata if publication.extraction_metadata else None,
+            "status": publication.status if publication.status else "NOVA",
+            "scraping_source": (
+                publication.scraping_source if publication.scraping_source else "DJE-SP"
+            ),
+            "caderno": publication.caderno if publication.caderno else "3",
+            "instancia": publication.instancia if publication.instancia else "1",
+            "local": publication.local if publication.local else "Capital",
+            "parte": publication.parte if publication.parte else "1",
+            "extraction_metadata": (
+                publication.extraction_metadata
+                if publication.extraction_metadata
+                else None
+            ),
             "scraping_execution_id": None,  # Será None pois não estamos mais usando o banco
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
         }
 
         return json_data
