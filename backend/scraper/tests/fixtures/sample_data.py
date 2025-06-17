@@ -54,17 +54,17 @@ SAMPLE_PUBLICATIONS_DATA = [
         "net_value": "12000.00",
         "interest_value": "2500.25",
         "attorney_fees": "3000.00",
-        "content": "VISTOS. Trata-se de ação previdenciária..."
+        "content": "VISTOS. Trata-se de ação previdenciária...",
     },
     {
-        "process_number": "7654321-98.2024.8.26.0100", 
+        "process_number": "7654321-98.2024.8.26.0100",
         "publication_date": "2024-03-16",
         "availability_date": "2024-03-16",
         "authors": ["Maria Santos"],
         "lawyers": ["Dra. Ana Costa - OAB/SP 789012"],
         "gross_value": "25000.75",
-        "interest_value": "5000.15", 
+        "interest_value": "5000.15",
         "attorney_fees": "4500.00",
-        "content": "VISTOS. Ação de auxílio-doença..."
-    }
+        "content": "VISTOS. Ação de auxílio-doença...",
+    },
 ]
