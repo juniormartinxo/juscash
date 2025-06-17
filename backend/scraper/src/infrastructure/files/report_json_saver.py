@@ -105,12 +105,12 @@ class ReportJsonSaver:
             "publication_date": (
                 format_date(publication.publication_date)
                 if publication.publication_date
-                else ""
+                else None
             ),
             "availability_date": (
                 format_date(publication.availability_date)
                 if publication.availability_date
-                else ""
+                else None
             ),
             "authors": publication.authors if publication.authors else [],
             "defendant": (
