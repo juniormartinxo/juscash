@@ -291,7 +291,7 @@ interface User {
 ```typescript
 interface Publication {
   id: string;
-  processNumber: string;
+  process_number: string;
   publicationDate?: Date;
   availabilityDate: Date;
   authors: string[];
