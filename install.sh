@@ -18,13 +18,59 @@ log_success() { echo -e "${GREEN}✅ $1${NC}"; }
 log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 log_error() { echo -e "${RED}❌ $1${NC}"; }
 
+echo -e "${YELLOW}"
+echo "╭─────────💡 Deseja continuar com a instalação?───────────────╮"
+echo "|                                                             |"
+echo "|          Este script irá resetar todo o ambiente,           |"
+echo "|          incluindo o banco de dados e o scraper.            |"
+echo "|          Para continuar, digite 's' e pressione Enter.      |"
+echo "|          Para cancelar, digite 'n' e pressione Enter.       |"
+echo "|                                                             |"
+echo "╰─────────────────────────────────────────────────────────────╯"
+echo -e "${NC}"
+
+read -p "Deseja continuar com a instalação? (s/n): " confirm
+if [ "$confirm" != "s" ]; then
+    log_error "Instalação cancelada pelo usuário. Execute o script novamente para continuar."
+    exit 1
+fi
+
+# verifica se algum container está em execução e se estiver esecuta docker compose down
+if [ "$(docker ps -q)" ]; then
+    echo ""
+    log_warning "════════════ Parando containers em execução ════════════"
+    docker compose down --rmi all
+fi
+
 # Banner de início
-echo "🚀 JusCash - Script de Instalação"
-echo "=================================="
+echo ""
+log_info "╭───────────────── JusCash - Script de Instalação ─────────────────╮"
 echo ""
 
 export COMPOSE_BAKE=true
 
+log_info "════════════ 💡 Dando permissão de execução aos scripts da pasta scripts ════════════"
+echo ""
+
+# Dando permissão de execução aos scripts da pasta scripts
+if [ -d "scripts" ]; then
+    chmod +x scripts/*.sh
+else
+    log_error "Pasta 'scripts' não encontrada."
+    exit 1
+fi
+
+log_warning "════════════ Limpeza do workspace ════════════"
+echo ""
+
+# Limpar o projeto com o script ./scrpits/clean-workspace.sh
+if [ -f "scripts/clean-workspace.sh" ]; then
+    chmod +x scripts/clean-workspace.sh
+    ./scripts/clean-workspace.sh
+else
+    log_error "Script clean-workspace.sh não encontrado em scripts/"
+    exit 1
+fi
 
 # Verificar argumentos da linha de comando
 if [ "$1" = "--scraper-only" ]; then
@@ -59,11 +105,14 @@ if [ ! -d "scripts" ]; then
     exit 1
 fi
 
-log_info "Iniciando configuração do ambiente JusCash..."
+echo ""
+echo "╭───────────────────────────────────────────────────────────────╮"
+echo "│          Iniciando configuração do ambiente JusCash           │"
+echo "╰───────────────────────────────────────────────────────────────╯"
 echo ""
 
 # 1. Verificar variáveis de ambiente
-log_info "Passo 1/6: Verificando variáveis de ambiente..."
+log_info "════════════ 1/7 - Verificando variáveis de ambiente ════════════"
 if [ -f "scripts/check-env.sh" ]; then
     chmod +x scripts/check-env.sh
     if ./scripts/check-env.sh; then
@@ -80,8 +129,9 @@ fi
 
 echo ""
 
+
 # 2. Verificar portas
-log_info "Passo 2/6: Verificando conflitos de portas..."
+log_info "════════════ 2/7 - Verificando conflitos de portas ════════════"
 if [ -f "scripts/check-ports.sh" ]; then
     chmod +x scripts/check-ports.sh
     if ./scripts/check-ports.sh; then
@@ -98,7 +148,7 @@ fi
 echo ""
 
 # 3. Configurar Redis
-log_info "Passo 3/6: Configurando Redis..."
+log_info "════════════ 3/7 - Configurando Redis ════════════"
 if [ -f "scripts/setup-redis.sh" ]; then
     chmod +x scripts/setup-redis.sh
     if ./scripts/setup-redis.sh; then
@@ -115,7 +165,7 @@ fi
 echo ""
 
 # 4. Configurar API
-    log_info "Passo 4/6: Configurando API..."
+log_info "════════════ 4/7 - Configurando API ════════════"
 if [ -f "scripts/setup-api.sh" ]; then
     chmod +x scripts/setup-api.sh
     if ./scripts/setup-api.sh; then
@@ -130,7 +180,7 @@ else
 fi
 
 # 5. Configurar banco de dados
-log_info "Passo 5/6: Configurando banco de dados com Prisma..."
+log_info "════════════ 5/7 - Configurando banco de dados com Prisma ════════════"
 if [ -f "scripts/setup-database.sh" ]; then
     chmod +x scripts/setup-database.sh
     if ./scripts/setup-database.sh; then
@@ -144,8 +194,23 @@ else
     exit 1
 fi
 
-# 6. Configurar scraper
-log_info "Passo 6/6: Configurando scraper via Docker..."
+# 6. Configurar Vite
+log_info "════════════ 6/7 - Configurando Vite ════════════"
+if [ -f "scripts/setup-vite.sh" ]; then
+    chmod +x scripts/setup-vite.sh
+    if ./scripts/setup-vite.sh; then
+        log_success "Vite configurado com sucesso!"
+    else
+        log_error "Falha ao configurar Vite"
+        exit 1
+    fi
+else
+    log_error "Script setup-vite.sh não encontrado em scripts/"
+    exit 1
+fi
+
+# 7. Configurar scraper
+log_info "════════════ 7/7 - Configurando scraper via Docker ════════════"
 if [ -f "scripts/run-scraper-docker.sh" ]; then
     chmod +x scripts/run-scraper-docker.sh
     if ./scripts/run-scraper-docker.sh; then
@@ -158,6 +223,10 @@ else
     log_error "Script run-scraper-docker.sh não encontrado em scripts/"
     exit 1
 fi
+echo ""
+
+echo ""
+log_info "════════════ FINAL ════════════"
 echo ""
 
 # Verificação final
