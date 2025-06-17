@@ -161,12 +161,12 @@ class Publication:
         # Garantir que todos os campos obrigatórios estejam presentes
         data = {
             "process_number": self.process_number,
-            "availabilityDate": format_datetime_for_api(self.availability_date),
+            "availability_date": format_datetime_for_api(self.availability_date),
             "authors": self.authors,
             "defendant": "Instituto Nacional do Seguro Social - INSS",  # Valor padrão
             "content": clean_content(self.content),
             "status": "NOVA",  # Valor padrão
-            "scrapingSource": "DJE-SP",  # Valor padrão
+            "scraping_source": "DJE-SP",  # Valor padrão
             "caderno": "3",  # Valor padrão
             "instancia": "1",  # Valor padrão
             "local": "Capital",  # Valor padrão
@@ -183,18 +183,18 @@ class Publication:
         ]
 
         if self.gross_value:
-            data["grossValue"] = self.gross_value.amount_cents
+            data["gross_value"] = self.gross_value.amount_cents
 
         if self.net_value:
-            data["netValue"] = self.net_value.amount_cents
+            data["net_value"] = self.net_value.amount_cents
 
         if self.interest_value:
-            data["interestValue"] = self.interest_value.amount_cents
+            data["interest_value"] = self.interest_value.amount_cents
 
         if self.attorney_fees:
-            data["attorneyFees"] = self.attorney_fees.amount_cents
+            data["attorney_fees"] = self.attorney_fees.amount_cents
 
         if self.extraction_metadata:
-            data["extractionMetadata"] = self.extraction_metadata
+            data["extraction_metadata"] = self.extraction_metadata
 
         return data
