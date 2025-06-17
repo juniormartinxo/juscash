@@ -20,8 +20,8 @@ export const loginSchema = z.object({
 // Publication schemas
 export const createPublicationSchema = z.object({
   process_number: z.string().min(1, 'Número do processo é obrigatório'),
-  publication_date: z.string().datetime().transform(date => { if (date === null) return "00:00:00Z"; return new Date(date) }).optional(),
-  availability_date: z.string().datetime().transform(date => { if (date === null) return "00:00:00Z"; return new Date(date) }),
+  publication_date: z.string().optional(),
+  availability_date: z.string(),
   authors: z.array(z.string().min(1, 'Nome do autor não pode estar vazio')).min(1, 'Pelo menos um autor é obrigatório'),
   defendant: z.string().optional(),
   lawyers: z.array(z.object({
