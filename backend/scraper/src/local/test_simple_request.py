@@ -19,7 +19,7 @@ async def test_simple_request():
     # Dados mínimos para teste - usando formato ISO mais simples
     test_data = {
         "process_number": "TEST-123",
-        "availabilityDate": "2024-03-15T00:00:00.000Z",  # Formato UTC
+        "availability_date": "2024-03-15T00:00:00.000Z",  # Formato UTC
         "authors": ["Teste"],
         "content": "Teste",
     }
