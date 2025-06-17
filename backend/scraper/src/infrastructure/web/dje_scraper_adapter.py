@@ -43,6 +43,9 @@ class DJEScraperAdapter(WebScraperPort):
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
         # Instanciar o salvador de relatórios TXT
         self.report_saver = ReportTxtSaver()
+        # Instanciar o salvador de relatórios JSON
+        from infrastructure.files.report_json_saver import ReportJsonSaver
+        self.json_saver = ReportJsonSaver()
 
     async def initialize(self) -> None:
         """Inicializa o browser e navegação"""
@@ -534,6 +537,30 @@ class DJEScraperAdapter(WebScraperPort):
                                         f"❌ Erro ao salvar relatório TXT (HTML fallback): {txt_error}"
                                     )
 
+                                # Salvar também como JSON
+                                try:
+                                    json_path = await self.json_saver.save_publication_json(
+                                        publication
+                                    )
+                                    if json_path:
+                                        logger.info(
+                                            f"📋 JSON salvo (HTML fallback): {json_path}"
+                                        )
+                                    else:
+                                        logger.warning(
+                                            f"⚠️ Falha ao salvar JSON para {publication.process_number}"
+                                        )
+                                except Exception as json_error:
+                                    logger.error(
+                                        f"❌ Erro ao salvar JSON (HTML fallback): {json_error}"
+                                    )
+
+                                yield publication
+                            return  # Sucesso, sair do loop de retry
+                        else:
+                            logger.warning(
+                                    )
+
                                 yield publication
                             return  # Sucesso, sair do loop de retry
                         else:
@@ -644,6 +671,65 @@ class DJEScraperAdapter(WebScraperPort):
                                     f"❌ Erro ao salvar relatório TXT: {txt_error}"
                                 )
 
+                            # Salvar também como JSON
+                            try:
+                                json_path = await self.json_saver.save_publication_json(
+                                    publication
+                                )
+                                if json_path:
+                                    logger.info(f"📋 JSON salvo: {json_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
+                                    )
+                            except Exception as json_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar JSON: {json_error}"
+                                )
+
+                            yield publication
+                        logger.info(
+                            f"✅ Parser aprimorado extraiu {len(enhanced_publications)} publicações"
+                        )
+                        for publication in enhanced_publications:
+                            logger.info(
+                                f"✅ Publicação extraída (aprimorado): {publication.process_number}"
+                            )
+
+                            # Salvar relatório como arquivo TXT
+                            try:
+                                saved_path = (
+                                    await self.report_saver.save_publication_report(
+                                        publication
+                                    )
+                                )
+                                if saved_path:
+                                    logger.info(f"📄 Relatório TXT salvo: {saved_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar relatório TXT para {publication.process_number}"
+                                    )
+                            except Exception as txt_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                                )
+
+                            # Salvar também como JSON
+                            try:
+                                json_path = await self.json_saver.save_publication_json(
+                                    publication
+                                )
+                                if json_path:
+                                    logger.info(f"📋 JSON salvo: {json_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
+                                    )
+                            except Exception as json_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar JSON: {json_error}"
+                                )
+
                             yield publication
                     else:
                         # Fallback para parser tradicional
@@ -673,6 +759,22 @@ class DJEScraperAdapter(WebScraperPort):
                             except Exception as txt_error:
                                 logger.error(
                                     f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                                )
+
+                            # Salvar também como JSON
+                            try:
+                                json_path = await self.json_saver.save_publication_json(
+                                    publication
+                                )
+                                if json_path:
+                                    logger.info(f"📋 JSON salvo: {json_path}")
+                                else:
+                                    logger.warning(
+                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
+                                    )
+                            except Exception as json_error:
+                                logger.error(
+                                    f"❌ Erro ao salvar JSON: {json_error}"
                                 )
 
                             yield publication
@@ -707,6 +809,22 @@ class DJEScraperAdapter(WebScraperPort):
                         except Exception as txt_error:
                             logger.error(
                                 f"❌ Erro ao salvar relatório TXT: {txt_error}"
+                            )
+
+                        # Salvar também como JSON
+                        try:
+                            json_path = await self.json_saver.save_publication_json(
+                                publication
+                            )
+                            if json_path:
+                                logger.info(f"📋 JSON salvo: {json_path}")
+                            else:
+                                logger.warning(
+                                    f"⚠️ Falha ao salvar JSON para {publication.process_number}"
+                                )
+                        except Exception as json_error:
+                            logger.error(
+                                f"❌ Erro ao salvar JSON: {json_error}"
                             )
 
                         yield publication
