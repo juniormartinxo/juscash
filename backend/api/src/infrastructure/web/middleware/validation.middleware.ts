@@ -33,7 +33,9 @@ export class ValidationMiddleware {
   static validateQuery(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
       try {
-        req.query = schema.parse(req.query)
+        const validatedQuery = schema.parse(req.query)
+          // Store validated query in a custom property instead of overwriting req.query
+          ; (req as any).validatedQuery = validatedQuery
         next()
       } catch (error) {
         if (error instanceof ZodError) {
