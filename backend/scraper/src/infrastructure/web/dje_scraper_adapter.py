@@ -40,10 +40,10 @@ class DJEScraperAdapter(WebScraperPort):
         self.enhanced_parser.set_scraper_adapter(self)
         self.temp_dir = Path(tempfile.gettempdir()) / "dje_scraper_pdfs"
         self.temp_dir.mkdir(exist_ok=True)
+
         # Controle de PDFs problemáticos
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
-        # Instanciar o salvador de relatórios TXT
-        # self.report_saver = ReportTxtSaver()  # Temporariamente desabilitado
+
         # Instanciar o salvador de relatórios JSON
         from infrastructure.files.report_json_saver import ReportJsonSaver
 
@@ -118,8 +118,6 @@ class DJEScraperAdapter(WebScraperPort):
             # Preencher formulário de pesquisa avançada
             await self._fill_advanced_search_form(search_terms)
 
-            # Extrair publicações das páginas de resultado
-            page_count = 0
             async for publication in self._extract_publications_from_pdf_links(
                 max_pages
             ):
@@ -141,8 +139,8 @@ class DJEScraperAdapter(WebScraperPort):
 
     async def _fill_advanced_search_form(self, search_terms: List[str]) -> None:
         """
-        Preenche o formulário de pesquisa avançada com critérios específicos da imagem
-        Data: 13/11/2024, Caderno 3, Palavras: "RPV" e "pagamento pelo INSS"
+        Preenche o formulário de pesquisa avançada com critérios específicos
+        Suporta data dinâmica através do atributo _target_date
         """
         logger.info("📝 Preenchendo formulário de pesquisa avançada")
 
@@ -151,37 +149,38 @@ class DJEScraperAdapter(WebScraperPort):
             await self.page.wait_for_load_state("networkidle")
             await asyncio.sleep(3)
 
-            # 1. FORÇAR DATA ESPECÍFICA: 13/11/2024
-            logger.info("📅 Configurando data específica: 13/11/2024...")
+            # 1. CONFIGURAR DATA ESPECÍFICA (dinâmica ou padrão)
+            target_date = getattr(self, "_target_date", "17/03/2025")
+            logger.info(f"📅 Configurando data específica: {target_date}...")
 
             # Forçar data início
-            data_inicio_script = """
-            (() => {
+            data_inicio_script = f"""
+            (() => {{
                 const dataInicio = document.querySelector('#dtInicioString');
-                if (dataInicio) {
+                if (dataInicio) {{
                     dataInicio.removeAttribute('readonly');
                     dataInicio.disabled = false;
-                    dataInicio.value = '13/11/2024';
-                    dataInicio.dispatchEvent(new Event('change', { bubbles: true }));
+                    dataInicio.value = '{target_date}';
+                    dataInicio.dispatchEvent(new Event('change', {{ bubbles: true }}));
                     return dataInicio.value;
-                }
+                }}
                 return null;
-            })()
+            }})()
             """
 
             # Forçar data fim
-            data_fim_script = """
-            (() => {
+            data_fim_script = f"""
+            (() => {{
                 const dataFim = document.querySelector('#dtFimString');
-                if (dataFim) {
+                if (dataFim) {{
                     dataFim.removeAttribute('readonly');
                     dataFim.disabled = false;
-                    dataFim.value = '13/11/2024';
-                    dataFim.dispatchEvent(new Event('change', { bubbles: true }));
+                    dataFim.value = '{target_date}';
+                    dataFim.dispatchEvent(new Event('change', {{ bubbles: true }}));
                     return dataFim.value;
-                }
+                }}
                 return null;
-            })()
+            }})()
             """
 
             try:
