@@ -19,7 +19,7 @@ if __name__ == "__main__":
     print("🌟 Iniciando Multi-Date Multi-Worker Scraper...")
     print("📅 Data inicial: 17/03/2025")
     print("📅 Data final: Hoje")
-    print("👥 Workers: 3")
+    print("👥 Workers: 1")
     print("📂 Arquivo de progresso: src/scrap_workrs.json")
     print("-" * 60)
 
