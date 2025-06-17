@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "publications" ALTER COLUMN "gross_value" SET DATA TYPE BIGINT,
+ALTER COLUMN "net_value" SET DATA TYPE BIGINT,
+ALTER COLUMN "interest_value" SET DATA TYPE BIGINT,
+ALTER COLUMN "attorney_fees" SET DATA TYPE BIGINT;
