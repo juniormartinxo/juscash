@@ -7,7 +7,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from application.usecases.extract_publications import ExtractPublicationsUseCase
-from application.usecases.save_publications import SavePublicationsUseCase
+from application.usecases.save_publications_to_files import SavePublicationsToFilesUseCase
 from domain.entities.scraping_execution import ScrapingExecution, ExecutionType
 from infrastructure.logging.logger import setup_logger
 
@@ -22,7 +22,7 @@ class ScrapingOrchestrator:
     def __init__(self, container):
         self.container = container
         self.extract_usecase = ExtractPublicationsUseCase(container.web_scraper)
-        self.save_usecase = SavePublicationsUseCase()  # Agora usa fila Redis
+        self.save_usecase = SavePublicationsToFilesUseCase()  # Agora salva em arquivos locais
 
     async def execute_daily_scraping(self) -> ScrapingExecution:
         """
@@ -57,28 +57,22 @@ class ScrapingOrchestrator:
                 publications.append(publication)
                 execution.publications_found += 1
 
-            # Enfileirar publicações para processamento assíncrono
+            # Salvar publicações em arquivos locais (TXT e JSON)
             if publications:
                 save_stats = await self.save_usecase.execute(publications)
-                execution.publications_new = save_stats[
-                    "enqueued"
-                ]  # Mudança: agora são enfileiradas
+                execution.publications_new = save_stats["saved"]
                 execution.publications_failed = save_stats["failed"]
-                execution.publications_saved = save_stats[
-                    "enqueued"
-                ]  # Serão processadas pelo worker
-                execution.publications_duplicated = (
-                    0  # Duplicação será verificada pelo worker
-                )
+                execution.publications_saved = save_stats["saved"]
+                execution.publications_duplicated = 0  # Não há verificação de duplicação local
 
-                # Log das estatísticas da fila
-                queue_stats = self.save_usecase.get_queue_stats()
-                logger.info(f"📊 Estatísticas da fila Redis: {queue_stats}")
+                # Log das estatísticas dos arquivos
+                file_stats = self.save_usecase.get_file_stats()
+                logger.info(f"📊 Estatísticas dos arquivos: {file_stats}")
 
             execution.mark_as_completed()
             logger.info(f"✅ Execução {execution.execution_id} concluída com sucesso")
             logger.info(f"📤 {execution.publications_found} publicações extraídas")
-            logger.info(f"📝 {execution.publications_new} publicações enfileiradas")
+            logger.info(f"💾 {execution.publications_saved} publicações salvas em arquivos")
 
         except Exception as error:
             logger.error(f"❌ Erro na execução {execution.execution_id}: {error}")
