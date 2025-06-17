@@ -8,6 +8,8 @@ from pydantic import Field
 from pydantic_settings import BaseSettings
 from pathlib import Path
 
+from .report_settings import ReportSettings
+
 
 class BrowserSettings(BaseSettings):
     """Configurações do browser"""
@@ -93,6 +95,7 @@ class Settings(BaseSettings):
     redis: RedisSettings = RedisSettings()
     logging: LogSettings = LogSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
+    reports: ReportSettings = ReportSettings()
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
