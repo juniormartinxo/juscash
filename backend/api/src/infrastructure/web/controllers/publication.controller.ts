@@ -39,10 +39,11 @@ export class PublicationController {
    * Usa a mesma lógica do createPublication, mas com logs específicos para auditoria
    */
   createPublicationFromScraper = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    console.log('Publication creation from SCRAPER:', req.body)
     try {
       // Log específico para identificar origem do scraper
       console.log('Publication creation from SCRAPER:', {
-        processNumber: req.body.processNumber,
+        process_number: req.body.process_number,
         source: 'SCRAPER',
         timestamp: new Date().toISOString(),
         ip: req.ip,
@@ -54,7 +55,7 @@ export class PublicationController {
       // Log de sucesso específico para scraper
       console.log('Publication created successfully from SCRAPER:', {
         publicationId: result.publication.id,
-        processNumber: result.publication.processNumber,
+        process_number: result.publication.process_number,
         source: 'SCRAPER'
       })
 
@@ -63,7 +64,7 @@ export class PublicationController {
       // Log de erro específico para scraper
       console.error('Publication creation failed from SCRAPER:', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        processNumber: req.body?.processNumber,
+        process_number: req.body?.process_number,
         source: 'SCRAPER',
         ip: req.ip
       })
@@ -75,13 +76,13 @@ export class PublicationController {
       if (error instanceof ConflictError) {
         // Para o scraper, tratar duplicatas como sucesso (200) ao invés de conflito
         console.log('Publication already exists (SCRAPER):', {
-          processNumber: req.body?.processNumber,
+          process_number: req.body?.process_number,
           message: 'Publication skipped - already exists',
           source: 'SCRAPER'
         })
         res.status(200).json(ApiResponseBuilder.success({
           message: 'Publication already exists',
-          processNumber: req.body?.processNumber,
+          process_number: req.body?.process_number,
           skipped: true
         }))
         return
