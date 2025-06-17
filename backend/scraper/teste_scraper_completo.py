@@ -22,7 +22,7 @@ def load_real_data():
     # Dados reais extraídos dos arquivos debug
     real_publications = [
         {
-            "processNumber": "0013168-70.2024.8.26.0053",
+            "process_number": "0013168-70.2024.8.26.0053",
             "availabilityDate": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Sheila de Oliveira"],
@@ -41,7 +41,7 @@ def load_real_data():
             "parte": "1",
         },
         {
-            "processNumber": "0029544-34.2024.8.26.0053",
+            "process_number": "0029544-34.2024.8.26.0053",
             "availabilityDate": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Verissimo Ursulino do Nascimento"],
@@ -60,7 +60,7 @@ def load_real_data():
             "parte": "1",
         },
         {
-            "processNumber": "0020204-66.2024.8.26.0053",
+            "process_number": "0020204-66.2024.8.26.0053",
             "availabilityDate": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Luciani Regina P Risco"],
@@ -164,7 +164,7 @@ async def test_complete_scraper():
 
     # Processar cada publicação
     for i, pub in enumerate(publications, 1):
-        print(f"📋 [{i}/{len(publications)}] Processando: {pub['processNumber']}")
+        print(f"📋 [{i}/{len(publications)}] Processando: {pub['process_number']}")
         print(f"   👤 Autor: {pub['authors'][0]}")
 
         # Mostrar valor se existe
