@@ -6,14 +6,14 @@ export interface PublicationEntity {
   id: string
   process_number: string
   publicationDate?: Date | null
-  availabilityDate: Date
+  availability_date: Date
   authors: string[]
   defendant: string
   lawyers?: Array<{ name: string; oab: string }> | null
-  grossValue?: number | null // Valor em reais
-  netValue?: number | null // Valor em reais
-  interestValue?: number | null // Valor em reais
-  attorneyFees?: number | null // Valor em reais
+  gross_value?: number | null // Valor em reais
+  net_value?: number | null // Valor em reais
+  interest_value?: number | null // Valor em reais
+  attorney_fees?: number | null // Valor em reais
   content: string
   status: PublicationStatus
   scrapingSource: string
@@ -21,7 +21,7 @@ export interface PublicationEntity {
   instancia: string
   local: string
   parte: string
-  extractionMetadata?: any | null
+  extraction_metadata?: any | null
   createdAt: Date
   updatedAt: Date
 }
@@ -66,7 +66,7 @@ export class PublicationValidation {
    * Valida se os dados monetários são válidos
    */
   static areValidMonetaryValues(publication: Partial<PublicationEntity>): boolean {
-    const fields = ['grossValue', 'netValue', 'interestValue', 'attorneyFees'] as const
+    const fields = ['gross_value', 'net_value', 'interest_value', 'attorney_fees'] as const
 
     for (const field of fields) {
       const value = publication[field]
@@ -81,17 +81,17 @@ export class PublicationValidation {
   /**
    * Valida se as datas são consistentes
    */
-  static areValidDates(publicationDate?: Date | null, availabilityDate?: Date): boolean {
-    if (!availabilityDate) return false
+  static areValidDates(publicationDate?: Date | null, availability_date?: Date): boolean {
+    if (!availability_date) return false
 
     const today = new Date()
     today.setHours(23, 59, 59, 999)
 
     // Availability date não pode ser futura
-    if (availabilityDate > today) return false
+    if (availability_date > today) return false
 
     // Se publication date existe, deve ser <= availability date
-    if (publicationDate && publicationDate > availabilityDate) return false
+    if (publicationDate && publicationDate > availability_date) return false
 
     return true
   }
@@ -120,16 +120,16 @@ export class PublicationFactory {
    */
   static create(data: {
     process_number: string
-    availabilityDate: Date
+    availability_date: Date
     authors: string[]
     content: string
     publicationDate?: Date
     lawyers?: Array<{ name: string; oab: string }>
-    grossValue?: number
-    netValue?: number
-    interestValue?: number
-    attorneyFees?: number
-    extractionMetadata?: any
+    gross_value?: number
+    net_value?: number
+    interest_value?: number
+    attorney_fees?: number
+    extraction_metadata?: any
   }): Omit<PublicationEntity, 'id' | 'createdAt' | 'updatedAt'> {
 
     // Validações
@@ -137,7 +137,7 @@ export class PublicationFactory {
       throw new Error('Invalid process number format')
     }
 
-    if (!PublicationValidation.areValidDates(data.publicationDate, data.availabilityDate)) {
+    if (!PublicationValidation.areValidDates(data.publicationDate, data.availability_date)) {
       throw new Error('Invalid dates')
     }
 
@@ -156,14 +156,14 @@ export class PublicationFactory {
     return {
       process_number: data.process_number,
       publicationDate: data.publicationDate || null,
-      availabilityDate: data.availabilityDate,
+      availability_date: data.availability_date,
       authors: data.authors,
       defendant: 'Instituto Nacional do Seguro Social - INSS',
       lawyers: data.lawyers || null,
-      grossValue: data.grossValue || null,
-      netValue: data.netValue || null,
-      interestValue: data.interestValue || null,
-      attorneyFees: data.attorneyFees || null,
+      gross_value: data.gross_value || null,
+      net_value: data.net_value || null,
+      interest_value: data.interest_value || null,
+      attorney_fees: data.attorney_fees || null,
       content: data.content,
       status: 'NOVA',
       scrapingSource: 'DJE-SP',
@@ -171,7 +171,7 @@ export class PublicationFactory {
       instancia: '1',
       local: 'Capital',
       parte: '1',
-      extractionMetadata: data.extractionMetadata || null,
+      extraction_metadata: data.extraction_metadata || null,
     }
   }
 
@@ -238,8 +238,8 @@ export class PublicationFormatter {
       `Status: ${publication.status}`,
     ]
 
-    if (publication.grossValue) {
-      parts.push(`Valor: ${this.formatMoney(publication.grossValue)}`)
+    if (publication.gross_value) {
+      parts.push(`Valor: ${this.formatMoney(publication.gross_value)}`)
     }
 
     return parts.join(' | ')
