@@ -23,18 +23,18 @@ def load_real_data():
     real_publications = [
         {
             "process_number": "0013168-70.2024.8.26.0053",
-            "availabilityDate": "2024-11-13T00:00:00.000Z",
+            "availability_date": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Sheila de Oliveira"],
             "defendant": "Instituto Nacional do Seguro Social - INSS",
             "lawyers": [{"name": "Dr. Carlos Santos Silva", "oab": "256789"}],
-            "grossValue": 12914423,  # R$ 129,144.23 em centavos
-            "netValue": 11622981,  # R$ 116,229.81 em centavos
-            "interestValue": 1291442,  # R$ 12,914.42 em centavos
-            "attorneyFees": 12914,  # R$ 129.14 em centavos (1% do valor bruto)
+            "gross_value": 12914423,  # R$ 129,144.23 em centavos
+            "net_value": 11622981,  # R$ 116,229.81 em centavos
+            "interest_value": 1291442,  # R$ 12,914.42 em centavos
+            "attorney_fees": 12914,  # R$ 129.14 em centavos (1% do valor bruto)
             "content": "PODER JUDICIÁRIO TRIBUNAL DE JUSTIÇA DO ESTADO DE SÃO PAULO Processo Digital nº: 0013168-70.2024.8.26.0053 Classe: Execução Contra a Fazenda Pública Assunto: Aposentadoria por Invalidez (Art. 42 da Lei 8.213/91) Exequente: Sheila de Oliveira Executado: Instituto Nacional do Seguro Social - INSS CONCLUSÃO: Requisição de Pequeno Valor - RPV no valor de R$ 129.144,23 aprovada para pagamento pelo INSS conforme decisão judicial.",
             "status": "NOVA",
-            "scrapingSource": "DJE-SP",
+            "scraping_source": "DJE-SP",
             "caderno": "3",
             "instancia": "1",
             "local": "Capital",
@@ -42,18 +42,18 @@ def load_real_data():
         },
         {
             "process_number": "0029544-34.2024.8.26.0053",
-            "availabilityDate": "2024-11-13T00:00:00.000Z",
+            "availability_date": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Verissimo Ursulino do Nascimento"],
             "defendant": "Instituto Nacional do Seguro Social - INSS",
             "lawyers": [{"name": "Dra. Ana Maria Ferreira", "oab": "189456"}],
-            "grossValue": 3479186,  # R$ 34,791.86 em centavos
-            "netValue": 3131267,  # R$ 31,312.67 em centavos
-            "interestValue": 347919,  # R$ 3,479.19 em centavos
-            "attorneyFees": 3479,  # R$ 34.79 em centavos (1% do valor bruto)
+            "gross_value": 3479186,  # R$ 34,791.86 em centavos
+            "net_value": 3131267,  # R$ 31,312.67 em centavos
+            "interest_value": 347919,  # R$ 3,479.19 em centavos
+            "attorney_fees": 3479,  # R$ 34.79 em centavos (1% do valor bruto)
             "content": "PODER JUDICIÁRIO TRIBUNAL DE JUSTIÇA DO ESTADO DE SÃO PAULO Processo Digital nº: 0029544-34.2024.8.26.0053 Classe: Execução Contra a Fazenda Pública Assunto: Aposentadoria por Invalidez (Art. 42 da Lei 8.213/91) Exequente: Verissimo Ursulino do Nascimento Executado: Instituto Nacional do Seguro Social - INSS CONCLUSÃO: Requisição de Pequeno Valor - RPV no valor de R$ 34.791,86 aprovada para pagamento pelo INSS conforme decisão judicial.",
             "status": "NOVA",
-            "scrapingSource": "DJE-SP",
+            "scraping_source": "DJE-SP",
             "caderno": "3",
             "instancia": "1",
             "local": "Capital",
@@ -61,18 +61,18 @@ def load_real_data():
         },
         {
             "process_number": "0020204-66.2024.8.26.0053",
-            "availabilityDate": "2024-11-13T00:00:00.000Z",
+            "availability_date": "2024-11-13T00:00:00.000Z",
             "publicationDate": "2024-11-13T00:00:00.000Z",
             "authors": ["Luciani Regina P Risco"],
             "defendant": "Instituto Nacional do Seguro Social - INSS",
             "lawyers": [{"name": "Dr. Pedro Augusto Lima", "oab": "334567"}],
-            "grossValue": 0,  # Sem valor informado
-            "netValue": 0,
-            "interestValue": 0,
-            "attorneyFees": 0,
+            "gross_value": 0,  # Sem valor informado
+            "net_value": 0,
+            "interest_value": 0,
+            "attorney_fees": 0,
             "content": "PODER JUDICIÁRIO TRIBUNAL DE JUSTIÇA DO ESTADO DE SÃO PAULO Processo Digital nº: 0020204-66.2024.8.26.0053 Classe: Execução Contra a Fazenda Pública Assunto: Aposentadoria por Invalidez (Art. 42 da Lei 8.213/91) Exequente: Luciani Regina P Risco Executado: Instituto Nacional do Seguro Social - INSS CONCLUSÃO: Processo em fase de execução de RPV para pagamento pelo INSS conforme decisão judicial.",
             "status": "NOVA",
-            "scrapingSource": "DJE-SP",
+            "scraping_source": "DJE-SP",
             "caderno": "3",
             "instancia": "1",
             "local": "Capital",
@@ -82,7 +82,7 @@ def load_real_data():
 
     # Adicionar metadata de extração
     for pub in real_publications:
-        pub["extractionMetadata"] = {
+        pub["extraction_metadata"] = {
             "extraction_date": datetime.now().isoformat(),
             "source_url": "https://dje.tjsp.jus.br/cdje/consultaAvancada.do",
             "confidence_score": 0.95,
@@ -98,7 +98,7 @@ async def send_publication_to_api(publication_data):
 
     # Remover campos com valor zero para torná-los opcionais
     clean_data = publication_data.copy()
-    zero_fields = ["grossValue", "netValue", "interestValue", "attorneyFees"]
+    zero_fields = ["gross_value", "net_value", "interest_value", "attorney_fees"]
 
     for field in zero_fields:
         if field in clean_data and clean_data[field] == 0:
@@ -168,8 +168,8 @@ async def test_complete_scraper():
         print(f"   👤 Autor: {pub['authors'][0]}")
 
         # Mostrar valor se existe
-        if pub["grossValue"] > 0:
-            valor_real = pub["grossValue"] / 100
+        if pub["gross_value"] > 0:
+            valor_real = pub["gross_value"] / 100
             print(f"   💰 Valor: R$ {valor_real:,.2f}")
         else:
             print(f"   💰 Valor: Não informado")
@@ -203,7 +203,7 @@ async def test_complete_scraper():
 
     if stats["success"] > 0:
         total_valor = sum(
-            pub["grossValue"] for pub in publications if pub["grossValue"] > 0
+            pub["gross_value"] for pub in publications if pub["gross_value"] > 0
         )
         print(f"💰 Valor total processado: R$ {total_valor / 100:,.2f}")
 
