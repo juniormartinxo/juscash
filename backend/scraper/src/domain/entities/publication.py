@@ -44,12 +44,14 @@ class Publication:
     # Identificação
     process_number: str
 
-    # Datas
+    # Partes do processo (campos obrigatórios sem valor padrão)
+    authors: List[str]
+
+    # Datas (campos opcionais com valor padrão)
     publication_date: Optional[datetime] = None
     availability_date: Optional[datetime] = None
 
-    # Partes do processo
-    authors: List[str]
+    # Outras partes do processo
     defendant: str = "Instituto Nacional do Seguro Social - INSS"
     lawyers: List[Lawyer] = field(default_factory=list)
 
