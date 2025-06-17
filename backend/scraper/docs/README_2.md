@@ -194,9 +194,9 @@ O sistema cria publicações de teste com:
     "authors": ["João Silva Santos"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "lawyers": [{"name": "Dr. Carlos", "oab": "123456"}],
-    "grossValue": 150000,  # em centavos
+    "gross_value": 150000,  # em centavos
     "content": "Texto completo da publicação...",
-    "extractionMetadata": {
+    "extraction_metadata": {
         "extraction_date": "2024-03-17T10:30:00Z",
         "source_url": "https://dje.tjsp.jus.br/...",
         "confidence_score": 0.95
