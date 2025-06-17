@@ -219,7 +219,7 @@ class DJEContentParser:
 
             # Extrair componentes opcionais
             publication_date = self._extract_publication_date(normalized_content)
-            availability_date = self._extract_availability_date(normalized_content)
+            availability_date = self._extract_availabilityDate(normalized_content)
             lawyers = self._extract_lawyers(normalized_content)
 
             # Extrair valores monetários
@@ -366,7 +366,7 @@ class DJEContentParser:
                     continue
         return None
 
-    def _extract_availability_date(self, content: str) -> Optional[datetime]:
+    def _extract_availabilityDate(self, content: str) -> Optional[datetime]:
         """Extrai data de disponibilização"""
         # Procurar por padrões específicos de disponibilização
         availability_patterns = [
