@@ -26,6 +26,12 @@ export interface PublicationEntity {
   updatedAt: Date
 }
 
+export type PublicationJsonEntity = Omit<PublicationEntity, 'gross_value' | 'net_value' | 'interest_value' | 'attorney_fees'> & {
+  gross_value?: string | null
+  net_value?: string | null
+  interest_value?: string | null
+  attorney_fees?: string | null
+}
 /**
  * Enum para status da publicação
  * Corresponde ao enum do Prisma schema
