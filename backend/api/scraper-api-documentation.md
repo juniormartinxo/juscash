@@ -117,7 +117,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
   -d '{
     "process_number": "1234567-89.2024.8.26.0100",
     "publicationDate": "2024-03-15T00:00:00.000Z",
-    "availabilityDate": "2024-03-17T00:00:00.000Z",
+    "availability_date": "2024-03-17T00:00:00.000Z",
     "authors": ["João Silva Santos", "Maria Oliveira"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "lawyers": [
@@ -126,10 +126,10 @@ curl -X POST http://localhost:3000/api/scraper/publications \
         "oab": "123456"
       }
     ],
-    "grossValue": 150000,
-    "netValue": 135000,
-    "interestValue": 10000,
-    "attorneyFees": 5000,
+    "gross_value": 150000,
+    "net_value": 135000,
+    "interest_value": 10000,
+    "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação...",
     "status": "NOVA",
     "scrapingSource": "DJE-SP",
@@ -137,7 +137,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
     "instancia": "1",
     "local": "Capital",
     "parte": "1",
-    "extractionMetadata": {
+    "extraction_metadata": {
       "extraction_date": "2024-03-17T10:30:00.000Z",
       "source_url": "https://dje.tjsp.jus.br/...",
       "confidence_score": 0.95
@@ -155,20 +155,20 @@ async function createPublicationFromScraper() {
     const publicationData = {
       process_number: '1234567-89.2024.8.26.0100',
       publicationDate: '2024-03-15T00:00:00.000Z',
-      availabilityDate: '2024-03-17T00:00:00.000Z',
+      availability_date: '2024-03-17T00:00:00.000Z',
       authors: ['João Silva Santos', 'Maria Oliveira'],
       defendant: 'Instituto Nacional do Seguro Social - INSS',
       lawyers: [
         { name: 'Dr. Carlos Advogado', oab: '123456' }
       ],
-      grossValue: 150000,
-      netValue: 135000,
-      interestValue: 10000,
-      attorneyFees: 5000,
+      gross_value: 150000,
+      net_value: 135000,
+      interest_value: 10000,
+      attorney_fees: 5000,
       content: 'Conteúdo completo da publicação...',
       status: 'NOVA',
       scrapingSource: 'DJE-SP',
-      extractionMetadata: {
+      extraction_metadata: {
         extraction_date: '2024-03-17T10:30:00.000Z',
         source_url: 'https://dje.tjsp.jus.br/...',
         confidence_score: 0.95
@@ -213,20 +213,20 @@ def create_publication_from_scraper():
     data = {
         "process_number": "1234567-89.2024.8.26.0100",
         "publicationDate": "2024-03-15T00:00:00.000Z",
-        "availabilityDate": "2024-03-17T00:00:00.000Z",
+        "availability_date": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos", "Maria Oliveira"],
         "defendant": "Instituto Nacional do Seguro Social - INSS",
         "lawyers": [
             {"name": "Dr. Carlos Advogado", "oab": "123456"}
         ],
-        "grossValue": 150000,
-        "netValue": 135000,
-        "interestValue": 10000,
-        "attorneyFees": 5000,
+        "gross_value": 150000,
+        "net_value": 135000,
+        "interest_value": 10000,
+        "attorney_fees": 5000,
         "content": "Conteúdo completo da publicação...",
         "status": "NOVA",
         "scrapingSource": "DJE-SP",
-        "extractionMetadata": {
+        "extraction_metadata": {
             "extraction_date": "2024-03-17T10:30:00.000Z",
             "source_url": "https://dje.tjsp.jus.br/...",
             "confidence_score": 0.95
@@ -402,7 +402,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
 curl -X POST http://localhost:3000/api/scraper/publications \
   -H "X-API-Key: sua-api-key-aqui" \
   -H "Content-Type: application/json" \
-  -d '{"process_number": "123", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
+  -d '{"process_number": "123", "availability_date": "2024-03-17", "authors": ["Test"], "content": "Test"}'
 ```
 
 ### 3. Teste de Rate Limiting
@@ -413,7 +413,7 @@ for i in {1..1001}; do
   curl -X POST http://localhost:3000/api/scraper/publications \
     -H "X-API-Key: sua-api-key-aqui" \
     -H "Content-Type: application/json" \
-    -d '{"process_number": "'$i'", "availabilityDate": "2024-03-17", "authors": ["Test"], "content": "Test"}'
+    -d '{"process_number": "'$i'", "availability_date": "2024-03-17", "authors": ["Test"], "content": "Test"}'
 done
 ```
 
