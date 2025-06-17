@@ -22,7 +22,7 @@ export class CreatePublicationUseCase {
       content: input.content,
       defendant: input.defendant || 'Instituto Nacional do Seguro Social - INSS',
       status: input.status || 'NOVA',
-      scrapingSource: input.scrapingSource || 'DJE-SP',
+      scraping_source: input.scraping_source || 'DJE-SP',
       caderno: input.caderno || '3',
       instancia: input.instancia || '1',
       local: input.local || 'Capital',
@@ -105,13 +105,13 @@ export interface CreatePublicationInput {
   authors: string[]
   defendant?: string
   lawyers?: Array<{ name: string; oab: string }>
-  gross_value?: number
-  net_value?: number
-  interest_value?: number
-  attorney_fees?: number
+  gross_value?: bigint
+  net_value?: bigint
+  interest_value?: bigint
+  attorney_fees?: bigint
   content: string
   status?: PublicationEntity['status']
-  scrapingSource?: string
+  scraping_source?: string
   caderno?: string
   instancia?: string
   local?: string
