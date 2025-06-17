@@ -94,7 +94,7 @@ test_api_endpoints() {
     fi
     
     # Test scraper endpoint
-    test_publication='{"processNumber":"TEST-'$(date +%s)'-89.2024.8.26.0100","availabilityDate":"2024-03-17T00:00:00.000Z","authors":["Test Author"],"content":"Test content aposentadoria benefício","defendant":"Instituto Nacional do Seguro Social - INSS"}'
+    test_publication='{"process_number":"TEST-'$(date +%s)'-89.2024.8.26.0100","availabilityDate":"2024-03-17T00:00:00.000Z","authors":["Test Author"],"content":"Test content aposentadoria benefício","defendant":"Instituto Nacional do Seguro Social - INSS"}'
     
     response=$(curl -s -X POST "$API_URL/api/scraper/publications" \
         -H "Content-Type: application/json" \
@@ -116,7 +116,7 @@ test_data_persistence() {
     local api_key=$(grep SCRAPER_API_KEY .env | cut -d'=' -f2)
     local test_process="PERSIST-$(date +%s)-89.2024.8.26.0100"
     
-    test_publication="{\"processNumber\":\"$test_process\",\"availabilityDate\":\"2024-03-17T00:00:00.000Z\",\"authors\":[\"Persistence Test\"],\"content\":\"Test persistence aposentadoria benefício\",\"defendant\":\"Instituto Nacional do Seguro Social - INSS\"}"
+    test_publication="{\"process_number\":\"$test_process\",\"availabilityDate\":\"2024-03-17T00:00:00.000Z\",\"authors\":[\"Persistence Test\"],\"content\":\"Test persistence aposentadoria benefício\",\"defendant\":\"Instituto Nacional do Seguro Social - INSS\"}"
     
     # Criar
     curl -s -X POST "$API_URL/api/scraper/publications" \
