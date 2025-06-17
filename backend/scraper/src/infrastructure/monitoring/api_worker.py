@@ -63,8 +63,8 @@ class APIWorker:
         self.redis_client: Optional[redis.Redis] = None
         self.api_key = api_key
 
-        # Ensure log directory exists
-        self.log_path.mkdir(parents=True, exist_ok=True)
+        # Ensure log directory exists with proper permission handling
+        self._ensure_log_directory()
 
         # Configure HTTP session
         self.session = self._create_http_session()
@@ -224,13 +224,13 @@ class APIWorker:
 
             # Se chegou até aqui, formato não reconhecido
             logger.warning(
-                f"Formato de data não reconhecido para {field_name} em {file_name}: {date_field}"
+                f"Formato de data não reconhecido para {field_name} em {file_name}: {date_field}, usando data atual"
             )
-            return "00:00:00Z"
+            return datetime.now().isoformat() + "Z"
 
         except Exception as e:
             logger.error(f"Erro ao processar data {field_name} em {file_name}: {e}")
-            return "00:00:00Z"  # datetime.now().isoformat() + "Z"
+            return datetime.now().isoformat() + "Z"
 
     def _safe_numeric_value(self, value: Any, default: int = 0) -> int:
         """Converte valor para inteiro de forma segura."""
@@ -290,17 +290,6 @@ class APIWorker:
 
                 data["content"] = content.replace("'", "''")
 
-            # CORREÇÃO: Usar formato datetime completo para compatibilidade com Zod
-            data["availability_date"] = self._validate_and_format_date(
-                data.get("availability_date"), "availability_date", file_name
-            )
-
-            # publication_date é opcional, mas se presente, deve seguir mesmo formato
-            if data.get("publication_date") is not None:
-                data["publication_date"] = self._validate_and_format_date(
-                    data.get("publication_date"), "publication_date", file_name
-                )
-
             # Tratar valores monetários (mantém como está)
             def safe_numeric_value(value: Any, default: int = 0) -> int:
                 if value is None or value == "" or str(value).strip() == "":
@@ -354,22 +343,14 @@ class APIWorker:
                 logger.error(f"content deve ser string em {file_name}")
                 return False
 
-            # Validar formato datetime das datas
-            datetime_fields = ["availability_date", "publication_date"]
-            for field in datetime_fields:
-                if field in data and data[field] is not None:
-                    if not isinstance(data[field], str):
-                        logger.error(f"{field} deve ser string datetime em {file_name}")
-                        return False
+            # Validar e formatar campos de data usando ISO-8601 DateTime
+            data["publication_date"] = self._validate_and_format_date(
+                data.get("publication_date"), "publication_date", file_name
+            )
 
-                    # Verificar se está no formato ISO 8601
-                    try:
-                        datetime.fromisoformat(data[field].replace("Z", "+00:00"))
-                    except ValueError:
-                        logger.error(
-                            f"{field} não está no formato datetime válido em {file_name}: {data[field]}"
-                        )
-                        return False
+            data["availability_date"] = self._validate_and_format_date(
+                data.get("availability_date"), "availability_date", file_name
+            )
 
             # Validar valores monetários
             monetary_fields = [
@@ -639,8 +620,48 @@ class APIWorker:
                 f"📝 Logged failure for {queue_item.get('file_name')} to {log_file}"
             )
 
+        except PermissionError as e:
+            # Tentar usar diretório temporário como fallback
+            logger.warning(
+                f"⚠️ Erro de permissão: {e}. Tentando diretório temporário..."
+            )
+            try:
+                import tempfile
+
+                temp_log_path = Path(tempfile.gettempdir()) / "juscash_logs"
+                temp_log_path.mkdir(exist_ok=True)
+
+                temp_log_file = (
+                    temp_log_path / f"failures_{datetime.now().strftime('%Y%m%d')}.json"
+                )
+
+                # Read existing logs or create new list
+                if temp_log_file.exists():
+                    with open(temp_log_file, "r", encoding="utf-8") as f:
+                        logs = json.load(f)
+                else:
+                    logs = []
+
+                # Append new log entry
+                logs.append(log_entry)
+
+                # Write back to file
+                with open(temp_log_file, "w", encoding="utf-8") as f:
+                    json.dump(logs, f, indent=2, ensure_ascii=False)
+
+                logger.info(
+                    f"📝 Logged failure for {queue_item.get('file_name')} to temp file: {temp_log_file}"
+                )
+
+            except Exception as temp_e:
+                logger.error(f"💥 Erro também no diretório temporário: {temp_e}")
+                # Como último recurso, apenas logar no console
+                logger.error(f"📊 Falha não salva: {log_entry}")
+
         except Exception as e:
             logger.error(f"💥 Error writing to log file: {e}")
+            # Tentar pelo menos logar no console
+            logger.error(f"📊 Falha não salva: {log_entry}")
 
     def start(self) -> None:
         """Start the improved worker service."""
@@ -814,15 +835,25 @@ def main():
 
     # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
+    handlers = [logging.StreamHandler(sys.stdout)]
+
+    # Tentar adicionar file handler, mas usar só console se houver erro de permissão
+    try:
+        log_file_path = (
+            Path(args.log_path) / f"worker_{datetime.now().strftime('%Y%m%d')}.log"
+        )
+        handlers.append(logging.FileHandler(log_file_path))
+    except PermissionError:
+        print(
+            f"⚠️ Warning: Cannot write to log file in {args.log_path}, logging only to console"
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Error setting up log file: {e}, logging only to console")
+
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler(
-                Path(args.log_path) / f"worker_{datetime.now().strftime('%Y%m%d')}.log"
-            ),
-        ],
+        handlers=handlers,
     )
 
     # Get Redis URL from args or environment
@@ -840,7 +871,7 @@ def main():
     logger.info(f"📁 Log Path: {args.log_path}")
 
     # Create worker
-    worker = ImprovedAPIWorker(
+    worker = APIWorker(
         redis_url=redis_url,
         api_endpoint=args.api_endpoint,
         log_path=args.log_path,
