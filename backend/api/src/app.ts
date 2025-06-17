@@ -176,8 +176,8 @@ class Application {
         version: '1.0.0',
         description: 'API para gerenciamento de publicações do DJE de São Paulo',
         environment: process.env.NODE_ENV || 'development',
-        documentation: '/api-docs',
-        health: '/health',
+        documentation: '/api/docs',
+        health: '/api/health',
         metrics: config.monitoring.enableMetrics ? config.monitoring.metricsPath : null,
         endpoints: {
           auth: {
@@ -233,7 +233,7 @@ class Application {
     })
 
     // Simple test endpoint
-    this.app.post('/test', (req, res) => {
+    this.app.post('/api/test', (req, res) => {
       res.json({ success: true, message: 'Test endpoint working', body: req.body })
     })
   }
@@ -371,9 +371,9 @@ class Application {
       // Start server
       const server = this.app.listen(apiPort, () => {
         logger.info(`🚀 Server running on http://localhost:${apiPort}`)
-        logger.info(`📋 Health check: http://localhost:${apiPort}/health`)
-        logger.info(`📚 API docs: http://localhost:${apiPort}/api-docs`)
-        logger.info(`🔗 API info: http://localhost:${apiPort}/api`)
+        logger.info(`📋 Health check: http://localhost:${apiPort}/api/health`)
+        logger.info(`📚 API docs: http://localhost:${apiPort}/api/docs`)
+        logger.info(`🔗 API info: http://localhost:${apiPort}/api/`)
 
         if (config.monitoring.enableMetrics) {
           logger.info(`📊 Metrics: http://localhost:${apiPort}${config.monitoring.metricsPath}`)
