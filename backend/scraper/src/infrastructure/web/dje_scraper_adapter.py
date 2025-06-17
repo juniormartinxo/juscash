@@ -89,14 +89,29 @@ class DJEScraperAdapter(WebScraperPort):
         except Exception as e:
             logger.warning(f"⚠️ Erro ao limpar PDFs: {e}")
 
-        if self.page:
-            await self.page.close()
+        # Cleanup do page
+        try:
+            if self.page and not self.page.is_closed():
+                await self.page.close()
+                logger.debug("📄 Página fechada")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao fechar página: {e}")
 
-        if self.browser:
-            await self.browser.close()
+        # Cleanup do browser
+        try:
+            if self.browser:
+                await self.browser.close()
+                logger.debug("🌐 Browser fechado")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao fechar browser: {e}")
 
-        if self.playwright:
-            await self.playwright.stop()
+        # Cleanup do playwright
+        try:
+            if self.playwright:
+                await self.playwright.stop()
+                logger.debug("🎭 Playwright parado")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao parar playwright: {e}")
 
     async def scrape_publications(
         self, search_terms: List[str], max_pages: int = 10
@@ -145,6 +160,10 @@ class DJEScraperAdapter(WebScraperPort):
         logger.info("📝 Preenchendo formulário de pesquisa avançada")
 
         try:
+            # Verificar se página ainda está válida
+            if not self.page or self.page.is_closed():
+                raise Exception("Página do browser foi fechada")
+
             # Aguardar carregamento completo do formulário
             await self.page.wait_for_load_state("networkidle")
             await asyncio.sleep(3)
@@ -245,31 +264,105 @@ class DJEScraperAdapter(WebScraperPort):
             # 4. AGUARDAR UM POUCO ANTES DE SUBMETER
             await asyncio.sleep(2)
 
-            # 5. SUBMETER FORMULÁRIO
+            # 5. SUBMETER FORMULÁRIO COM TRATAMENTO MELHORADO
             submit_selectors = [
                 'input[value="Pesquisar"]',
+                'input[name="pbConsultar"]',
                 'button:text("Pesquisar")',
                 'input[type="submit"]',
                 'button[type="submit"]',
+                ".botaoPesquisar",
+                "#pbConsultar",
+                '[onclick*="consultar"]',
             ]
 
             submitted = False
+            last_error = None
+
             for selector in submit_selectors:
-                element = await self.page.query_selector(selector)
-                if element:
-                    try:
-                        await element.click()
-                        await self.page.wait_for_load_state("networkidle")
-                        await asyncio.sleep(3)  # Aguardar resultados carregarem
-                        logger.info(f"✅ Formulário submetido (selector: {selector})")
-                        submitted = True
-                        break
-                    except Exception as e:
-                        logger.debug(f"Falha ao submeter com {selector}: {e}")
+                try:
+                    # Verificar se o elemento existe
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        # Verificar se é visível e habilitado
+                        is_visible = await element.is_visible()
+                        is_enabled = await element.is_enabled()
+
+                        if is_visible and is_enabled:
+                            logger.info(
+                                f"🎯 Tentando submeter com selector: {selector}"
+                            )
+                            await element.click()
+
+                            # Aguardar navegação ou carregamento
+                            try:
+                                await self.page.wait_for_load_state(
+                                    "networkidle", timeout=15000
+                                )
+                                await asyncio.sleep(3)  # Aguardar resultados carregarem
+
+                                # Verificar se a submissão foi bem-sucedida
+                                current_url = self.page.url
+                                if (
+                                    "consultaAvancada" not in current_url
+                                    or "resultado" in current_url.lower()
+                                ):
+                                    logger.info(
+                                        f"✅ Formulário submetido com sucesso (selector: {selector})"
+                                    )
+                                    submitted = True
+                                    break
+                                else:
+                                    logger.debug(
+                                        f"⚠️ URL não mudou após submissão: {current_url}"
+                                    )
+                            except Exception as e:
+                                logger.debug(
+                                    f"⚠️ Timeout aguardando resposta para {selector}: {e}"
+                                )
+                                # Continuar tentando outros seletores
+                        else:
+                            logger.debug(
+                                f"❌ Elemento {selector} não está visível ou habilitado"
+                            )
+                except Exception as e:
+                    last_error = e
+                    logger.debug(f"❌ Falha ao tentar {selector}: {e}")
+                    continue
 
             if not submitted:
-                logger.error("❌ Não foi possível submeter o formulário")
-                raise Exception("Falha ao submeter formulário")
+                error_msg = f"Falha ao submeter formulário. Último erro: {last_error}"
+                logger.error(f"❌ {error_msg}")
+
+                # Salvar screenshot para debug
+                await self._save_debug_screenshot("form_submit_error")
+
+                # Tentar submissão por JavaScript como último recurso
+                try:
+                    logger.info("🔄 Tentando submissão via JavaScript...")
+                    submit_result = await self.page.evaluate("""
+                        () => {
+                            const forms = document.querySelectorAll('form');
+                            for (const form of forms) {
+                                if (form.action && form.action.includes('consulta')) {
+                                    form.submit();
+                                    return 'Formulário submetido via JavaScript';
+                                }
+                            }
+                            return 'Nenhum formulário encontrado';
+                        }
+                    """)
+                    logger.info(f"📝 Resultado JavaScript: {submit_result}")
+
+                    if "submetido" in submit_result:
+                        await asyncio.sleep(5)  # Aguardar mais tempo para JS
+                        submitted = True
+                        logger.info("✅ Formulário submetido via JavaScript")
+                except Exception as js_error:
+                    logger.error(f"❌ Falha na submissão JavaScript: {js_error}")
+
+            if not submitted:
+                raise Exception(error_msg)
 
             logger.info("✅ Pesquisa executada com critérios específicos")
 
@@ -753,10 +846,15 @@ class DJEScraperAdapter(WebScraperPort):
     async def _save_debug_screenshot(self, name: str) -> None:
         """Salva screenshot para debug"""
         try:
+            # Garantir que o diretório debug_images existe
+            debug_dir = Path("logs/debug_images")
+            debug_dir.mkdir(parents=True, exist_ok=True)
+
             screenshot_path = (
-                f"debug_{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                debug_dir
+                / f"debug_{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             )
-            await self.page.screenshot(path=screenshot_path)
+            await self.page.screenshot(path=str(screenshot_path))
             logger.info(f"🐛 Screenshot de debug: {screenshot_path}")
         except Exception as e:
             logger.warning(f"⚠️ Erro ao salvar screenshot: {e}")
