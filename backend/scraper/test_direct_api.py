@@ -22,25 +22,25 @@ async def test_direct_api():
     # Criar publicação de teste
     publication_data = {
         "process_number": f"TEST-DIRECT-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
-        "availabilityDate": "2024-03-17T00:00:00.000Z",
+        "availability_date": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos", "Maria Oliveira"],
         "defendant": "Instituto Nacional do Seguro Social - INSS",
         "lawyers": [
             {"name": "Dr. Carlos Advogado", "oab": "123456"},
             {"name": "Dra. Ana Jurista", "oab": "789012"},
         ],
-        "grossValue": 150000,  # R$ 1500,00 em centavos
-        "netValue": 135000,  # R$ 1350,00 em centavos
-        "interestValue": 10000,  # R$ 100,00 em centavos
-        "attorneyFees": 5000,  # R$ 50,00 em centavos
+        "gross_value": 150000,  # R$ 1500,00 em centavos
+        "net_value": 135000,  # R$ 1350,00 em centavos
+        "interest_value": 10000,  # R$ 100,00 em centavos
+        "attorney_fees": 5000,  # R$ 50,00 em centavos
         "content": "Conteúdo completo da publicação do DJE sobre RPV aposentadoria por invalidez do INSS. Valor a ser pago pelo Instituto Nacional do Seguro Social conforme decisão judicial.",
         "status": "NOVA",
-        "scrapingSource": "DJE-SP",
+        "scraping_source": "DJE-SP",
         "caderno": "3",
         "instancia": "1",
         "local": "Capital",
         "parte": "1",
-        "extractionMetadata": {
+        "extraction_metadata": {
             "extraction_date": datetime.now().isoformat(),
             "source_url": "https://dje.tjsp.jus.br/test",
             "confidence_score": 0.95,
@@ -55,7 +55,7 @@ async def test_direct_api():
     print(f"📋 Processo: {publication_data['process_number']}")
     print(f"👥 Autores: {len(publication_data['authors'])}")
     print(f"⚖️ Advogados: {len(publication_data['lawyers'])}")
-    print(f"💰 Valor bruto: R$ {publication_data['grossValue'] / 100:.2f}")
+    print(f"💰 Valor bruto: R$ {publication_data['gross_value'] / 100:.2f}")
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
