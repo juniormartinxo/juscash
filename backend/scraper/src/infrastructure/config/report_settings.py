@@ -1,78 +1,37 @@
 """
-Configurações específicas para salvamento de relatórios TXT
+Configurações para diretórios de relatórios
 """
 
 import os
-from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
+from pydantic import BaseSettings, Field
 
 
-@dataclass
-class ReportSettings:
-    """
-    Configurações para salvamento de relatórios TXT
-    """
+class ReportSettings(BaseSettings):
+    """Configurações dos diretórios de relatórios"""
 
-    # Diretório de saída
-    output_directory: str = "./reports/txt"
+    # Diretório base para relatórios
+    base_dir: Path = Field(default=Path("/app/reports"), env="REPORTS_BASE_DIR")
 
-    # Habilitar/desabilitar salvamento
-    enabled: bool = True
+    # Subdiretórios específicos
+    json_dir: Path = Field(default=None)
+    log_dir: Path = Field(default=None)
 
-    # Formato do nome do arquivo
-    filename_format: str = "{process_number}.txt"
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    # Incluir metadados no relatório
-    include_metadata: bool = True
+        # Configurar subdiretórios
+        self.json_dir = self.base_dir / "json"
+        self.log_dir = self.base_dir / "log"
 
-    # Incluir valores monetários
-    include_monetary_values: bool = True
+        # Criar diretórios se não existirem
+        for dir_path in [self.base_dir, self.json_dir, self.log_dir]:
+            dir_path.mkdir(parents=True, exist_ok=True)
 
-    # Incluir conteúdo completo da publicação
-    include_full_content: bool = True
-
-    # Dias para manter relatórios antigos
-    cleanup_days: int = 30
-
-    # Habilitar limpeza automática
-    auto_cleanup: bool = True
-
-    # Separador de seções no relatório
-    section_separator: str = "-" * 40
-
-    # Separador principal
-    main_separator: str = "=" * 80
-
-    # Encoding para os arquivos
-    file_encoding: str = "utf-8"
-
-    # Criar subdiretórios por data
-    organize_by_date: bool = True
-
-    # Formato de data para subdiretórios
-    date_format: str = "%Y-%m-%d"
+    class Config:
+        env_file = ".env"
 
 
 def get_report_settings() -> ReportSettings:
-    """
-    Obtém configurações de relatório a partir de variáveis de ambiente
-    ou valores padrão
-
-    Returns:
-        Configurações de relatório
-    """
-    return ReportSettings(
-        output_directory=os.getenv("REPORT_OUTPUT_DIR", "./reports/txt"),
-        enabled=os.getenv("REPORT_ENABLED", "true").lower() == "true",
-        filename_format=os.getenv("REPORT_FILENAME_FORMAT", "{process_number}.txt"),
-        include_metadata=os.getenv("REPORT_INCLUDE_METADATA", "true").lower() == "true",
-        include_monetary_values=os.getenv("REPORT_INCLUDE_VALUES", "true").lower()
-        == "true",
-        include_full_content=os.getenv("REPORT_INCLUDE_CONTENT", "true").lower()
-        == "true",
-        cleanup_days=int(os.getenv("REPORT_CLEANUP_DAYS", "30")),
-        auto_cleanup=os.getenv("REPORT_AUTO_CLEANUP", "true").lower() == "true",
-        file_encoding=os.getenv("REPORT_ENCODING", "utf-8"),
-        organize_by_date=os.getenv("REPORT_ORGANIZE_BY_DATE", "true").lower() == "true",
-        date_format=os.getenv("REPORT_DATE_FORMAT", "%Y-%m-%d"),
-    )
+    """Retorna uma instância das configurações de relatórios"""
+    return ReportSettings()
