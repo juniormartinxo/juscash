@@ -40,7 +40,7 @@ def test_publication_to_api_dict():
     print(json.dumps(api_data, indent=2, ensure_ascii=False))
 
     # Verificar campos obrigatórios
-    required_fields = ["processNumber", "availabilityDate", "authors", "content"]
+    required_fields = ["process_number", "availabilityDate", "authors", "content"]
 
     print("\n🔍 Verificação de Campos Obrigatórios:")
     for field in required_fields:
@@ -52,11 +52,11 @@ def test_publication_to_api_dict():
     # Verificar tipos de dados
     print("\n🔍 Verificação de Tipos:")
 
-    # processNumber deve ser string
-    if isinstance(api_data.get("processNumber"), str):
-        print("   ✅ processNumber: string")
+    # process_number deve ser string
+    if isinstance(api_data.get("process_number"), str):
+        print("   ✅ process_number: string")
     else:
-        print(f"   ❌ processNumber: {type(api_data.get('processNumber'))}")
+        print(f"   ❌ process_number: {type(api_data.get('process_number'))}")
 
     # availabilityDate deve ser string (ISO format)
     if isinstance(api_data.get("availabilityDate"), str):
@@ -103,7 +103,7 @@ def test_schema_compliance():
 
     # Campos esperados pelo schema da API (baseado no código TypeScript)
     expected_schema = {
-        "processNumber": "string (obrigatório)",
+        "process_number": "string (obrigatório)",
         "publicationDate": "string datetime (opcional)",
         "availabilityDate": "string datetime (obrigatório)",
         "authors": "array de strings (obrigatório, min 1)",
@@ -133,7 +133,7 @@ def test_schema_compliance():
     print("\n🔍 Verificação de Conformidade:")
 
     # Verificar se todos os campos obrigatórios estão presentes
-    required_fields = ["processNumber", "availabilityDate", "authors", "content"]
+    required_fields = ["process_number", "availabilityDate", "authors", "content"]
     for field in required_fields:
         if field in api_data and api_data[field]:
             print(f"   ✅ {field}: presente e não vazio")
