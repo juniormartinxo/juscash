@@ -1,39 +1,39 @@
 import pytest
 
-from src.shared.value_objects import ProcessNumber, Status, ScrapingCriteria, DJEUrl
+from src.shared.value_objects import process_number, Status, ScrapingCriteria, DJEUrl
 from src.shared.exceptions import ValidationException
 
 
-class TestProcessNumber:
-    """Testes unitários para ProcessNumber."""
-    
+class Testprocess_number:
+    """Testes unitários para process_number."""
+
     def test_valid_cnj_format(self):
         """Testa número no formato CNJ válido."""
-        process = ProcessNumber("1234567-89.2024.8.26.0100")
+        process = process_number("1234567-89.2024.8.26.0100")
         assert str(process) == "1234567-89.2024.8.26.0100"
         assert process.get_sequential_number() == "1234567"
         assert process.get_court_code() == "0100"
-    
+
     def test_alternative_formats(self):
         """Testa formatos alternativos aceitos."""
-        process = ProcessNumber("123456/2024")
+        process = process_number("123456/2024")
         assert str(process) == "123456/2024"
         assert process.get_sequential_number() is None  # Não é formato CNJ
-    
+
     def test_invalid_format_raises_error(self):
         """Testa que formato inválido levanta erro."""
         with pytest.raises(ValueError):
-            ProcessNumber("")
-        
+            process_number("")
+
         with pytest.raises(ValueError):
-            ProcessNumber("@#$%")
-    
+            process_number("@#$%")
+
     def test_equality_and_hash(self):
         """Testa igualdade e hash para uso em sets."""
-        process1 = ProcessNumber("1234567-89.2024.8.26.0100")
-        process2 = ProcessNumber("1234567-89.2024.8.26.0100")
-        process3 = ProcessNumber("7654321-98.2024.8.26.0100")
-        
+        process1 = process_number("1234567-89.2024.8.26.0100")
+        process2 = process_number("1234567-89.2024.8.26.0100")
+        process3 = process_number("7654321-98.2024.8.26.0100")
+
         assert process1 == process2
         assert process1 != process3
         assert hash(process1) == hash(process2)
