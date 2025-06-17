@@ -190,7 +190,7 @@ class EnhancedDJEContentParser(DJEContentParser):
             # Extrair dados complementares
             publication_date = self._extract_publication_date(process_content)
             availability_date = (
-                self._extract_availability_date(process_content) or datetime.now()
+                self._extract_availabilityDate(process_content) or datetime.now()
             )
             lawyers = self._extract_lawyers(process_content)
             monetary_values = self._extract_all_monetary_values(process_content)
