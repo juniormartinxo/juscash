@@ -186,7 +186,7 @@ publications = db_service.get_publications(
     offset=0,
     filters={
         "status": "NOVA",
-        "availability_date_from": date(2025, 3, 1),
+        "availabilityDate_from": date(2025, 3, 1),
         "search_term": "aposentadoria"
     }
 )
