@@ -86,7 +86,7 @@ const swaggerSpec = {
             format: 'date',
             description: 'Data de publicação',
           },
-          availabilityDate: {
+          availability_date: {
             type: 'string',
             format: 'date',
             description: 'Data de disponibilização no DJE',
@@ -119,21 +119,21 @@ const swaggerSpec = {
               },
             },
           },
-          grossValue: {
+          gross_value: {
             type: 'integer',
             description: 'Valor bruto em centavos',
             example: 150000,
           },
-          netValue: {
+          net_value: {
             type: 'integer',
             description: 'Valor líquido em centavos',
             example: 135000,
           },
-          interestValue: {
+          interest_value: {
             type: 'integer',
             description: 'Valor dos juros em centavos',
           },
-          attorneyFees: {
+          attorney_fees: {
             type: 'integer',
             description: 'Valor dos honorários em centavos',
           },
