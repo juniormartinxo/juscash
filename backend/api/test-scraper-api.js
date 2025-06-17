@@ -73,7 +73,7 @@ const samplePublicationData = {
   attorney_fees: 5000,
   content: 'Conteúdo de teste da publicação do DJE sobre aposentadoria por invalidez. Este é um teste automatizado da API do scraper.',
   status: 'NOVA',
-  scrapingSource: 'DJE-SP-TEST',
+  scraping_source: 'DJE-SP-TEST',
   caderno: '3',
   instancia: '1',
   local: 'Capital',
