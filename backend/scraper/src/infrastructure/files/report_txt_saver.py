@@ -35,15 +35,13 @@ class ReportTxtSaver:
         self.output_dir = Path(dir_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Criar subdiretórios por data se configurado
-        if self.settings.organize_by_date:
-            self.daily_dir = self.output_dir
-            self.daily_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            self.daily_dir = self.output_dir
+        # Não criar subdiretórios por data - usar diretório direto
+        self.daily_dir = self.output_dir
 
         logger.info(f"📁 Diretório de relatórios: {self.output_dir}")
-        logger.info(f"📅 Relatórios do dia: {self.daily_dir}")
+        logger.info(
+            f"⚙️ Salvamento {'habilitado' if self.settings.enabled else 'desabilitado'}"
+        )
         logger.info(
             f"⚙️ Salvamento {'habilitado' if self.settings.enabled else 'desabilitado'}"
         )
@@ -69,7 +67,7 @@ class ReportTxtSaver:
             safe_process_number = publication.process_number.replace("/", "_").replace(
                 ".", "_"
             )
-            filename = f"relatorio_{safe_process_number}_{timestamp}.txt"
+            filename = f"{safe_process_number}.txt"
             file_path = self.daily_dir / filename
 
             # Gerar conteúdo do relatório
