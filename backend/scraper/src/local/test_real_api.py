@@ -103,7 +103,7 @@ async def test_real_api_submission():
         print(f"   - Autores: {len(api_data['authors'])} autores")
         print(f"   - Advogados: {len(api_data.get('lawyers', []))} advogados")
         print(
-            f"   - Valores: {len([k for k in ['grossValue', 'netValue', 'interestValue', 'attorneyFees'] if k in api_data])} valores monetários"
+            f"   - Valores: {len([k for k in ['gross_value', 'net_value', 'interest_value', 'attorney_fees'] if k in api_data])} valores monetários"
         )
 
         # Para teste real, descomente as linhas abaixo:
