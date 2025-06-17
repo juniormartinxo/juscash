@@ -48,27 +48,20 @@ for file in "${required_files[@]}"; do
 done
 
 # Construir a imagem Docker
+echo ""
 echo -e "${YELLOW}Construindo imagem Docker...${NC}"
-docker build -t juscash-vite -f .docker/Dockerfile .
-
-# Verificar se a construção foi bem-sucedida
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Imagem Docker construída com sucesso!${NC}"
-else
-    echo "Erro ao construir a imagem Docker."
-    exit 1
-fi
-
-# --- Adicione esta seção para iniciar o contêiner ---
-echo -e "${YELLOW}Iniciando o contêiner Docker...${NC}"
-docker run -d -p 5173:5173 --name juscash-frontend juscash-vite
+echo ""
+docker compose up -d juscash-vite --build --remove-orphans
 
 # Verificar se o contêiner iniciou
 if [ $? -eq 0 ]; then
-    print_success "Contêiner 'juscash-frontend' iniciado com sucesso!"
+    print_success "Contêiner 'juscash-vite' iniciado com sucesso!"
+    echo ""
     echo -e "Acesse a aplicação em ${YELLOW}http://localhost:5173${NC}"
+    echo ""
 else
-    print_error "Falha ao iniciar o contêiner."
+    print_error ">>> Falha ao iniciar o contêiner."
+    echo ""
 fi
 
 cd ../
