@@ -1,5 +1,6 @@
 import { UserRepository } from '@/domain/repositories/user.repository'
 import { AuthService, TokenPair } from '@/domain/services/auth.service'
+import { AppError } from '@/shared/utils/error-handler'
 
 export class RefreshTokenUseCase {
   constructor(
@@ -12,18 +13,17 @@ export class RefreshTokenUseCase {
     const payload = await this.authService.validateToken(input.refreshToken)
 
     if (!payload) {
-      throw new Error('Invalid refresh token')
+      throw new AppError('Invalid or expired refresh token', 401)
     }
 
-    // Verificar se usuário ainda existe e está ativo
     const user = await this.userRepository.findById(payload.userId)
 
-    if (!user || !user.isActive) {
-      throw new Error('User not found or inactive')
+    if (!user) {
+      throw new AppError('User not found', 404)
     }
 
     // Gerar novos tokens
-    const tokens = await this.authService.generateTokens(user.id)
+    const tokens = await this.authService.generateTokens(user)
 
     return {
       tokens,
