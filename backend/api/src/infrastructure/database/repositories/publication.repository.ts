@@ -164,12 +164,12 @@ export class PrismaPublicationRepository implements PublicationRepository {
 
   async create(data: CreatePublicationData): Promise<PublicationEntity> {
     try {
-      // Converter valores monetários de reais para centavos se necessário
-      const monetaryFieldsInCents = {
-        gross_value: data.gross_value ? Math.round(data.gross_value * 100) : null,
-        net_value: data.net_value ? Math.round(data.net_value * 100) : null,
-        interest_value: data.interest_value ? Math.round(data.interest_value * 100) : null,
-        attorney_fees: data.attorney_fees ? Math.round(data.attorney_fees * 100) : null,
+      // Os valores monetários já chegam convertidos para centavos do worker
+      const monetaryFields = {
+        gross_value: data.gross_value || null,
+        net_value: data.net_value || null,
+        interest_value: data.interest_value || null,
+        attorney_fees: data.attorney_fees || null,
       }
 
       const publicationData: any = {
@@ -178,10 +178,10 @@ export class PrismaPublicationRepository implements PublicationRepository {
         availability_date: data.availability_date,
         authors: data.authors,
         defendant: data.defendant || 'Instituto Nacional do Seguro Social - INSS',
-        ...monetaryFieldsInCents,
+        ...monetaryFields,
         content: data.content,
         status: data.status || 'NOVA',
-        scraping_source: data.scrapingSource || 'DJE-SP',
+        scraping_source: data.scraping_source || 'DJE-SP',
         caderno: data.caderno || '3',
         instancia: data.instancia || '1',
         local: data.local || 'Capital',
@@ -225,14 +225,14 @@ export class PrismaPublicationRepository implements PublicationRepository {
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
       lawyers: prismaPublication.lawyers ? JSON.parse(prismaPublication.lawyers) : null,
-      // Converter centavos para reais
-      gross_value: prismaPublication.gross_value ? prismaPublication.gross_value / 100 : null,
-      net_value: prismaPublication.net_value ? prismaPublication.net_value / 100 : null,
-      interest_value: prismaPublication.interest_value ? prismaPublication.interest_value / 100 : null,
-      attorney_fees: prismaPublication.attorney_fees ? prismaPublication.attorney_fees / 100 : null,
+      // Valores monetários já em centavos como bigint
+      gross_value: prismaPublication.gross_value,
+      net_value: prismaPublication.net_value,
+      interest_value: prismaPublication.interest_value,
+      attorney_fees: prismaPublication.attorney_fees,
       content: prismaPublication.content,
       status: prismaPublication.status,
-      scrapingSource: prismaPublication.scraping_source,
+      scraping_source: prismaPublication.scraping_source,
       caderno: prismaPublication.caderno,
       instancia: prismaPublication.instancia,
       local: prismaPublication.local,
