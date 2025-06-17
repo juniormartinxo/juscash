@@ -190,7 +190,7 @@ O sistema cria publicações de teste com:
 
 ```python
 {
-    "processNumber": "1234567-89.2024.8.26.0100",
+    "process_number": "1234567-89.2024.8.26.0100",
     "authors": ["João Silva Santos"],
     "defendant": "Instituto Nacional do Seguro Social - INSS",
     "lawyers": [{"name": "Dr. Carlos", "oab": "123456"}],
