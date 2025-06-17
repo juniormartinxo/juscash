@@ -4,7 +4,9 @@ Worker - Processador de publicações da fila Redis
 
 import asyncio
 import json
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Any
 from domain.entities.publication import Publication, MonetaryValue
 from infrastructure.queue.redis_queue_adapter import RedisQueueAdapter
@@ -28,6 +30,12 @@ class PublicationWorker:
         self.report_saver = ReportTxtSaver()
         self.is_running = False
         self._stop_event = asyncio.Event()
+
+        # Configurar diretório de relatórios JSON
+        self.json_dir = Path(self.settings.reports.json_dir)
+        if not self.json_dir.exists():
+            self.json_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"📁 Diretório JSON criado: {self.json_dir}")
 
     async def start(self):
         """Inicia o worker"""
@@ -95,6 +103,8 @@ class PublicationWorker:
 
             if success:
                 processed_count += 1
+                # Excluir arquivo JSON após sucesso
+                await self._delete_json_file(publication_data)
             else:
                 # Reenfileirar com retry ou mover para DLQ
                 await self._handle_failed_publication(publication_data)
@@ -156,6 +166,32 @@ class PublicationWorker:
                 f"🔧 Dados: {publication_data.get('process_number', 'UNKNOWN')}"
             )
             return False
+
+    async def _delete_json_file(self, publication_data: Dict[str, Any]) -> None:
+        """
+        Exclui o arquivo JSON após processamento bem-sucedido
+
+        Args:
+            publication_data: Dados da publicação
+        """
+        try:
+            # Construir o caminho do arquivo
+            process_number = publication_data.get("process_number", "")
+            if not process_number:
+                return
+
+            safe_process_number = process_number.replace("/", "_").replace(".", "_")
+            filename = f"{safe_process_number}.json"
+            file_path = self.json_dir / filename
+
+            if file_path.exists():
+                file_path.unlink()
+                logger.info(f"🗑️ Arquivo JSON excluído: {filename}")
+            else:
+                logger.debug(f"⚠️ Arquivo JSON não encontrado: {filename}")
+
+        except Exception as error:
+            logger.error(f"❌ Erro ao excluir arquivo JSON: {error}")
 
     def _reconstruct_publication(self, publication_data: Dict[str, Any]) -> Publication:
         """
@@ -264,11 +300,12 @@ class PublicationWorker:
 
             await self.queue.requeue_publication(publication_data, delay_seconds)
         else:
-            # Máximo de tentativas atingido - mover para Dead Letter Queue
+            # Máximo de tentativas atingido - mover para Dead Letter Queue e excluir arquivo
             logger.error(
                 f"💀 Publicação {process_number} falhou após {max_retries} tentativas - movendo para DLQ"
             )
             await self._move_to_dead_letter_queue(publication_data)
+            await self._delete_json_file(publication_data)
 
     async def _move_to_dead_letter_queue(self, publication_data: Dict[str, Any]):
         """
