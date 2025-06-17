@@ -21,6 +21,6 @@ fi
 log_info "Executando scraper via Docker..."
 
 # Construir e executar apenas o scraper
-docker-compose up --build scraper
+docker-compose up --build scraper -d
 
 log_success "Scraper finalizado"
