@@ -7,19 +7,20 @@ export interface PublicationRepository {
   updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationEntity>
   search(query: string): Promise<PublicationEntity[]>
   create(data: CreatePublicationData): Promise<PublicationEntity>
+  upsert(data: CreatePublicationData): Promise<PublicationEntity>
 }
 
 export interface CreatePublicationData {
   process_number: string
-  publicationDate?: Date
-  availabilityDate: Date
+  publication_date?: Date
+  availability_date?: Date
   authors: string[]
   defendant?: string
   lawyers?: Array<{ name: string; oab: string }>
-  grossValue?: number
-  netValue?: number
-  interestValue?: number
-  attorneyFees?: number
+  gross_value?: number
+  net_value?: number
+  interest_value?: number
+  attorney_fees?: number
   content: string
   status?: PublicationEntity['status']
   scrapingSource?: string
@@ -27,7 +28,7 @@ export interface CreatePublicationData {
   instancia?: string
   local?: string
   parte?: string
-  extractionMetadata?: any
+  extraction_metadata?: any
 }
 
 export interface FindPublicationsParams {
