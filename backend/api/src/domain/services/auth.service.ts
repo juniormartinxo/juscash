@@ -9,7 +9,7 @@ export interface TokenPayload {
 }
 
 export interface AuthService {
-  generateTokens(userId: string): Promise<TokenPair>
+  generateTokens(user: { id: string, email: string }): Promise<TokenPair>
   validatePassword(password: string, hash: string): Promise<boolean>
   hashPassword(password: string): Promise<string>
   validateToken(token: string): Promise<TokenPayload | null>
