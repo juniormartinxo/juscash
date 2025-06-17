@@ -59,3 +59,4 @@ urllib3>=2.4.0
 # API dependencies
 fastapi>=0.110.0
 uvicorn[standard]>=0.34.3
+supervisor>=4.2.5
