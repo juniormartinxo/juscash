@@ -128,7 +128,7 @@ class ApiClientAdapter(ScrapingRepositoryPort):
                         api_data = publication.to_api_dict()
                         logger.warning(f"📤 Dados enviados para API:")
                         logger.warning(
-                            f"   🔢 Número processo: {api_data.get('processNumber')}"
+                            f"   🔢 Número processo: {api_data.get('process_number')}"
                         )
                         logger.warning(
                             f"   📅 Data publicação: {api_data.get('publicationDate')}"
