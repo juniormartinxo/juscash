@@ -224,18 +224,18 @@ async def test_full_integration():
     test_data = {
         "process_number": f"INTEGRATION-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
         "publicationDate": "2024-03-15T00:00:00.000Z",
-        "availabilityDate": "2024-03-17T00:00:00.000Z",
+        "availability_date": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos - INTEGRAÇÃO"],
         "defendant": "Instituto Nacional do Seguro Social - INSS",
         "lawyers": [{"name": "Dr. Teste Integração", "oab": "999999"}],
-        "grossValue": 100000,
-        "netValue": 90000,
-        "interestValue": 5000,
-        "attorneyFees": 5000,
+        "gross_value": 100000,
+        "net_value": 90000,
+        "interest_value": 5000,
+        "attorney_fees": 5000,
         "content": "Teste de integração completa entre scraper e API. Aposentadoria por invalidez.",
         "status": "NOVA",
         "scrapingSource": "DJE-SP-TEST",
-        "extractionMetadata": {
+        "extraction_metadata": {
             "test": True,
             "integration_test": True,
             "timestamp": datetime.now().isoformat()
