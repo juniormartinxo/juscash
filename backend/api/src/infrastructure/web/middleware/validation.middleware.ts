@@ -4,7 +4,6 @@ import { ZodError, ZodSchema } from 'zod'
 export class ValidationMiddleware {
   static validateBody(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
-      console.log('ValidationMiddleware.validateBody', req.body)
       try {
         req.body = schema.parse(req.body)
         next()
@@ -34,7 +33,6 @@ export class ValidationMiddleware {
 
   static validateQuery(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
-      console.log('ValidationMiddleware.validateQuery', req.query)
       try {
         const validatedQuery = schema.parse(req.query)
           // Store validated query in a custom property instead of overwriting req.query
@@ -66,11 +64,14 @@ export class ValidationMiddleware {
 
   static validateParams(schema: ZodSchema) {
     return (req: Request, res: Response, next: NextFunction) => {
-      console.log('ValidationMiddleware.validateParams', req.params)
+      //console.log('ValidationMiddleware.validateParams', req.params.id)
+
       try {
         req.params = schema.parse(req.params)
+        console.log('ValidationMiddleware.validateParams', req.params.id)
         next()
       } catch (error) {
+        console.log('ValidationMiddleware.error', error)
         if (error instanceof ZodError) {
           res.status(400).json({
             success: false,
