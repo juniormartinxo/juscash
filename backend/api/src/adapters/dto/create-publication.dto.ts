@@ -53,7 +53,7 @@ export class CreatePublicationMapper {
 
         const input: CreatePublicationInput = {
             process_number: dto.process_number.trim(),
-            availabilityDate: this.parseDate(dto.availability_date),
+            availability_date: this.parseDate(dto.availability_date),
             authors: dto.authors,
             defendant: dto.defendant || 'Instituto Nacional do Seguro Social - INSS',
             content: dto.content.trim(),
@@ -72,25 +72,25 @@ export class CreatePublicationMapper {
 
         // Adicionar campos opcionais apenas se tiverem valores
         if (dto.publication_date) {
-            input.publicationDate = this.parseDate(dto.publication_date)
+            input.publication_date = this.parseDate(dto.publication_date)
         }
         if (dto.lawyers) {
             input.lawyers = dto.lawyers
         }
         if (dto.gross_value !== undefined && dto.gross_value !== null) {
-            input.grossValue = dto.gross_value
+            input.gross_value = dto.gross_value
         }
         if (dto.net_value !== undefined && dto.net_value !== null) {
-            input.netValue = dto.net_value
+            input.net_value = dto.net_value
         }
         if (dto.interest_value !== undefined && dto.interest_value !== null) {
-            input.interestValue = dto.interest_value
+            input.interest_value = dto.interest_value
         }
         if (dto.attorney_fees !== undefined && dto.attorney_fees !== null) {
-            input.attorneyFees = dto.attorney_fees
+            input.attorney_fees = dto.attorney_fees
         }
         if (dto.extraction_metadata) {
-            input.extractionMetadata = dto.extraction_metadata
+            input.extraction_metadata = dto.extraction_metadata
         }
 
         return input
