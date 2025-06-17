@@ -233,7 +233,7 @@ class APIWorker:
             return datetime.now().isoformat() + "Z"
 
     def _safe_numeric_value(self, value: Any, default: int = 0) -> int:
-        """Converte valor para inteiro de forma segura."""
+        """Converte valor para inteiro de forma segura respeitando limites INT4."""
         if value is None or value == "" or str(value).strip() == "":
             return default
 
@@ -245,9 +245,36 @@ class APIWorker:
                     return default
 
                 clean_value = clean_value.replace(",", ".")
-                return int(float(clean_value) * 100)  # Converter para centavos
 
-            return int(float(value) * 100) if value else default
+                # Converter para centavos
+                centavos = int(float(clean_value) * 100)
+
+                # Validar limites BIGINT (-9223372036854775808 a 9223372036854775807)
+                BIGINT_MIN = -9223372036854775808
+                BIGINT_MAX = 9223372036854775807
+
+                if centavos < BIGINT_MIN or centavos > BIGINT_MAX:
+                    logger.error(
+                        f"⚠️ Valor monetário {clean_value} ({centavos} centavos) excede limites BIGINT"
+                    )
+                    logger.error(
+                        f"💡 Valor original: {value}, Convertido: {centavos}, Limite: {BIGINT_MAX}"
+                    )
+                    return default
+
+                return centavos
+
+            converted = int(float(value) * 100) if value else default
+
+            # Validar limites BIGINT também para valores não-string
+            BIGINT_MAX = 9223372036854775807
+            if converted > BIGINT_MAX:
+                logger.error(
+                    f"⚠️ Valor monetário {value} ({converted} centavos) excede limites BIGINT"
+                )
+                return default
+
+            return converted
 
         except (ValueError, TypeError) as e:
             logger.warning(f"Valor monetário inválido: {value} -> usando {default}")
@@ -290,26 +317,13 @@ class APIWorker:
 
                 data["content"] = content.replace("'", "''")
 
-            # Tratar valores monetários (mantém como está)
-            def safe_numeric_value(value: Any, default: int = 0) -> int:
-                if value is None or value == "" or str(value).strip() == "":
-                    return default
-                try:
-                    if isinstance(value, str):
-                        clean_value = re.sub(r"[^\d,.-]", "", value.strip())
-                        if not clean_value:
-                            return default
-                        clean_value = clean_value.replace(",", ".")
-                        return int(float(clean_value) * 100)
-                    return int(float(value) * 100) if value else default
-                except (ValueError, TypeError):
-                    logger.warning(f"Valor monetário inválido em {file_name}: {value}")
-                    return default
-
-            data["gross_value"] = safe_numeric_value(data.get("gross_value"))
-            data["net_value"] = safe_numeric_value(data.get("net_value"))
-            data["interest_value"] = safe_numeric_value(data.get("interest_value"))
-            data["attorney_fees"] = safe_numeric_value(data.get("attorney_fees"))
+            # Tratar valores monetários com validação de limites INT4
+            data["gross_value"] = self._safe_numeric_value(data.get("gross_value"))
+            data["net_value"] = self._safe_numeric_value(data.get("net_value"))
+            data["interest_value"] = self._safe_numeric_value(
+                data.get("interest_value")
+            )
+            data["attorney_fees"] = self._safe_numeric_value(data.get("attorney_fees"))
 
             # Tratar array de advogados
             if data.get("lawyers") is None:
