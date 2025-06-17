@@ -5,14 +5,26 @@ export class GetPublicationsUseCase {
   constructor(private publicationRepository: PublicationRepository) { }
 
   async execute(input: GetPublicationsInput): Promise<GetPublicationsOutput> {
-    const result = await this.publicationRepository.findMany({
+    const params: any = {
       page: input.page || 1,
       limit: input.limit || 30,
-      status: input.status || 'NOVA',
-      startDate: input.startDate || new Date(),
-      endDate: input.endDate || new Date(),
       searchTerm: input.searchTerm || '',
-    })
+    }
+
+    // Só adicionar status se foi fornecido
+    if (input.status) {
+      params.status = input.status
+    }
+
+    // Só adicionar datas se foram fornecidas
+    if (input.startDate) {
+      params.startDate = input.startDate
+    }
+    if (input.endDate) {
+      params.endDate = input.endDate
+    }
+
+    const result = await this.publicationRepository.findMany(params)
 
     return {
       publications: result.publications,
