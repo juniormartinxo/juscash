@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 from domain.entities.publication import Publication
-from infrastructure.config.report_settings import get_report_settings
+from infrastructure.config.settings import get_settings
 from infrastructure.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -29,21 +29,13 @@ class ReportJsonSaver:
             output_dir: Diretório onde os arquivos JSON serão salvos (opcional)
         """
         # Carregar configurações
-        self.settings = get_report_settings()
+        self.settings = get_settings()
 
         # Usar diretório personalizado ou das configurações
-        dir_path = output_dir or self.settings.output_directory
-        self.output_dir = Path(dir_path)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Criar subdiretório para JSONs
-        self.json_dir = Path("/app/reports/json")  # Path absoluto
+        self.json_dir = (
+            Path(output_dir) if output_dir else self.settings.reports.json_dir
+        )
         self.json_dir.mkdir(parents=True, exist_ok=True)
-
-        logger.info(f"📁 Diretório de JSONs: {self.output_dir}")
-
-        # Não criar subdiretórios por data
-        self.daily_json_dir = self.json_dir
 
         logger.info(f"📁 Diretório de JSONs: {self.json_dir}")
 
@@ -63,7 +55,7 @@ class ReportJsonSaver:
                 ".", "_"
             )
             filename = f"{safe_process_number}.json"
-            file_path = self.daily_json_dir / filename
+            file_path = self.json_dir / filename
 
             # Converter publicação para formato JSON compatível com o modelo Prisma
             json_data = self._publication_to_prisma_json(publication)
@@ -92,6 +84,7 @@ class ReportJsonSaver:
         Returns:
             Dicionário com os dados no formato do modelo Prisma
         """
+
         # Formatar datas para ISO 8601 (YYYY-MM-DD)
         def format_date(dt: Optional[datetime]) -> Optional[str]:
             if dt:
@@ -102,7 +95,7 @@ class ReportJsonSaver:
         lawyers_json = None
         if publication.lawyers:
             lawyers_json = [
-                {"name": lawyer.name, "oab": lawyer.oab} 
+                {"name": lawyer.name, "oab": lawyer.oab}
                 for lawyer in publication.lawyers
             ]
 
@@ -169,11 +162,11 @@ class ReportJsonSaver:
             Dicionário com estatísticas
         """
         try:
-            json_files = list(self.daily_json_dir.glob("*.json"))
+            json_files = list(self.json_dir.glob("*.json"))
             return {
                 "total_json_files": len(json_files),
-                "directory": str(self.daily_json_dir)
+                "directory": str(self.json_dir),
             }
         except Exception as error:
             logger.error(f"❌ Erro ao obter estatísticas de JSON: {error}")
-            return {"total_json_files": 0, "directory": str(self.daily_json_dir)}
+            return {"total_json_files": 0, "directory": str(self.json_dir)}
