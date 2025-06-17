@@ -10,13 +10,13 @@ export interface PublicationEntity {
   authors: string[]
   defendant: string
   lawyers?: Array<{ name: string; oab: string }> | null
-  gross_value?: number | null // Valor em reais
-  net_value?: number | null // Valor em reais
-  interest_value?: number | null // Valor em reais
-  attorney_fees?: number | null // Valor em reais
+  gross_value?: bigint | null // Valor em centavos (bigint para suportar valores grandes)
+  net_value?: bigint | null // Valor em centavos (bigint para suportar valores grandes)
+  interest_value?: bigint | null // Valor em centavos (bigint para suportar valores grandes)
+  attorney_fees?: bigint | null // Valor em centavos (bigint para suportar valores grandes)
   content: string
   status: PublicationStatus
-  scrapingSource: string
+  scraping_source: string
   caderno: string
   instancia: string
   local: string
@@ -125,10 +125,10 @@ export class PublicationFactory {
     content: string
     publicationDate?: Date
     lawyers?: Array<{ name: string; oab: string }>
-    gross_value?: number
-    net_value?: number
-    interest_value?: number
-    attorney_fees?: number
+    gross_value?: bigint
+    net_value?: bigint
+    interest_value?: bigint
+    attorney_fees?: bigint
     extraction_metadata?: any
   }): Omit<PublicationEntity, 'id' | 'createdAt' | 'updatedAt'> {
 
@@ -166,7 +166,7 @@ export class PublicationFactory {
       attorney_fees: data.attorney_fees || null,
       content: data.content,
       status: 'NOVA',
-      scrapingSource: 'DJE-SP',
+      scraping_source: 'DJE-SP',
       caderno: '3',
       instancia: '1',
       local: 'Capital',
@@ -197,7 +197,7 @@ export class PublicationFormatter {
   /**
    * Formata valores monetários para exibição
    */
-  static formatMoney(value?: number | null): string {
+  static formatMoney(value?: bigint | null): string {
     if (value === null || value === undefined) return 'N/A'
 
     return new Intl.NumberFormat('pt-BR', {
