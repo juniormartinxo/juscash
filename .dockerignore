@@ -70,4 +70,7 @@ cypress/
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Scraper
+backend/scraper/.docker/entrypoint.sh
