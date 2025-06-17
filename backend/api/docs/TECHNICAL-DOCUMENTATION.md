@@ -199,7 +199,7 @@ CREATE TABLE publications (
 ```sql
 -- Índices para buscas frequentes
 CREATE INDEX idx_publications_status ON publications(status);
-CREATE INDEX idx_publications_availability_date ON publications(availability_date);
+CREATE INDEX idx_publications_availabilityDate ON publications(availability_date);
 CREATE INDEX idx_publications_process_number ON publications(process_number);
 
 -- Índice composto para paginação eficiente
@@ -331,13 +331,13 @@ flowchart TD
 ```typescript
 interface ScrapedPublication {
   process_number: string;
-  availabilityDate: Date;
+  availability_date: Date;
   authors: string[];
   content: string;
-  grossValue?: number;
-  netValue?: number;
-  interestValue?: number;
-  attorneyFees?: number;
+  gross_value?: number;
+  net_value?: number;
+  interest_value?: number;
+  attorney_fees?: number;
   lawyers?: Array<{
     name: string;
     oab: string;
