@@ -78,7 +78,7 @@ async def debug_page_structure():
             print("   📝 Primeiras classes encontradas:")
             for i, tr in enumerate(all_tr_with_class[:10]):
                 class_name = await tr.get_attribute("class")
-                print(f"      {i+1}. class='{class_name}'")
+                print(f"      {i + 1}. class='{class_name}'")
 
         # 4. Buscar elementos com onclick
         onclick_elements = await scraper.page.query_selector_all('[onclick*="popup"]')
@@ -90,7 +90,7 @@ async def debug_page_structure():
                 onclick_attr = await element.get_attribute("onclick")
                 tag_name = await element.evaluate("el => el.tagName")
                 print(
-                    f"      {i+1}. <{tag_name.lower()}> onclick='{onclick_attr[:100]}...'"
+                    f"      {i + 1}. <{tag_name.lower()}> onclick='{onclick_attr[:100]}...'"
                 )
 
         # 5. Buscar por consultaSimples.do
@@ -119,13 +119,15 @@ async def debug_page_structure():
                     print(f"⚠️ Mensagem encontrada: '{text}'")
 
         # 7. Capturar screenshot para análise
-        screenshot_path = "debug_page_structure.png"
-        await scraper.page.screenshot(path=screenshot_path, full_page=True)
+        debug_dir = Path("logs/debug_images")
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        screenshot_path = debug_dir / "debug_page_structure.png"
+        await scraper.page.screenshot(path=str(screenshot_path), full_page=True)
         print(f"📸 Screenshot salvo: {screenshot_path}")
 
         # 8. Salvar HTML da página
         html_content = await scraper.page.content()
-        html_path = "debug_page_content.html"
+        html_path = debug_dir / "debug_page_content.html"
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         print(f"💾 HTML salvo: {html_path}")
@@ -137,7 +139,7 @@ async def debug_page_structure():
         if tables:
             for i, table in enumerate(tables[:3]):
                 rows = await table.query_selector_all("tr")
-                print(f"   Tabela {i+1}: {len(rows)} linhas")
+                print(f"   Tabela {i + 1}: {len(rows)} linhas")
 
         return True
 
@@ -161,7 +163,7 @@ if __name__ == "__main__":
 
     if success:
         print("\n✅ DEBUG CONCLUÍDO")
-        print("📋 Verifique os arquivos gerados:")
+        print("📋 Verifique os arquivos gerados em logs/debug_images/:")
         print("   • debug_page_structure.png - Screenshot da página")
         print("   • debug_page_content.html - HTML completo")
         print("💡 Use essas informações para ajustar os seletores")
