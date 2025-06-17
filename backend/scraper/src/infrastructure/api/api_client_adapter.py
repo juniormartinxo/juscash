@@ -134,12 +134,12 @@ class ApiClientAdapter(ScrapingRepositoryPort):
                             f"   📅 Data publicação: {api_data.get('publicationDate')}"
                         )
                         logger.warning(
-                            f"   📅 Data disponibilização: {api_data.get('availabilityDate')}"
+                            f"   📅 Data disponibilização: {api_data.get('availability_date')}"
                         )
                         logger.warning(f"   👥 Autores: {api_data.get('authors')}")
                         logger.warning(f"   ⚖️  Advogados: {api_data.get('lawyers')}")
                         logger.warning(
-                            f"   💰 Valores: gross={api_data.get('grossValue')}, net={api_data.get('netValue')}, interest={api_data.get('interestValue')}, fees={api_data.get('attorneyFees')}"
+                            f"   💰 Valores: gross={api_data.get('gross_value')}, net={api_data.get('net_value')}, interest={api_data.get('interest_value')}, fees={api_data.get('attorney_fees')}"
                         )
                         logger.warning(
                             f"   📝 Conteúdo (primeiros 100 chars): {api_data.get('content', '')[:100]}..."
