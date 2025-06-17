@@ -47,7 +47,7 @@ export class ApiKeyMiddleware {
       }
 
       // Validar a API Key
-      if (apiKey !== config.scraper.apiKey) {
+      if (apiKey.trim() !== config.scraper.apiKey.trim()) {
         logger.warn('API Key validation failed: Invalid API Key', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
@@ -58,7 +58,7 @@ export class ApiKeyMiddleware {
 
         res.status(401).json({
           success: false,
-          error: 'Invalid API Key'
+          error: 'Invalid API Key 01'
         })
         return
       }
@@ -116,7 +116,7 @@ export class ApiKeyMiddleware {
 
           res.status(401).json({
             success: false,
-            error: 'Invalid API Key'
+            error: 'Invalid API Key 02'
           })
           return
         }
