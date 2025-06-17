@@ -33,7 +33,7 @@ export class SecurityMiddleware {
       this.markSuspiciousRequest(req)
       res.status(400).json({
         success: false,
-        error: 'Invalid request parameters',
+        error: 'Invalid request parameters 01',
       })
       return
     }
@@ -61,6 +61,9 @@ export class SecurityMiddleware {
       if (typeof value === 'string') {
         return xssPatterns.some(pattern => pattern.test(value))
       }
+      if (Array.isArray(value)) {
+        return value.some(item => containsXSS(item))
+      }
       if (typeof value === 'object' && value !== null) {
         return Object.values(value).some(v => containsXSS(v))
       }
@@ -70,6 +73,9 @@ export class SecurityMiddleware {
     const sanitizeValue = (value: any): any => {
       if (typeof value === 'string') {
         return xssPatterns.reduce((acc, pattern) => acc.replace(pattern, ''), value)
+      }
+      if (Array.isArray(value)) {
+        return value.map(item => sanitizeValue(item))
       }
       if (typeof value === 'object' && value !== null) {
         const sanitized: any = {}
@@ -86,7 +92,7 @@ export class SecurityMiddleware {
       this.markSuspiciousRequest(req)
       res.status(400).json({
         success: false,
-        error: 'Invalid request parameters',
+        error: 'Invalid request parameters 02',
       })
       return
     }
