@@ -99,7 +99,7 @@ async def test_real_api_submission():
         # 4. Submissão de teste (comentado por segurança)
         print(f"\n💾 Etapa 3: Preparação para submissão")
         print(f"📦 Dados preparados para envio:")
-        print(f"   - Processo: {api_data['processNumber']}")
+        print(f"   - Processo: {api_data['process_number']}")
         print(f"   - Autores: {len(api_data['authors'])} autores")
         print(f"   - Advogados: {len(api_data.get('lawyers', []))} advogados")
         print(
