@@ -216,15 +216,12 @@ class FileMonitorService:
         except Exception:
             return False
 
-    # 🔥 FIM DOS NOVOS MÉTODOS 🔥
-
     def start(self) -> None:
         """Start the file monitoring service."""
         try:
             # Connect to Redis
             self.redis_client = self._connect_redis()
 
-            # 🔥 MODIFICAÇÃO - Scan de arquivos existentes 🔥
             logger.info("Iniciando scan de arquivos JSON existentes...")
             self._scan_existing_files()
 
