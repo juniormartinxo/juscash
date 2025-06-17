@@ -54,7 +54,7 @@ function logWarning(message) {
 const samplePublicationData = {
   process_number: `TEST-${Date.now()}-89.2024.8.26.0100`,
   publicationDate: '2024-03-15T00:00:00.000Z',
-  availabilityDate: '2024-03-17T00:00:00.000Z',
+  availability_date: '2024-03-17T00:00:00.000Z',
   authors: ['João Silva Santos - TESTE', 'Maria Oliveira - TESTE'],
   defendant: 'Instituto Nacional do Seguro Social - INSS',
   lawyers: [
@@ -67,10 +67,10 @@ const samplePublicationData = {
       oab: '789012'
     }
   ],
-  grossValue: 150000,
-  netValue: 135000,
-  interestValue: 10000,
-  attorneyFees: 5000,
+  gross_value: 150000,
+  net_value: 135000,
+  interest_value: 10000,
+  attorney_fees: 5000,
   content: 'Conteúdo de teste da publicação do DJE sobre aposentadoria por invalidez. Este é um teste automatizado da API do scraper.',
   status: 'NOVA',
   scrapingSource: 'DJE-SP-TEST',
@@ -78,7 +78,7 @@ const samplePublicationData = {
   instancia: '1',
   local: 'Capital',
   parte: '1',
-  extractionMetadata: {
+  extraction_metadata: {
     extraction_date: new Date().toISOString(),
     source_url: 'https://dje.tjsp.jus.br/test',
     confidence_score: 0.95,
