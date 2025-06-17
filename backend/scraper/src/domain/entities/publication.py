@@ -160,7 +160,7 @@ class Publication:
 
         # Garantir que todos os campos obrigatórios estejam presentes
         data = {
-            "processNumber": self.process_number,
+            "process_number": self.process_number,
             "availabilityDate": format_datetime_for_api(self.availability_date),
             "authors": self.authors,
             "defendant": "Instituto Nacional do Seguro Social - INSS",  # Valor padrão
