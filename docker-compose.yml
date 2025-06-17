@@ -42,23 +42,32 @@ services:
     build:
       context: ./backend/scraper
       dockerfile: .docker/Dockerfile
+      target: ${WORK_MODE:-development}
     container_name: ${SCRAPER_CONTAINER_NAME}
-    entrypoint: ./backend/scraper/.docker/entrypoint.sh
     env_file:
       - .env    # Variáveis globais compartilhadas
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=:99
     volumes:
       - ./backend/scraper:/app
       - ./backend/scraper/reports/json:/app/reports/json
       - ./backend/scraper/reports/txt:/app/reports/txt
       - ./backend/scraper/reports/log:/app/reports/log
       - ./backend/scraper/reports/pdf:/app/reports/pdf
-    command: python monitor_json_files.py --api-endpoint ${API_BASE_URL:-http://juscash-api:8000/api}
+    command: supervisord -n
     ports:
       - ${SCRAPER_API_PORT}:${SCRAPER_API_PORT}
     depends_on:
       - api
     networks:
       - juscash-net
+    restart: unless-stopped
+    # Para Playwright
+    shm_size: 2gb
+    security_opt:
+      - seccomp:unconfined
 
   # Banco de dados PostgreSQL
   postgres:

@@ -1,78 +1,113 @@
 # =========================================================================
 # BUILDER STAGE
-# Esta fase instala dependências de compilação e as dependências Python.
 # =========================================================================
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# Instala apenas as dependências de compilação necessárias aqui
+# Instala dependências de compilação
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc g++ && \
     rm -rf /var/lib/apt/lists/*
 
-# Cria um ambiente virtual para isolar as dependências
+# Cria ambiente virtual
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copia e instala as dependências Python
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # =========================================================================
 # PRODUCTION STAGE
-# Esta é a imagem final, otimizada e segura para produção.
 # =========================================================================
-FROM python:3.11-slim AS production
+FROM python:3.12-slim AS production
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    # Define o caminho dos browsers do Playwright para um local compartilhado
     PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
-    # Aponta para o ambiente virtual criado na fase anterior
     PATH="/opt/venv/bin:$PATH"
 
-# Instala apenas as dependências de sistema para o Playwright rodar
-# O comando `playwright install-deps` faz isso de forma otimizada
+# Instala dependências do sistema + supervisor
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    curl -sSL https://raw.githubusercontent.com/microsoft/playwright-python/main/utils/docker/install-deps.sh | bash -s -- chromium && \
+    apt-get install -y --no-install-recommends \
+        supervisor \
+        procps \
+        wget \
+        curl \
+        ca-certificates \
+        fonts-liberation \
+        fonts-noto-color-emoji \
+        fonts-dejavu-core \
+        libasound2 \
+        libatk1.0-0 \
+        libatspi2.0-0 \
+        libdrm2 \
+        libgtk-3-0 \
+        libnspr4 \
+        libnss3 \
+        libx11-xcb1 \
+        libxcb-dri3-0 \
+        libxcb1 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxi6 \
+        libxrandr2 \
+        libxss1 \
+        libxtst6 \
+        libgbm1 \
+        libxkbcommon0 \
+        libatspi2.0-0 \
+        libdrm2 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libgconf-2-4 \
+        libxss1 \
+        libxtst6 && \
     rm -rf /var/lib/apt/lists/*
 
-# Cria o usuário não-root
-RUN useradd --create-home --shell /bin/bash scraper
+# Cria usuário não-root e diretórios necessários
+RUN useradd --create-home --shell /bin/bash scraper && \
+    mkdir -p /opt/playwright && \
+    mkdir -p /var/log/supervisor && \
+    mkdir -p /var/run/supervisor && \
+    mkdir -p /app/reports/json && \
+    mkdir -p /app/reports/log && \
+    mkdir -p /app/logs && \
+    chown -R scraper:scraper /opt/playwright /var/log/supervisor /var/run/supervisor
 
 WORKDIR /app
 
-# Instala os browsers do Playwright (agora em /opt/playwright, acessível a todos)
-# Não precisa de `--with-deps` pois já instalamos na etapa anterior
-RUN python -m playwright install chromium
-
-# Copia o ambiente virtual com as dependências Python da fase 'builder'
+# Copia ambiente virtual e código
 COPY --from=builder /opt/venv /opt/venv
-
-# Copia o código da aplicação e define o dono
-# Copie apenas o que é necessário para produção
 COPY --chown=scraper:scraper src/ ./src/
 COPY --chown=scraper:scraper *.py ./
-COPY --chown=scraper:scraper entrypoint.sh .
-RUN chmod +x entrypoint.sh
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY .docker/entrypoint.sh /entrypoint.sh
 
+# Torna entrypoint executável
+RUN chmod +x /entrypoint.sh
+
+# Muda para usuário scraper temporariamente para instalar browsers
+USER scraper
+RUN python -m playwright install chromium
+
+# Volta para root para configurar supervisor e depois muda permanentemente
+USER root
+RUN chown -R scraper:scraper /app
+
+# Define usuário final
 USER scraper
 
-# Usa um entrypoint para iniciar múltiplos processos
-ENTRYPOINT ["./entrypoint.sh"]
+# Comando principal usando entrypoint
+CMD ["/entrypoint.sh"]
 
 # =========================================================================
 # DEVELOPMENT STAGE
-# Esta fase é para desenvolvimento, com o código montado como um volume.
 # =========================================================================
 FROM production AS development
-
-# No modo de desenvolvimento, você provavelmente montará o código-fonte
-# como um volume. Este CMD mantém o container rodando para que você
-# possa usar `docker exec` e ter live-reloading.
 CMD ["tail", "-f", "/dev/null"]
