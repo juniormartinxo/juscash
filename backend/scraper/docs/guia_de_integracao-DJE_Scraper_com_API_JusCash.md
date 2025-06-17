@@ -234,7 +234,7 @@ async def test_full_integration():
         "attorney_fees": 5000,
         "content": "Teste de integração completa entre scraper e API. Aposentadoria por invalidez.",
         "status": "NOVA",
-        "scrapingSource": "DJE-SP-TEST",
+        "scraping_source": "DJE-SP-TEST",
         "extraction_metadata": {
             "test": True,
             "integration_test": True,
