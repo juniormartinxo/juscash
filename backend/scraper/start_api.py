@@ -3,6 +3,7 @@
 Script para iniciar a API do scraper.
 """
 
+import os
 import uvicorn
 from pathlib import Path
 import sys
@@ -15,7 +16,10 @@ sys.path.insert(0, str(SCRIPT_DIR))
 def main():
     """Inicia o servidor da API."""
     uvicorn.run(
-        "src.infrastructure.web.scraper_api:app", host="0.0.0.0", port=8000, reload=True
+        "src.infrastructure.web.scraper_api:app",
+        host="0.0.0.0",
+        port=int(os.getenv("SCRAPER_API_PORT", 5000)),
+        reload=True,
     )
 
 
