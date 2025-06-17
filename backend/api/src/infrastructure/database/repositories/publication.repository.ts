@@ -145,20 +145,37 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
+  async upsert(data: CreatePublicationData): Promise<PublicationEntity> {
+    try {
+      const existingPublication = await this.prisma.publication.upsert({
+        where: { process_number: data.process_number },
+        update: {
+          status: data.status || 'NOVA',
+        },
+        create: data,
+      })
+
+      return this.toDomainEntity(existingPublication)
+    } catch (error) {
+      console.error('Error upserting publication:', error)
+      throw new Error('Failed to upsert publication')
+    }
+  }
+
   async create(data: CreatePublicationData): Promise<PublicationEntity> {
     try {
       // Converter valores monetários de reais para centavos se necessário
       const monetaryFieldsInCents = {
-        gross_value: data.grossValue ? Math.round(data.grossValue * 100) : null,
-        net_value: data.netValue ? Math.round(data.netValue * 100) : null,
-        interest_value: data.interestValue ? Math.round(data.interestValue * 100) : null,
-        attorney_fees: data.attorneyFees ? Math.round(data.attorneyFees * 100) : null,
+        gross_value: data.gross_value ? Math.round(data.gross_value * 100) : null,
+        net_value: data.net_value ? Math.round(data.net_value * 100) : null,
+        interest_value: data.interest_value ? Math.round(data.interest_value * 100) : null,
+        attorney_fees: data.attorney_fees ? Math.round(data.attorney_fees * 100) : null,
       }
 
       const publicationData: any = {
         process_number: data.process_number,
-        publication_date: data.publicationDate || null,
-        availability_date: data.availabilityDate,
+        publication_date: data.publication_date || null,
+        availability_date: data.availability_date,
         authors: data.authors,
         defendant: data.defendant || 'Instituto Nacional do Seguro Social - INSS',
         ...monetaryFieldsInCents,
@@ -175,8 +192,8 @@ export class PrismaPublicationRepository implements PublicationRepository {
         publicationData.lawyers = JSON.stringify(data.lawyers)
       }
 
-      if (data.extractionMetadata) {
-        publicationData.extraction_metadata = JSON.stringify(data.extractionMetadata)
+      if (data.extraction_metadata) {
+        publicationData.extraction_metadata = JSON.stringify(data.extraction_metadata)
       }
 
       const createdPublication = await this.prisma.publication.create({
@@ -204,15 +221,15 @@ export class PrismaPublicationRepository implements PublicationRepository {
       id: prismaPublication.id,
       process_number: prismaPublication.process_number,
       publicationDate: prismaPublication.publication_date,
-      availabilityDate: prismaPublication.availability_date,
+      availability_date: prismaPublication.availability_date,
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
       lawyers: prismaPublication.lawyers ? JSON.parse(prismaPublication.lawyers) : null,
       // Converter centavos para reais
-      grossValue: prismaPublication.gross_value ? prismaPublication.gross_value / 100 : null,
-      netValue: prismaPublication.net_value ? prismaPublication.net_value / 100 : null,
-      interestValue: prismaPublication.interest_value ? prismaPublication.interest_value / 100 : null,
-      attorneyFees: prismaPublication.attorney_fees ? prismaPublication.attorney_fees / 100 : null,
+      gross_value: prismaPublication.gross_value ? prismaPublication.gross_value / 100 : null,
+      net_value: prismaPublication.net_value ? prismaPublication.net_value / 100 : null,
+      interest_value: prismaPublication.interest_value ? prismaPublication.interest_value / 100 : null,
+      attorney_fees: prismaPublication.attorney_fees ? prismaPublication.attorney_fees / 100 : null,
       content: prismaPublication.content,
       status: prismaPublication.status,
       scrapingSource: prismaPublication.scraping_source,
@@ -220,7 +237,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
       instancia: prismaPublication.instancia,
       local: prismaPublication.local,
       parte: prismaPublication.parte,
-      extractionMetadata: prismaPublication.extraction_metadata ?
+      extraction_metadata: prismaPublication.extraction_metadata ?
         JSON.parse(prismaPublication.extraction_metadata) : null,
       createdAt: prismaPublication.created_at,
       updatedAt: prismaPublication.updated_at,
