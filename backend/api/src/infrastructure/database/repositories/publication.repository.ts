@@ -1,16 +1,17 @@
-import { PublicationEntity } from '@/domain/entities/publication.entity'
-import { 
+import { PublicationEntity, PublicationJsonEntity } from '@/domain/entities/publication.entity'
+import {
   PublicationRepository,
-  CreatePublicationData, 
-  FindPublicationsParams, 
-  PublicationResult
+  CreatePublicationData,
+  FindPublicationsParams,
+  PublicationJsonResult,
 } from '@/domain/repositories/publication.repository'
 import { PrismaClient } from '@/generated/prisma/index'
+import superjson from 'superjson'
 
 export class PrismaPublicationRepository implements PublicationRepository {
   constructor(private prisma: PrismaClient) { }
 
-  async findById(id: string): Promise<PublicationEntity | null> {
+  async findById(id: string): Promise<PublicationJsonEntity | null> {
     try {
       const publication = await this.prisma.publication.findUnique({
         where: { id },
@@ -23,7 +24,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async findByProcessNumber(process_number: string): Promise<PublicationEntity | null> {
+  async findByProcessNumber(process_number: string): Promise<PublicationJsonEntity | null> {
     try {
       const publication = await this.prisma.publication.findUnique({
         where: {
@@ -38,7 +39,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async findMany(params: FindPublicationsParams): Promise<PublicationResult> {
+  async findMany(params: FindPublicationsParams): Promise<PublicationJsonResult> {
     try {
       const {
         page = 1,
@@ -104,7 +105,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationEntity> {
+  async updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationJsonEntity> {
     try {
       const updatedPublication = await this.prisma.publication.update({
         where: { id },
@@ -121,7 +122,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async search(query: string): Promise<PublicationEntity[]> {
+  async search(query: string): Promise<PublicationJsonEntity[]> {
     try {
       const publications = await this.prisma.publication.findMany({
         where: {
@@ -145,7 +146,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async upsert(data: CreatePublicationData): Promise<PublicationEntity> {
+  async upsert(data: CreatePublicationData): Promise<PublicationJsonEntity> {
     try {
       const existingPublication = await this.prisma.publication.upsert({
         where: { process_number: data.process_number },
@@ -162,7 +163,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     }
   }
 
-  async create(data: CreatePublicationData): Promise<PublicationEntity> {
+  async create(data: CreatePublicationData): Promise<PublicationJsonEntity> {
     try {
       // Os valores monetários já chegam convertidos para centavos do worker
       const monetaryFields = {
@@ -216,7 +217,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
   /**
    * Converte dados do Prisma para entidade de domínio
    */
-  private toDomainEntity(prismaPublication: any): PublicationEntity {
+  private toDomainEntity(prismaPublication: any): PublicationJsonEntity {
     return {
       id: prismaPublication.id,
       process_number: prismaPublication.process_number,
@@ -224,12 +225,12 @@ export class PrismaPublicationRepository implements PublicationRepository {
       availability_date: prismaPublication.availability_date,
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
-      lawyers: prismaPublication.lawyers ? JSON.parse(prismaPublication.lawyers) : null,
+      lawyers: prismaPublication.lawyers ? superjson.deserialize(prismaPublication.lawyers) : null,
       // Valores monetários já em centavos como bigint
-      gross_value: prismaPublication.gross_value,
-      net_value: prismaPublication.net_value,
-      interest_value: prismaPublication.interest_value,
-      attorney_fees: prismaPublication.attorney_fees,
+      gross_value: prismaPublication.gross_value ? superjson.deserialize(prismaPublication.gross_value) : null,
+      net_value: prismaPublication.net_value ? superjson.deserialize(prismaPublication.net_value) : null,
+      interest_value: prismaPublication.interest_value ? superjson.deserialize(prismaPublication.interest_value) : null,
+      attorney_fees: prismaPublication.attorney_fees ? superjson.deserialize(prismaPublication.attorney_fees) : null,
       content: prismaPublication.content,
       status: prismaPublication.status,
       scraping_source: prismaPublication.scraping_source,
@@ -238,7 +239,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
       local: prismaPublication.local,
       parte: prismaPublication.parte,
       extraction_metadata: prismaPublication.extraction_metadata ?
-        JSON.parse(prismaPublication.extraction_metadata) : null,
+        superjson.deserialize(prismaPublication.extraction_metadata) : null,
       createdAt: prismaPublication.created_at,
       updatedAt: prismaPublication.updated_at,
     }
