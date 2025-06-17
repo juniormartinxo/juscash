@@ -47,7 +47,7 @@ def debug_api_data():
         f"publicationDate: {type(api_data.get('publicationDate'))} = {api_data.get('publicationDate')}"
     )
     print(
-        f"availabilityDate: {type(api_data.get('availabilityDate'))} = {api_data.get('availabilityDate')}"
+        f"availability_date: {type(api_data.get('availability_date'))} = {api_data.get('availability_date')}"
     )
     print(f"authors: {type(api_data.get('authors'))} = {api_data.get('authors')}")
     print(f"lawyers: {type(api_data.get('lawyers'))} = {api_data.get('lawyers')}")
@@ -61,12 +61,12 @@ def debug_api_data():
         except Exception as e:
             print(f"❌ publicationDate formato inválido: {e}")
 
-    if api_data.get("availabilityDate"):
+    if api_data.get("availability_date"):
         try:
-            datetime.fromisoformat(api_data["availabilityDate"].replace("Z", "+00:00"))
-            print("✅ availabilityDate está em formato ISO válido")
+            datetime.fromisoformat(api_data["availability_date"].replace("Z", "+00:00"))
+            print("✅ availability_date está em formato ISO válido")
         except Exception as e:
-            print(f"❌ availabilityDate formato inválido: {e}")
+            print(f"❌ availability_date formato inválido: {e}")
 
 
 if __name__ == "__main__":
