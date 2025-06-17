@@ -77,6 +77,6 @@ class TestPublication:
         assert api_dict["process_number"] == sample_publication.process_number
         assert api_dict["authors"] == sample_publication.authors
         assert api_dict["defendant"] == sample_publication.defendant
-        assert api_dict["grossValue"] == 150000  # R$ 1500.00 em centavos
+        assert api_dict["gross_value"] == 150000  # R$ 1500.00 em centavos
         assert len(api_dict["lawyers"]) == 2
         assert api_dict["lawyers"][0]["name"] == "Dr. Carlos Advogado"
