@@ -132,7 +132,7 @@ curl -X POST http://localhost:3000/api/scraper/publications \
     "attorney_fees": 5000,
     "content": "Conteúdo completo da publicação...",
     "status": "NOVA",
-    "scrapingSource": "DJE-SP",
+    "scraping_source": "DJE-SP",
     "caderno": "3",
     "instancia": "1",
     "local": "Capital",
@@ -167,7 +167,7 @@ async function createPublicationFromScraper() {
       attorney_fees: 5000,
       content: 'Conteúdo completo da publicação...',
       status: 'NOVA',
-      scrapingSource: 'DJE-SP',
+      scraping_source: 'DJE-SP',
       extraction_metadata: {
         extraction_date: '2024-03-17T10:30:00.000Z',
         source_url: 'https://dje.tjsp.jus.br/...',
@@ -225,7 +225,7 @@ def create_publication_from_scraper():
         "attorney_fees": 5000,
         "content": "Conteúdo completo da publicação...",
         "status": "NOVA",
-        "scrapingSource": "DJE-SP",
+        "scraping_source": "DJE-SP",
         "extraction_metadata": {
             "extraction_date": "2024-03-17T10:30:00.000Z",
             "source_url": "https://dje.tjsp.jus.br/...",
