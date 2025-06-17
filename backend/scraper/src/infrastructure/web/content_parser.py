@@ -217,12 +217,10 @@ class DJEContentParser:
                 )
                 return None
 
-            # Extrair componentes opcionais
+            # Extrair dados complementares
             publication_date = self._extract_publication_date(normalized_content)
             availability_date = self._extract_availabilityDate(normalized_content)
             lawyers = self._extract_lawyers(normalized_content)
-
-            # Extrair valores monetários
             monetary_values = self._extract_all_monetary_values(normalized_content)
 
             # Calcular score de confiança
@@ -239,7 +237,7 @@ class DJEContentParser:
             publication = Publication(
                 process_number=process_number,
                 publication_date=publication_date,
-                availability_date=availability_date or datetime.now(),
+                availability_date=availability_date,
                 authors=authors,
                 lawyers=lawyers,
                 gross_value=monetary_values.get("gross"),
