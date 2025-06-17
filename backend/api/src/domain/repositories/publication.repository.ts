@@ -2,6 +2,7 @@ import { PublicationEntity } from '@/domain/entities/publication.entity'
 
 export interface PublicationRepository {
   findById(id: string): Promise<PublicationEntity | null>
+  findByProcessNumber(process_number: string): Promise<PublicationEntity | null>
   findMany(params: FindPublicationsParams): Promise<PublicationResult>
   updateStatus(id: string, status: PublicationEntity['status']): Promise<PublicationEntity>
   search(query: string): Promise<PublicationEntity[]>
@@ -9,7 +10,7 @@ export interface PublicationRepository {
 }
 
 export interface CreatePublicationData {
-  processNumber: string
+  process_number: string
   publicationDate?: Date
   availabilityDate: Date
   authors: string[]
