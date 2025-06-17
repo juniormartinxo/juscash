@@ -222,7 +222,7 @@ async def test_full_integration():
     
     # Dados de teste
     test_data = {
-        "processNumber": f"INTEGRATION-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
+        "process_number": f"INTEGRATION-{int(datetime.now().timestamp())}-89.2024.8.26.0100",
         "publicationDate": "2024-03-15T00:00:00.000Z",
         "availabilityDate": "2024-03-17T00:00:00.000Z",
         "authors": ["João Silva Santos - INTEGRAÇÃO"],
@@ -283,7 +283,7 @@ async def test_full_integration():
         try:
             response = await client.get(
                 f"{API_BASE_URL}/api/publications",
-                params={"search": test_data["processNumber"], "limit": 1},
+                params={"search": test_data["process_number"], "limit": 1},
                 headers={"Authorization": "Bearer dummy"}  # Usar token real se necessário
             )
             
@@ -303,7 +303,7 @@ async def test_full_integration():
         print("\n🔄 Teste 4: Endpoint normal (comparação)")
         try:
             test_data_2 = {**test_data}
-            test_data_2["processNumber"] = f"NORMAL-{int(datetime.now().timestamp())}-89.2024.8.26.0100"
+            test_data_2["process_number"] = f"NORMAL-{int(datetime.now().timestamp())}-89.2024.8.26.0100"
             
             response = await client.post(
                 f"{API_BASE_URL}/api/publications",
@@ -360,7 +360,7 @@ docker-compose logs -f scraper
   "timestamp": "2024-03-17T10:30:01Z",
   "level": "INFO", 
   "message": "Publication creation from SCRAPER",
-  "processNumber": "1234567-89.2024.8.26.0100",
+  "process_number": "1234567-89.2024.8.26.0100",
   "source": "SCRAPER",
   "ip": "172.18.0.3"
 }
