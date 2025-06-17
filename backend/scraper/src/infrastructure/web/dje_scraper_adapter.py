@@ -559,12 +559,6 @@ class DJEScraperAdapter(WebScraperPort):
                             return  # Sucesso, sair do loop de retry
                         else:
                             logger.warning(
-                                    )
-
-                                yield publication
-                            return  # Sucesso, sair do loop de retry
-                        else:
-                            logger.warning(
                                 "⚠️ Nenhum download detectado e conteúdo insuficiente"
                             )
 
