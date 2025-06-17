@@ -123,6 +123,8 @@ export class PublicationController {
     const { id } = req.params
     const { status } = req.body
 
+    console.log('Updating status for publication:', { id, status })
+
     if (!id) {
       res.status(400).json(ApiResponseBuilder.error('ID is required'))
       return
