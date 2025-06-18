@@ -3,15 +3,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
 
 from src.adapters.secondary.playwright_scraper import PlaywrightScraperAdapter
-from src.adapters.secondary.sqlalchemy_repository import SQLAlchemyRepository, PublicationModel
+from src.adapters.secondary.sqlalchemy_repository import (
+    SQLAlchemyRepository,
+    PublicationModel,
+)
 from src.shared.value_objects import DJEUrl, ScrapingCriteria
+from src.domain.entities.publication import Publication
 
 
 @pytest.mark.unit
 class TestPlaywrightScraperAdapter:
     """Testes unitários para o adaptador Playwright."""
 
-    @patch('src.adapters.secondary.playwright_scraper.async_playwright')
+    @patch("src.adapters.secondary.playwright_scraper.async_playwright")
     async def test_initialize_success(self, mock_playwright):
         """Testa inicialização bem-sucedida do Playwright."""
         # Configurar mocks
@@ -43,8 +47,7 @@ class TestPlaywrightScraperAdapter:
         # Verificar
         assert result is True
         mock_playwright_page.goto.assert_called_once_with(
-            dje_url.get_main_url(),
-            wait_until='networkidle'
+            dje_url.get_main_url(), wait_until="networkidle"
         )
 
     async def test_extract_basic_info_from_content(self):
@@ -70,28 +73,28 @@ class TestPlaywrightScraperAdapter:
         assert "Dr. Carlos Alberto - OAB/SP 123456" in publication.lawyers
 
 
-@pytest.mark.unit  
+@pytest.mark.unit
 class TestSQLAlchemyRepository:
     """Testes unitários para o repositório SQLAlchemy."""
-    
+
     def test_publication_model_to_entity(self, sample_publication):
         """Testa conversão de modelo para entidade."""
-        # Criar modelo
+
         model = PublicationModel.from_entity(sample_publication)
-        
+
         # Converter de volta para entidade
         entity = model.to_entity()
-        
+
         # Verificar
         assert entity.id == sample_publication.id
         assert str(entity.process_number) == str(sample_publication.process_number)
         assert entity.status == sample_publication.status
         assert entity.defendant == sample_publication.defendant
-    
+
     def test_publication_model_from_entity(self, sample_publication):
         """Testa conversão de entidade para modelo."""
         model = PublicationModel.from_entity(sample_publication)
-        
+
         assert model.id == sample_publication.id
         assert model.process_number == str(sample_publication.process_number)
         assert model.status == sample_publication.status.value
