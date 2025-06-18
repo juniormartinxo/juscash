@@ -11,12 +11,12 @@ export class GetPublicationsUseCase {
       searchTerm: input.searchTerm || '',
     }
 
-    // Só adicionar status se foi fornecido
+
     if (input.status) {
       params.status = input.status
     }
 
-    // Só adicionar datas se foram fornecidas
+
     if (input.startDate) {
       params.startDate = input.startDate
     }
