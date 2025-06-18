@@ -684,7 +684,7 @@ Cada mudança de status é registrada com:
 
 #### 2. **Suporte por Email**
 
-- **Email Geral**: suporte@juscash.com
+- **Email Geral**: juniormatinxo@gmail.com
 - **Email Técnico**: tecnico@juscash.com
 - **Tempo de Resposta**: 24-48 horas em dias úteis
 
@@ -792,5 +792,5 @@ O uso do sistema JusCash está sujeito aos Termos de Uso disponíveis em https:/
 *Fim do Manual de Produto JusCash*
 
 - **Para mais informações, visite: https://juscash.juniomartins.dev/manual**  
-- **Suporte técnico: suporte@juscash.com**  
+- **Suporte técnico: juniormatinxo@gmail.com**  
 - **Telefone: (11) 9999-9999**
