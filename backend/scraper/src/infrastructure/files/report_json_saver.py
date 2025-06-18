@@ -99,7 +99,6 @@ class ReportJsonSaver:
                 for lawyer in publication.lawyers
             ]
 
-        # Criar o objeto JSON seguindo o modelo Prisma
         json_data = {
             "process_number": publication.process_number,
             "publication_date": (
