@@ -11,7 +11,7 @@ from pathlib import Path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
-# Importar e executar o scraper
+
 from multi_date_scraper import main
 import asyncio
 
