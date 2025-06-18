@@ -79,7 +79,6 @@ class PerformanceMonitor:
         self._initial_network_stats = psutil.net_io_counters()
         self._initial_disk_stats = psutil.disk_io_counters()
 
-        # Criar nova sessão
         self.current_session = ScrapingSession(
             session_id=session_id, start_time=datetime.now()
         )
