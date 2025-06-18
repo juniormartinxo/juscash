@@ -66,7 +66,7 @@ class Application {
 
     // CORS configuration
     this.app.use(cors({
-      origin: config.cors.origin,
+      origin: ['http://localhost:5173', config.cors.origin],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
