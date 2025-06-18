@@ -128,7 +128,7 @@ class ApiService {
         }
 
         try {
-            // Para requisições GET, usar queue para rate limiting
+
             // Para outras requisições críticas (POST/PUT), fazer diretamente
             const response = options.method === 'GET' || !options.method
                 ? await this.queueRequest<T>(url, config)
@@ -167,7 +167,7 @@ class ApiService {
     private isRetryableError(error: any): boolean {
         const message = error.message?.toLowerCase() || ''
 
-        // Erros que devem ser retentados
+
         return message.includes('429') || // Rate limit
             message.includes('502') || // Bad Gateway
             message.includes('503') || // Service Unavailable
@@ -184,7 +184,6 @@ class ApiService {
         return this.requestWithRetry<T>(endpoint, options)
     }
 
-    // Métodos de autenticação
     async login(credentials: LoginForm): Promise<AuthResponse> {
         const response = await this.request<ApiResponse<AuthResponse>>('/auth/login', {
             method: 'POST',
@@ -232,7 +231,6 @@ class ApiService {
         }
     }
 
-    // Métodos de publicações com cache simples
     private publicationsCache = new Map<string, { data: any; timestamp: number }>()
     private readonly cacheTimeout = 30000 // 30 segundos
 
@@ -286,7 +284,7 @@ class ApiService {
             params.append('status', filters.status)
         }
 
-        // Backend retorna estrutura diferente, vamos converter
+
         const response = await this.request<ApiResponse<{
             publications: Publication[]
             pagination: {
@@ -297,7 +295,7 @@ class ApiService {
             }
         }>>(`/publications?${params.toString()}`)
 
-        // Converter para o formato esperado pelo frontend
+
         const convertedResponse: PaginatedResponse<Publication> = {
             data: response.data.publications || [],
             total: response.data.pagination.count || 0,
@@ -319,7 +317,7 @@ class ApiService {
         id: string,
         status: PublicationStatus
     ): Promise<Publication> {
-        // Limpar cache relacionado quando atualizar status
+
         this.publicationsCache.clear()
 
         const response = await this.request<ApiResponse<Publication>>(
@@ -332,23 +330,19 @@ class ApiService {
         return response.data
     }
 
-    // Método para limpar cache manualmente
     clearCache(): void {
         this.publicationsCache.clear()
     }
 
-    // Método para verificar se o usuário está autenticado
     isAuthenticated(): boolean {
         return !!this.getToken()
     }
 
-    // Método para obter o usuário atual
     getCurrentUser(): User | null {
         const userStr = localStorage.getItem('user')
         return userStr ? JSON.parse(userStr) : null
     }
 
-    // Método para atualizar o token
     setToken(token: string): void {
         localStorage.setItem('accessToken', token)
     }
