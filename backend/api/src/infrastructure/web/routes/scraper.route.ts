@@ -23,7 +23,7 @@ export function createScraperRoutes(
   // Aplicar rate limiting específico para scraper
   router.use(scraperRateLimit.middleware)
 
-  // Aplicar validação de API Key a todas as rotas do scraper
+
   router.use(ApiKeyMiddleware.validateScraperApiKey)
 
   /**
