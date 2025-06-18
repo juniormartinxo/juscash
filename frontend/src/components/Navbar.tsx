@@ -2,6 +2,7 @@ import { LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import Logo from './Logo'
 
 export function Navbar() {
   const { logout } = useAuth()
@@ -30,25 +31,7 @@ export function Navbar() {
           {/* Logo JusCash à esquerda */}
           <div className="flex items-center">
             <div className="flex items-center space-x-2">
-              {/* Ícone do logo */}
-              <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="text-white"
-                >
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2"/>
-                  <text x="8" y="16" fontSize="8" fill="currentColor">$</text>
-                </svg>
-              </div>
-              {/* Texto JusCash */}
-              <span className="text-xl font-bold text-secondary-500">
-                JusCash
-              </span>
+              <Logo />
             </div>
           </div>
 
@@ -58,10 +41,18 @@ export function Navbar() {
               variant="ghost"
               size="sm"
               onClick={handleLogout}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+              className="flex items-center space-x-2 text-secondary cursor-pointer relative w-20"
             >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sair</span>
+              <span className="absolute flex flex-row items-center opacity-100 hover:opacity-0 transition-opacity duration-300">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sair</span>
+              </span>
+
+              <span className="absolute flex flex-row items-center hover:animate-ping opacity-0 hover:opacity-100 transition-opacity duration-300 p-3">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sair</span>
+              </span>
+
             </Button>
           </div>
         </div>
