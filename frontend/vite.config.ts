@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -13,8 +13,15 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    allowedHosts: ['juscash.juniormartins.dev'],
-    // Importante: configurar para não interferir com o proxy reverso
+    allowedHosts: ['juscash.juniormartins.dev', "localhost:5173"],
+    // ADICIONAR PROXY PARA DESENVOLVIMENTO LOCAL
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      }
+    },
     fs: {
       strict: false
     }
@@ -22,9 +29,8 @@ export default defineConfig({
   preview: {
     port: 5173,
     host: true,
-    allowedHosts: ['juscash.juniormartins.dev'],
+    allowedHosts: ['juscash.juniormartins.dev', "localhost:5173"],
   },
-  // Configurar para SPA mas não interceptar /api
   appType: 'spa',
   base: '/'
 })
