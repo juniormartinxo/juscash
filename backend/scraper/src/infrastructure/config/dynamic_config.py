@@ -86,7 +86,6 @@ class DynamicConfigManager:
                 self._last_modified = self.config_file.stat().st_mtime
                 logger.info(f"⚙️  Configuração carregada: {self.config_file}")
             else:
-                # Criar configuração padrão
                 self._config = ScrapingConfig()
                 self._save_config()
                 logger.info("⚙️  Configuração padrão criada")

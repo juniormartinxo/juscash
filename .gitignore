@@ -84,3 +84,6 @@ dump.rdb
 *.json
 backend/scraper/**/*.png
 backend/scraper/**/*.jpeg
+
+cleanup*
+CLEANUP_*
