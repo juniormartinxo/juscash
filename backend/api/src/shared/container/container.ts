@@ -91,7 +91,7 @@ export class Container {
       this.publicationRepository
     )
 
-    // Controllers
+
     this.authController = new AuthController(
       this.registerUserUseCase,
       this.loginUserUseCase,
@@ -106,7 +106,7 @@ export class Container {
       this.createPublicationUseCase
     )
 
-    // Middleware
+
     this.authMiddleware = new AuthMiddleware(this.authService)
     this.performanceMiddleware = new PerformanceMiddleware()
     this.securityMiddleware = new SecurityMiddleware()
