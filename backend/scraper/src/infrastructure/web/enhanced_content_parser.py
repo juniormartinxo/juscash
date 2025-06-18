@@ -111,7 +111,7 @@ class EnhancedDJEContentParser(DJEContentParser):
 
         logger.info(f"🔍 Encontradas {len(matches)} ocorrências de RPV/INSS")
         for i, match in enumerate(matches):
-            logger.debug(f"   {i+1}. {match['type']} na posição {match['position']}")
+            logger.debug(f"   {i + 1}. {match['type']} na posição {match['position']}")
 
         return matches
 
@@ -195,7 +195,6 @@ class EnhancedDJEContentParser(DJEContentParser):
             lawyers = self._extract_lawyers(process_content)
             monetary_values = self._extract_all_monetary_values(process_content)
 
-            # Criar publicação
             publication = Publication(
                 process_number=process_number,
                 publication_date=publication_date,
@@ -406,7 +405,6 @@ class EnhancedDJEContentParser(DJEContentParser):
         return name
 
 
-# Função para alertar sobre edge cases
 def alert_edge_case(message: str):
     """
     Alerta sobre edge cases ou dificuldades na extração
