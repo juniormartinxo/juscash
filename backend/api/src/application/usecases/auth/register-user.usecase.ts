@@ -21,7 +21,7 @@ export class RegisterUserUseCase {
     // Hash da senha
     const passwordHash = await this.authService.hashPassword(input.password)
 
-    // Criar usuário
+
     const user = await this.userRepository.create({
       name: input.name,
       email: input.email,
