@@ -68,7 +68,6 @@ describe('Auth Integration Tests', () => {
 
   describe('POST /api/auth/login', () => {
     beforeAll(async () => {
-      // Criar usuário para testes de login
       await request(app)
         .post('/api/auth/register')
         .send({
