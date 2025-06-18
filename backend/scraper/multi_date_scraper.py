@@ -80,7 +80,7 @@ class MultiDateScraper:
 
         self._load_or_create_progress_file()
 
-        logger.info(f"🚀 MultiDateScraper inicializado")
+        logger.info("🚀 MultiDateScraper inicializado")
         logger.info(
             f"📅 Período: {self.start_date.strftime('%d/%m/%Y')} até {self.end_date.strftime('%d/%m/%Y')}"
         )
