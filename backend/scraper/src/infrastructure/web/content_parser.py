@@ -233,7 +233,6 @@ class DJEContentParser:
                     f"⚠️  Baixa confiança ({confidence_score:.2f}) para {process_number}"
                 )
 
-            # Criar entidade Publication
             publication = Publication(
                 process_number=process_number,
                 publication_date=publication_date,
