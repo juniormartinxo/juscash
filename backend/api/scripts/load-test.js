@@ -2,7 +2,7 @@ import { check, sleep } from 'k6'
 import http from 'k6/http'
 import { Rate } from 'k6/metrics'
 
-// Métricas customizadas
+
 export const errorRate = new Rate('errors')
 
 export const options = {
@@ -22,7 +22,6 @@ export const options = {
 const BASE_URL = __ENV.API_URL || 'http://localhost:3001'
 
 export function setup() {
-  // Registrar usuário para testes
   const registerResponse = http.post(
     `${BASE_URL}/api/auth/register`,
     JSON.stringify({
@@ -44,7 +43,6 @@ export function setup() {
 }
 
 export default function (data) {
-  // Health check
   const healthResponse = http.get(`${BASE_URL}/health`)
   check(healthResponse, {
     'health check status is 200': r => r.status === 200,
@@ -52,14 +50,12 @@ export default function (data) {
 
   sleep(1)
 
-  // Test authenticated endpoints if token is available
   if (data.token) {
     const headers = {
       Authorization: `Bearer ${data.token}`,
       'Content-Type': 'application/json',
     }
 
-    // Get publications
     const publicationsResponse = http.get(`${BASE_URL}/api/publications?page=1&limit=10`, {
       headers,
     })
