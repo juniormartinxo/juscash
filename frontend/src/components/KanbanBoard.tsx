@@ -362,9 +362,6 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                   </h3>
                   <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-1">
                     {column.publications.length}
-                    {column.count > column.publications.length &&
-                      <span className="text-gray-400">/{column.count}</span>
-                    }
                   </span>
                   {isPreloading && (
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
@@ -451,28 +448,10 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                           </div>
                         )}
 
-                        {/* Debug Info - Simples */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="text-center py-1 text-xs text-gray-500 border-t">
-                            {column.publications.length}/{column.count} | P:{currentPage.get(status) || 1} |
-                            {hasMore.get(status) ? '📄 Tem mais' : '🔚 Fim'} |
-                            {scrollDetected.has(status) && '📜 Scroll OK'}
-                            {hasMore.get(status) && (
-                              <button
-                                onClick={() => loadMoreItems(status, false)}
-                                className="ml-2 px-1 py-0 bg-blue-500 text-white rounded text-xs"
-                                disabled={loadingMore.has(status)}
-                              >
-                                +
-                              </button>
-                            )}
-                          </div>
-                        )}
-
                         {/* Indicador de fim dos dados */}
                         {!hasMore.get(status) && column.publications.length > 0 && (
                           <div className="text-center py-4 text-xs text-gray-400 border-t border-gray-200">
-                            Todos os cards foram carregados
+                            Todos os cards foram carregados {column.publications.length}/{column.count}
                           </div>
                         )}
                       </div>
