@@ -138,7 +138,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     } catch (error) {
       console.error(`❌ Erro ao carregar publicações para ${status}:`, error)
 
-      // Log detalhado do erro
+
       if (error instanceof Error) {
         console.error(`Error message: ${error.message}`)
         console.error(`Error stack:`, error.stack)
@@ -261,7 +261,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     setColumns(prev => {
       const newColumns = new Map(prev)
 
-      // Remover da origem
+
       const sourceCol = newColumns.get(sourceStatus)
       if (sourceCol) {
         newColumns.set(sourceStatus, {
@@ -270,7 +270,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         })
       }
 
-      // Adicionar no destino
+
       const destCol = newColumns.get(destStatus)
       if (destCol) {
         const updatedPublication = { ...publication, status: destStatus }
