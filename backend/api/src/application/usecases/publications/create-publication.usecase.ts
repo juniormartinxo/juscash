@@ -1,4 +1,4 @@
-import { PublicationEntity, PublicationValidation } from '@/domain/entities/publication.entity'
+import { PublicationEntity, PublicationValidation, PublicationJsonEntity } from '@/domain/entities/publication.entity'
 import { PublicationRepository, CreatePublicationData } from '@/domain/repositories/publication.repository'
 
 export class CreatePublicationUseCase {
@@ -39,14 +39,14 @@ export class CreatePublicationUseCase {
     }
 
     try {
-      // Criar publicação
-      const publication = await this.publicationRepository.upsert(publicationData)
+      const publicationJson = await this.publicationRepository.upsert(publicationData)
+      const publication = this.convertToEntity(publicationJson)
 
       return {
         publication,
       }
     } catch (error) {
-      // Log para debugging
+
       console.error('Error creating publication in repository:', error)
 
       // Re-throw como erro de domínio
@@ -62,17 +62,17 @@ export class CreatePublicationUseCase {
    * Validações específicas de domínio usando as classes de validação
    */
   private validateDomainRules(input: CreatePublicationInput): void {
-  // Validar formato do número do processo
-  /*if (!PublicationValidation.isValidprocess_number(input.process_number)) {
-    throw new ValidationError('Process number must follow Brazilian court format (NNNNNNN-NN.NNNN.N.NN.NNNN)')
-  }*/
+    // Validar formato do número do processo
+    /*if (!PublicationValidation.isValidprocess_number(input.process_number)) {
+      throw new ValidationError('Process number must follow Brazilian court format (NNNNNNN-NN.NNNN.N.NN.NNNN)')
+    }*/
 
-  // Validar datas
-  /*if (!PublicationValidation.areValidDates(input.publicationDate, input.availability_date)) {
-    throw new ValidationError('Invalid dates: availability date cannot be in the future and must be after publication date')
-  }*/
+    // Validar datas
+    /*if (!PublicationValidation.areValidDates(input.publicationDate, input.availability_date)) {
+      throw new ValidationError('Invalid dates: availability date cannot be in the future and must be after publication date')
+    }*/
 
-  // Validar autores
+    // Validar autores
     if (!input.authors || input.authors.length === 0) {
       throw new ValidationError('At least one author is required')
     }
@@ -94,6 +94,19 @@ export class CreatePublicationUseCase {
     // Validar conteúdo mínimo
     if (!input.content || input.content.trim().length < 10) {
       throw new ValidationError('Content must have at least 10 characters')
+    }
+  }
+
+  /**
+   * Converte PublicationJsonEntity para PublicationEntity
+   */
+  private convertToEntity(jsonEntity: PublicationJsonEntity): PublicationEntity {
+    return {
+      ...jsonEntity,
+      gross_value: jsonEntity.gross_value ? BigInt(jsonEntity.gross_value) : null,
+      net_value: jsonEntity.net_value ? BigInt(jsonEntity.net_value) : null,
+      interest_value: jsonEntity.interest_value ? BigInt(jsonEntity.interest_value) : null,
+      attorney_fees: jsonEntity.attorney_fees ? BigInt(jsonEntity.attorney_fees) : null,
     }
   }
 }
