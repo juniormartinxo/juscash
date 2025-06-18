@@ -23,7 +23,7 @@ export function createPublicationRoutes(
 ): Router {
   const router = Router()
 
-  // Aplicar autenticação a todas as rotas
+
   router.use(authMiddleware.authenticate)
 
   router.post('/',
