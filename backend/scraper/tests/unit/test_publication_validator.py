@@ -74,7 +74,6 @@ class TestPublicationValidator:
         """Testa validação completa de publicação"""
         required_terms = ["aposentadoria", "benefício"]
 
-        # Criar nova publicação com termos obrigatórios
         from domain.entities.publication import Publication, MonetaryValue
         from datetime import datetime
 
