@@ -26,7 +26,6 @@ class ReportSettings(BaseSettings):
         self.json_dir = self.base_dir / "json"
         self.log_dir = self.base_dir / "log"
 
-        # Criar diretórios se não existirem
         for dir_path in [self.base_dir, self.json_dir, self.log_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
