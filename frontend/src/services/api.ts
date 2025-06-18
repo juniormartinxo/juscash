@@ -108,7 +108,7 @@ class ApiService {
         options: RequestInit = {},
         attempt: number = 0
     ): Promise<T> {
-        const url = `${this.baseURL}/api${endpoint}`
+        const url = `${this.baseURL}${endpoint}`
         const token = this.getToken()
 
         console.log(`[API Service] Making request to: ${url} (attempt ${attempt + 1})`)
