@@ -10,7 +10,6 @@ describe('Publications Integration Tests', () => {
   beforeAll(async () => {
     prisma = new PrismaClient()
 
-    // Create test user and get token
     const userData = {
       name: 'Test User',
       email: 'test.publications@exemplo.com',
@@ -25,7 +24,6 @@ describe('Publications Integration Tests', () => {
   })
 
   afterAll(async () => {
-    // Clean up test user
     await prisma.user.deleteMany({
       where: { email: 'test.publications@exemplo.com' },
     })
@@ -33,7 +31,6 @@ describe('Publications Integration Tests', () => {
   })
 
   beforeEach(async () => {
-    // Clean publications before each test
     await prisma.publication.deleteMany()
   })
 
@@ -50,7 +47,6 @@ describe('Publications Integration Tests', () => {
     })
 
     it('should return publications with pagination', async () => {
-      // Create test publications
       const publicationsData = Array.from({ length: 35 }, (_, i) => ({
         process_number: `${i + 1}234567-89.2024.8.26.0100`,
         availability_date: new Date('2024-03-17'),
@@ -62,7 +58,6 @@ describe('Publications Integration Tests', () => {
         data: publicationsData,
       })
 
-      // Test first page
       const firstPageResponse = await request(app)
         .get('/api/publications?page=1&limit=10')
         .set('Authorization', `Bearer ${authToken}`)
@@ -72,7 +67,6 @@ describe('Publications Integration Tests', () => {
       expect(firstPageResponse.body.data.pagination.current).toBe(1)
       expect(firstPageResponse.body.data.pagination.total).toBe(4) // 35 / 10 = 4 pages
 
-      // Test second page
       const secondPageResponse = await request(app)
         .get('/api/publications?page=2&limit=10')
         .set('Authorization', `Bearer ${authToken}`)
@@ -83,7 +77,6 @@ describe('Publications Integration Tests', () => {
     })
 
     it('should filter publications by status', async () => {
-      // Create publications with different statuses
       await prisma.publication.createMany({
         data: [
           {
