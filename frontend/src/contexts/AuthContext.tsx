@@ -18,12 +18,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Verificar se o usuário está logado ao inicializar
+
     const initAuth = () => {
       try {
         const token = localStorage.getItem('accessToken')
         const userData = localStorage.getItem('user')
-        
+
         if (token && userData) {
           const parsedUser = JSON.parse(userData)
           setUser(parsedUser)
