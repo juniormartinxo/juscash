@@ -242,7 +242,6 @@ class PublicationWorker:
                     elif "liquido" in mv_type or "net" in mv_type:
                         net_value = MonetaryValue(amount_cents=amount_cents)
 
-            # Criar Publication
             publication = Publication(
                 process_number=publication_data["process_number"],
                 publication_date=publication_date,
