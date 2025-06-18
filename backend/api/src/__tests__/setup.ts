@@ -4,11 +4,10 @@ declare global {
   var testPrisma: PrismaClient
 }
 
-// Global test setup
+
 let prisma: PrismaClient = new PrismaClient()
 
 beforeAll(async () => {
-  // Configurar banco de teste
   prisma = new PrismaClient({
     datasources: {
       db: {
@@ -17,17 +16,15 @@ beforeAll(async () => {
     },
   })
 
-  // Executar migrações
+
   await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
 })
 
 afterAll(async () => {
-  // Limpar banco e fechar conexão
   await prisma.$disconnect()
 })
 
 beforeEach(async () => {
-  // Limpar tabelas antes de cada teste
   await prisma.publicationLog.deleteMany()
   await prisma.publication.deleteMany()
   await prisma.userRefreshToken.deleteMany()
@@ -36,5 +33,5 @@ beforeEach(async () => {
   await prisma.user.deleteMany()
 })
 
-// Disponibilizar prisma globalmente para os testes
+
 global.testPrisma = prisma
