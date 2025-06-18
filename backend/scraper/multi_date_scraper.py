@@ -78,7 +78,6 @@ class MultiDateScraper:
         self.settings = get_settings()
         self.container = Container()
 
-        # Inicializar arquivo de progresso
         self._load_or_create_progress_file()
 
         logger.info(f"🚀 MultiDateScraper inicializado")
@@ -111,7 +110,6 @@ class MultiDateScraper:
                     f"📂 Arquivo de progresso carregado: {len(self.progress_data)} datas"
                 )
             else:
-                # Criar arquivo inicial
                 self._initialize_progress_data()
                 self._save_progress()
                 logger.info("📝 Arquivo de progresso inicial criado")
@@ -209,7 +207,6 @@ class MultiDateScraper:
         logger.info(f"👷 Worker {worker_id} iniciado")
 
         try:
-            # Criar orchestrator específico para este worker
             orchestrator = ScrapingOrchestrator(self.container)
 
             while not self.shutdown_event.is_set():
@@ -328,7 +325,7 @@ class MultiDateScraper:
 
     async def _scrape_for_date(self, date_str: str, orchestrator: ScrapingOrchestrator):
         """Executa scraping para uma data específica"""
-        # Criar execução personalizada para a data
+
         from domain.entities.scraping_execution import ScrapingExecution, ExecutionType
         from uuid import uuid4
 
