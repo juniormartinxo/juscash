@@ -16,7 +16,6 @@ class SavePublicationsToFilesUseCase:
     """
 
     def __init__(self):
-        # Inicializar o salvador de arquivos JSON
         self.json_saver = ReportJsonSaver()
 
     async def execute(self, publications: List[Publication]) -> Dict[str, int]:
@@ -43,7 +42,6 @@ class SavePublicationsToFilesUseCase:
         try:
             for publication in publications:
                 try:
-                    # Salvar como JSON
                     json_path = await self.json_saver.save_publication_json(publication)
 
                     if json_path:
@@ -72,7 +70,6 @@ class SavePublicationsToFilesUseCase:
 
             logger.info(f"📊 Salvamento concluído: {stats}")
 
-            # Obter estatísticas dos arquivos JSON
             json_stats = self.json_saver.get_json_stats()
             logger.info(
                 f"📈 Arquivos JSON do dia: {json_stats.get('total_json_files', 0)}"
@@ -83,7 +80,6 @@ class SavePublicationsToFilesUseCase:
         except Exception as error:
             logger.error(f"❌ Erro durante salvamento: {error}")
 
-            # Retornar estatísticas de falha
             return {
                 "total": len(publications),
                 "saved": saved_count,
