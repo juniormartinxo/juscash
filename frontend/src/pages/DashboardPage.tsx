@@ -38,7 +38,7 @@ export function DashboardPage() {
           </div>
 
           {/* Board Kanban */}
-          <div className="h-[calc(100vh-300px)]"> {/* Altura fixa para o kanban */}
+          <div className="min-h-72"> {/* Altura fixa para o kanban */}
             <KanbanBoard filters={filters} />
           </div>
         </div>
