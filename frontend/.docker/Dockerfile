@@ -7,6 +7,8 @@ RUN npm install -g pnpm
 # Definir diretório de trabalho
 WORKDIR /app
 
+RUN apk add --no-cache tzdata bash wget curl
+
 # Copiar arquivos de configuração do pnpm
 COPY .npmrc pnpm-lock.yaml package.json ./
 
