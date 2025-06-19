@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import superjson from "superjson"
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -18,11 +19,31 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Formatação de valores monetários
-export function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(value / 100) // Valor em centavos
+export function formatCurrency(value: any): string {
+    if (value === null || value === undefined) return 'N/A'
+
+    try {
+        // Se for um objeto superjson, deserializar
+        let deserializedValue = value
+        if (value && typeof value === 'object' && value.json !== undefined && value.meta !== undefined) {
+            deserializedValue = superjson.deserialize(value)
+        }
+
+        // Converter BigInt para number (dividindo por 100 para centavos)
+        const numericValue = typeof deserializedValue === 'bigint'
+            ? Number(deserializedValue)
+            : deserializedValue
+
+        if (typeof numericValue !== 'number' || isNaN(numericValue)) return 'N/A'
+
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(numericValue / 100) // Valor em centavos
+    } catch (error) {
+        console.warn('Erro ao formatar currency:', error)
+        return 'N/A'
+    }
 }
 
 // Formatação de datas
