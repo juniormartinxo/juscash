@@ -14,14 +14,6 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: ['juscash.juniormartins.dev', "localhost:5173"],
-    // ADICIONAR PROXY PARA DESENVOLVIMENTO LOCAL
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false
-      }
-    },
     fs: {
       strict: false
     }
