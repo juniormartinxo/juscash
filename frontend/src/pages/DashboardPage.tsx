@@ -34,9 +34,7 @@ export function DashboardPage() {
             </div>
 
             {/* Filtros de busca */}
-            <SearchFiltersComponent
-              onFiltersChange={handleFiltersChange}
-            />
+            <SearchFiltersComponent onFiltersChange={handleFiltersChange} />
           </div>
 
           {/* Board Kanban */}
