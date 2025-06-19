@@ -78,7 +78,7 @@ RUN useradd --create-home --shell /bin/bash scraper && \
     mkdir -p /app/reports/json && \
     mkdir -p /app/reports/log && \
     mkdir -p /app/logs && \
-    chown -R scraper:scraper /opt/playwright /var/log/supervisor /var/run/supervisor
+    chown -R scraper:scraper /opt/playwright /var/log/supervisor /var/run/supervisor /app/reports /app/logs
 
 WORKDIR /app
 
