@@ -19,10 +19,18 @@ export function PublicationModal({
 	isOpen,
 	onClose,
 }: PublicationModalProps) {
-	if (!publication) return null
+	if (!publication) {
+		return null
+	}
+
+	const handleOpenChange = (open: boolean) => {
+		if (!open) {
+			onClose()
+		}
+	}
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-md font-bold text-secondary mb-4">
