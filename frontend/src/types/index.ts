@@ -5,8 +5,8 @@ export interface User {
     id: string
     name: string
     email: string
-    created_at: string
-    updated_at: string
+    createdAt: string
+    updatedAt: string
 }
 
 export enum PublicationStatus {
@@ -14,6 +14,13 @@ export enum PublicationStatus {
     LIDA = 'LIDA',
     ENVIADA_PARA_ADV = 'ENVIADA_PARA_ADV',
     CONCLUIDA = 'CONCLUIDA'
+}
+
+export const PublicationStatusName = {
+    [PublicationStatus.NOVA]: 'Nova',
+    [PublicationStatus.LIDA]: 'Lida',
+    [PublicationStatus.ENVIADA_PARA_ADV]: 'Enviada para Advogado',
+    [PublicationStatus.CONCLUIDA]: 'Concluída'
 }
 
 export interface Lawyer {
@@ -35,8 +42,8 @@ export interface Publication {
     attorney_fees?: number // Valor em centavos
     content: string
     status: PublicationStatus
-    created_at: string
-    updated_at: string
+    createdAt: string
+    updatedAt: string
 }
 
 // Tipos para formulários
