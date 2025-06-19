@@ -1,4 +1,4 @@
-import { cn, formatDate } from "@/lib/utils"
+import { cn, formatDate, getTimeAgo } from "@/lib/utils"
 import type { Publication } from "@/types"
 import { Clock } from "lucide-react"
 
@@ -32,8 +32,8 @@ export function PublicationCard({
 				{/* Data de atualização */}
 				<div className="flex flex-row items-center text-xs text-secondary/75">
 					<Clock className="h-2 w-2 mr-1" />
-					<span>3h</span>
-					{/* Tempo desde a última atualização - simplificado */}
+					<span>{getTimeAgo(publication?.publication_date ?? '')}</span>
+					{/* Tempo desde a criação */}
 				</div>
 
 				{/* Data de disponibilização */}
