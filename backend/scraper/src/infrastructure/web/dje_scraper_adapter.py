@@ -6,6 +6,7 @@ import re
 import asyncio
 import tempfile
 import os
+import shutil
 from typing import List, AsyncGenerator, Optional
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -40,6 +41,10 @@ class DJEScraperAdapter(WebScraperPort):
         self.enhanced_parser.set_scraper_adapter(self)
         self.temp_dir = Path(tempfile.gettempdir()) / "dje_scraper_pdfs"
         self.temp_dir.mkdir(exist_ok=True)
+
+        # 🆕 Pasta para salvar PDFs para debug
+        self.pdf_debug_dir = Path("reports/pdf")
+        self.pdf_debug_dir.mkdir(parents=True, exist_ok=True)
 
         # Controle de PDFs problemáticos
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
@@ -81,11 +86,12 @@ class DJEScraperAdapter(WebScraperPort):
         """Limpeza de recursos"""
         logger.info("🧹 Limpando recursos do browser")
 
-        # Limpar PDFs temporários
+        # Limpar PDFs temporários (mas NÃO os de debug)
         try:
             for pdf_file in self.temp_dir.glob("*.pdf"):
                 pdf_file.unlink()
             logger.info("🗑️ PDFs temporários removidos")
+            logger.info(f"🐛 PDFs de debug mantidos em: {self.pdf_debug_dir}")
         except Exception as e:
             logger.warning(f"⚠️ Erro ao limpar PDFs: {e}")
 
@@ -597,8 +603,26 @@ class DJEScraperAdapter(WebScraperPort):
                         async for publication in self._process_pdf_content(pdf_path):
                             yield publication
 
-                        # Remover arquivo após processamento
-                        pdf_path.unlink()
+                        # 🐛 MODO DEBUG: Mover PDF para pasta de debug ao invés de apagar
+                        debug_filename = (
+                            f"debug_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.pdf"
+                        )
+                        debug_path = self.pdf_debug_dir / debug_filename
+                        try:
+                            shutil.move(str(pdf_path), str(debug_path))
+                            logger.info(f"🐛 PDF salvo para debug: {debug_path}")
+                        except Exception as move_error:
+                            logger.warning(
+                                f"⚠️ Erro ao mover PDF para debug: {move_error}"
+                            )
+                            # Fallback: copiar e depois apagar
+                            try:
+                                shutil.copy2(str(pdf_path), str(debug_path))
+                                pdf_path.unlink()
+                                logger.info(f"🐛 PDF copiado para debug: {debug_path}")
+                            except Exception as copy_error:
+                                logger.error(f"❌ Erro ao copiar PDF: {copy_error}")
+                                pdf_path.unlink()  # Apagar original em caso de falha total
                         return  # Sucesso, sair do loop de retry
 
                     else:

@@ -64,18 +64,36 @@ class EnhancedDJEParserIntegrated:
         re.IGNORECASE | re.MULTILINE,
     )
 
-    # Padrões para advogados aprimorados
+    # Padrões para advogados APRIMORADOS - Versão 3.0 (com foco em /SP))
     LAWYER_PATTERNS = [
+        # Padrão 1: ADV: NOME (OAB XX/SP) - com dois pontos (prioritário)
         re.compile(
-            r"ADV\.\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,60}?)\s*\(\s*OAB\s+(\d+)(?:/\w+)?\)",
+            r"ADV:\s*([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,80}?)\s*\(\s*OAB\s+(\d+)(?:/(\w+))?\)",
             re.IGNORECASE,
         ),
+        # Padrão 2: ADV. NOME (OAB XX/SP) - com ponto
         re.compile(
-            r"ADVOGAD[OA]\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,60}?)\s*\(\s*OAB\s+(\d+)(?:/\w+)?\)",
+            r"ADV\.\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,80}?)\s*\(\s*OAB\s+(\d+)(?:/(\w+))?\)",
             re.IGNORECASE,
         ),
+        # Padrão 3: ADVOGADO/ADVOGADA NOME (OAB XX/SP)
         re.compile(
-            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,60}?)\s*\(\s*OAB\s+(\d+)(?:/\w+)?\)",
+            r"ADVOGAD[OA]\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{2,80}?)\s*\(\s*OAB\s+(\d+)(?:/(\w+))?\)",
+            re.IGNORECASE,
+        ),
+        # Padrão 4: NOME COMPLETO (OAB XXXXX/SP) - padrão geral com captura de UF
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{6,80}?)\s*\(\s*OAB\s+(\d{4,6})/(\w{2})\)",
+            re.IGNORECASE,
+        ),
+        # Padrão 5: NOME COMPLETO (OAB XXXXX) - sem UF (fallback)
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{6,80}?)\s*\(\s*OAB\s+(\d{4,6})\)",
+            re.IGNORECASE,
+        ),
+        # Padrão 6: Foco específico em /SP) - o que o usuário sugeriu
+        re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{6,80}?)\s*\(\s*OAB\s+(\d{4,6})/SP\)",
             re.IGNORECASE,
         ),
     ]
@@ -421,23 +439,94 @@ class EnhancedDJEParserIntegrated:
 
     def _find_publication_end(self, content: str, start_position: int) -> int:
         """
-        Encontra o fim da publicação atual
+        Encontra o fim da publicação atual - VERSÃO APRIMORADA 3.0
+
+        Estratégia baseada no feedback do usuário:
+        1. Publicação sempre termina com advogados que têm "/SP)"
+        2. Busca o último "/SP)" antes do próximo processo
+        3. Garante que o conteúdo inclua TODOS os advogados
         """
         # Procurar próximo processo após a posição inicial
-        search_content = content[
-            start_position + 100 :
-        ]  # Skip inicial para evitar o processo atual
-
+        search_content = content[start_position + 100 :]  # Skip inicial
         next_process_match = self.PROCESS_PATTERN.search(search_content)
 
         if next_process_match:
-            # Fim é onde começa o próximo processo
-            end_position = start_position + 100 + next_process_match.start()
+            # Região entre processo atual e próximo processo
+            region_end = start_position + 100 + next_process_match.start()
+            publication_region = content[start_position:region_end]
+
+            # Buscar o ÚLTIMO /SP) na região (indica final dos advogados)
+            sp_pattern = re.compile(r"/SP\)", re.IGNORECASE)
+            sp_matches = list(sp_pattern.finditer(publication_region))
+
+            if sp_matches:
+                # Usar posição após o último /SP) + margem de segurança
+                last_sp_end = start_position + sp_matches[-1].end()
+                end_position = min(last_sp_end + 50, region_end)  # +50 chars de margem
+
+                logger.debug(
+                    f"📍 Final da publicação determinado por /SP) na posição {end_position}"
+                )
+            else:
+                # Fallback: buscar padrões alternativos de final
+                end_position = self._find_alternative_publication_end(
+                    publication_region, start_position, region_end
+                )
         else:
-            # Se não há próximo processo, usar o resto do conteúdo
+            # Se não há próximo processo, incluir TODO o resto
             end_position = len(content)
 
+            # Mas ainda assim buscar /SP) para validar
+            remaining_content = content[start_position:]
+            sp_pattern = re.compile(r"/SP\)", re.IGNORECASE)
+            sp_matches = list(sp_pattern.finditer(remaining_content))
+
+            if sp_matches:
+                last_sp_end = start_position + sp_matches[-1].end()
+                end_position = min(last_sp_end + 50, len(content))
+                logger.debug(
+                    f"📍 Final da publicação (sem próximo processo) por /SP) na posição {end_position}"
+                )
+
+        logger.debug(
+            f"📏 Publicação: posição {start_position} até {end_position} ({end_position - start_position} chars)"
+        )
         return end_position
+
+    def _find_alternative_publication_end(
+        self, publication_region: str, start_position: int, max_end: int
+    ) -> int:
+        """
+        Busca padrões alternativos para determinar final da publicação
+        quando não encontra /SP)
+        """
+        # Padrões alternativos de final (em ordem de prioridade)
+        end_patterns = [
+            # Padrão 1: Qualquer OAB seguido de estado
+            re.compile(r"OAB\s+\d{4,6}/\w{2}\)", re.IGNORECASE),
+            # Padrão 2: ADV: seguido de conteúdo até quebra significativa
+            re.compile(r"ADV:\s*[^.]*?(?=\s*$|\s*\n\s*\n)", re.IGNORECASE | re.DOTALL),
+            # Padrão 3: Qualquer padrão de OAB (mesmo sem estado)
+            re.compile(r"OAB\s+\d{4,6}\)", re.IGNORECASE),
+            # Padrão 4: Números de página ou marcadores finais
+            re.compile(r"(?:Página|Int\.|Intimação)\s*[-\s]*\s*$", re.IGNORECASE),
+        ]
+
+        for pattern in end_patterns:
+            matches = list(pattern.finditer(publication_region))
+            if matches:
+                # Usar posição após o último match + margem
+                last_match_end = start_position + matches[-1].end()
+                end_position = min(last_match_end + 30, max_end)
+
+                logger.debug(
+                    f"📍 Final alternativo encontrado na posição {end_position}"
+                )
+                return end_position
+
+        # Fallback final: usar limite original
+        logger.debug(f"⚠️ Usando fallback para final da publicação")
+        return max_end
 
     def _extract_structured_data(
         self, content: str, process_number: str
@@ -497,23 +586,147 @@ class EnhancedDJEParserIntegrated:
 
     def _extract_lawyers(self, content: str) -> List[Lawyer]:
         """
-        Extrai advogados com OAB
+        Extrai advogados com OAB - VERSÃO APRIMORADA 2.0
+
+        Busca advogados em toda a publicação, com foco especial no final
+        onde geralmente aparecem antes do próximo processo.
         """
         lawyers = []
 
+        # 1. Extração geral com padrões aprimorados
         for pattern in self.LAWYER_PATTERNS:
             for match in pattern.finditer(content):
                 name = self._clean_lawyer_name(match.group(1))
                 oab = match.group(2)
 
-                if name and oab:
+                # Alguns padrões capturam UF no grupo 3
+                uf = None
+                if len(match.groups()) >= 3 and match.group(3):
+                    uf = match.group(3)
+
+                if name and oab and len(name) > 6:  # Nome mínimo razoável
                     lawyer = Lawyer(name=name, oab_number=oab)
 
-                    # Evitar duplicatas
+                    # Evitar duplicatas por OAB
                     if not any(l.oab_number == oab for l in lawyers):
                         lawyers.append(lawyer)
 
+        # 2. Busca especializada no FINAL da publicação
+        lawyers_from_end = self._extract_lawyers_from_publication_end(content)
+        for lawyer in lawyers_from_end:
+            # Evitar duplicatas por OAB
+            if not any(l.oab_number == lawyer.oab_number for l in lawyers):
+                lawyers.append(lawyer)
+
+        # 3. Log de debugging
+        if lawyers:
+            logger.debug(f"🏛️ Advogados extraídos: {len(lawyers)}")
+            for lawyer in lawyers:
+                logger.debug(f"   - {lawyer.name} (OAB {lawyer.oab_number})")
+        else:
+            logger.debug("⚠️ Nenhum advogado encontrado")
+
         return lawyers
+
+    def _extract_lawyers_from_publication_end(self, content: str) -> List[Lawyer]:
+        """
+        Método especializado para extrair advogados no FINAL das publicações
+
+        Estratégia:
+        1. Busca região próxima ao final da publicação (últimos 500 chars)
+        2. Aplica padrões específicos para essa região
+        3. Captura múltiplos advogados separados por vírgula/ponto-vírgula
+        """
+        lawyers = []
+
+        # Pegar últimos 500 caracteres da publicação (região final)
+        end_region = content[-500:] if len(content) > 500 else content
+
+        # Padrões específicos para o final das publicações
+        end_patterns = [
+            # Padrão 1: ADV: NOME1 (OAB XX), NOME2 (OAB YY)
+            re.compile(
+                r"ADV:\s*([^.]+?)(?=\s*(?:Processo|\.|$))", re.IGNORECASE | re.DOTALL
+            ),
+            # Padrão 2: Sequência de nomes com OAB no final
+            re.compile(
+                r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][^.]*?OAB\s+\d{4,6}(?:/\w{2})?[^.]*?)(?=\s*(?:Processo|\.|$))",
+                re.IGNORECASE | re.DOTALL,
+            ),
+            # Padrão 3: Linha que termina com múltiplos OABs
+            re.compile(
+                r"([^.\n]*?(?:OAB\s+\d{4,6}(?:/\w{2})?[^.\n]*?){1,5})(?=\s*(?:Processo|\.|$))",
+                re.IGNORECASE,
+            ),
+        ]
+
+        for pattern in end_patterns:
+            for match in pattern.finditer(end_region):
+                lawyer_text = match.group(1).strip()
+
+                # Extrair advogados individuais desta região
+                individual_lawyers = self._parse_multiple_lawyers_from_text(lawyer_text)
+                lawyers.extend(individual_lawyers)
+
+        # Remover duplicatas
+        unique_lawyers = []
+        seen_oabs = set()
+
+        for lawyer in lawyers:
+            if lawyer.oab_number not in seen_oabs:
+                unique_lawyers.append(lawyer)
+                seen_oabs.add(lawyer.oab_number)
+
+        return unique_lawyers
+
+    def _parse_multiple_lawyers_from_text(self, text: str) -> List[Lawyer]:
+        """
+        Parseia múltiplos advogados de um texto que pode conter:
+        "ADV: MARCIO SILVA COELHO (OAB 45683/SP), ESMERALDA FIGUEIREDO DE OLIVEIRA (OAB 29062/SP)"
+        """
+        lawyers = []
+
+        # Padrão para extrair NOME (OAB XXXXX/UF) individual
+        individual_pattern = re.compile(
+            r"([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ][A-ZÁÉÍÓÚÀÂÊÔÃÕÇ\s\.]{6,80}?)\s*\(\s*OAB\s+(\d{4,6})(?:/(\w{2}))?\)",
+            re.IGNORECASE,
+        )
+
+        for match in individual_pattern.finditer(text):
+            name = self._clean_lawyer_name(match.group(1))
+            oab = match.group(2)
+            uf = match.group(3) if match.group(3) else "SP"  # Default SP
+
+            if name and oab and len(name) > 6:
+                # Validar se nome parece razoável (não apenas iniciais)
+                if self._is_valid_lawyer_name(name):
+                    lawyer = Lawyer(name=name, oab_number=oab)
+                    lawyers.append(lawyer)
+
+        return lawyers
+
+    def _is_valid_lawyer_name(self, name: str) -> bool:
+        """
+        Valida se um nome de advogado parece razoável
+        """
+        # Nome deve ter pelo menos 2 palavras
+        words = name.split()
+        if len(words) < 2:
+            return False
+
+        # Cada palavra deve ter pelo menos 2 caracteres
+        if any(len(word) < 2 for word in words):
+            return False
+
+        # Nome não deve ter caracteres estranhos demais
+        if re.search(r"[^\w\s\.\-]", name):
+            return False
+
+        # Nome não deve ser muito curto ou muito longo
+        if len(name) < 6 or len(name) > 80:
+            return False
+
+        return True
 
     def _extract_monetary_values(
         self, content: str
