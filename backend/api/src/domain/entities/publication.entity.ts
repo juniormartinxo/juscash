@@ -5,7 +5,7 @@
 export interface PublicationEntity {
   id: string
   process_number: string
-  publicationDate?: Date | null
+  publication_date?: Date | null
   availability_date: Date
   authors: string[]
   defendant: string
@@ -87,7 +87,7 @@ export class PublicationValidation {
   /**
    * Valida se as datas são consistentes
    */
-  static areValidDates(publicationDate?: Date | null, availability_date?: Date): boolean {
+  static areValidDates(publication_date?: Date | null, availability_date?: Date): boolean {
     if (!availability_date) return false
 
     const today = new Date()
@@ -97,7 +97,7 @@ export class PublicationValidation {
     if (availability_date > today) return false
 
     // Se publication date existe, deve ser <= availability date
-    if (publicationDate && publicationDate > availability_date) return false
+    if (publication_date && publication_date > availability_date) return false
 
     return true
   }
@@ -129,7 +129,7 @@ export class PublicationFactory {
     availability_date: Date
     authors: string[]
     content: string
-    publicationDate?: Date
+    publication_date?: Date
     lawyers?: Array<{ name: string; oab: string }>
     gross_value?: bigint
     net_value?: bigint
@@ -143,7 +143,7 @@ export class PublicationFactory {
       throw new Error('Invalid process number format')
     }
 
-    if (!PublicationValidation.areValidDates(data.publicationDate, data.availability_date)) {
+    if (!PublicationValidation.areValidDates(data.publication_date, data.availability_date)) {
       throw new Error('Invalid dates')
     }
 
@@ -161,7 +161,7 @@ export class PublicationFactory {
 
     return {
       process_number: data.process_number,
-      publicationDate: data.publicationDate || null,
+      publication_date: data.publication_date || null,
       availability_date: data.availability_date,
       authors: data.authors,
       defendant: 'Instituto Nacional do Seguro Social - INSS',
