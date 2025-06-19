@@ -36,10 +36,10 @@ export interface Publication {
     authors: string[]
     defendant: string
     lawyers?: Lawyer[]
-    gross_value?: number // Valor em centavos
-    net_value?: number // Valor em centavos
-    interest_value?: number // Valor em centavos
-    attorney_fees?: number // Valor em centavos
+    gross_value?: any // Valor serializado pelo superjson (BigInt)
+    net_value?: any // Valor serializado pelo superjson (BigInt)
+    interest_value?: any // Valor serializado pelo superjson (BigInt) 
+    attorney_fees?: any // Valor serializado pelo superjson (BigInt)
     content: string
     status: PublicationStatus
     createdAt: string
