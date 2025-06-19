@@ -221,7 +221,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
     return {
       id: prismaPublication.id,
       process_number: prismaPublication.process_number,
-      publicationDate: prismaPublication.publication_date,
+      publication_date: prismaPublication.publication_date,
       availability_date: prismaPublication.availability_date,
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
