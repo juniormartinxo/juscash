@@ -54,6 +54,7 @@ services:
       - ./backend/scraper:/app
       - ./backend/scraper/reports/json:/app/reports/json
       - ./backend/scraper/reports/log:/app/reports/log
+      - ./backend/scraper/reports/pdf:/app/reports/pdf
     command: supervisord -n
     ports:
       - ${SCRAPER_API_PORT}:${SCRAPER_API_PORT}
