@@ -8,7 +8,7 @@
 
 ### **Componentes Principais**
 
-```
+```txt
 📦 DJE Scraper System v1.0
 ├── 🕷️ DJEScraperAdapter (infrastructure/web/dje_scraper_adapter.py)
 │   ├── Browser: Playwright Chromium
@@ -37,11 +37,13 @@
 ## 📋 **FLUXO DE FUNCIONAMENTO ATUAL**
 
 ### **1. Inicialização**
+
 1. Container injeta dependências
 2. DJEScraperAdapter inicializa Playwright
 3. Enhanced parser é configurado com scraper adapter
 
 ### **2. Scraping Process**
+
 1. Navega para consultaAvancada.do
 2. Preenche formulário (data, termos de busca)
 3. Encontra elementos tr.ementaClass
@@ -51,6 +53,7 @@
 7. Salva publicações como JSON
 
 ### **3. Parsing Strategy**
+
 - **Parser básico**: Regex simples para dados gerais
 - **Enhanced parser**: Busca por RPV/INSS com lógica reversa
 - **Fallback**: Enhanced → Basic se falhar
@@ -58,7 +61,8 @@
 ## 🔧 **DEPENDÊNCIAS ATUAIS**
 
 ### **Python (Scraper)**
-```
+
+```txt
 playwright==1.52.0          # Automação browser
 loguru==0.7.3               # Logging avançado
 pydantic==2.11.5            # Validação de dados
@@ -74,7 +78,8 @@ watchdog>=6.0.0             # File monitoring
 ```
 
 ### **Node.js (API)**
-```
+
+```txt
 typescript: 5.8.3           # Language
 express: 5.1.0              # Web framework
 prisma: 6.9.0               # ORM
@@ -87,33 +92,38 @@ swagger-ui-express: 5.0.0   # Documentation
 ## 📊 **LIMITAÇÕES IDENTIFICADAS**
 
 ### **1. Publicações Divididas**
+
 ❌ **Problema**: Parser não consegue lidar com publicações que começam em uma página e continuam na próxima  
 📋 **Comportamento atual**: Perde início ou fim da publicação  
 🔧 **Tentativa existente**: Enhanced parser tem método `_download_previous_page()` mas implementação incompleta
 
 ### **2. Cache de Páginas**
+
 ❌ **Problema**: Não há cache para páginas baixadas  
 📋 **Comportamento atual**: Re-baixa a mesma página múltiplas vezes  
 🔧 **Impacto**: Performance degradada e potencial rate limiting
 
 ### **3. Validação de Merge**
+
 ❌ **Problema**: Não há validação se conteúdo merged está correto  
 📋 **Comportamento atual**: Pode fazer merge incorreto silenciosamente  
 🔧 **Impacto**: Dados incorretos ou incompletos
 
 ### **4. Analytics Limitado**
+
 ❌ **Problema**: Falta sistema de análise de qualidade das extrações  
 📋 **Comportamento atual**: Apenas logs básicos  
 🔧 **Impacto**: Difícil identificar problemas de qualidade
 
 ### **5. Rate Limiting Básico**
+
 ⚠️ **Problema**: Rate limiting simples baseado apenas em delays  
 📋 **Comportamento atual**: Delay fixo entre requisições  
 🔧 **Impacto**: Pode ser bloqueado pelo servidor
 
 ## 📁 **ESTRUTURA DE ARQUIVOS ATUAL**
 
-```
+```txt
 backend/scraper/src/
 ├── application/
 │   ├── services/scraping_orchestrator.py
@@ -152,6 +162,7 @@ backend/scraper/src/
 ## 🔑 **CONFIGURAÇÕES IMPORTANTES**
 
 ### **Variáveis de Ambiente**
+
 ```bash
 # Scraper
 SCRAPER_TARGET_URL=https://esaj.tjsp.jus.br/cdje/consultaAvancada.do#buscaavancada
@@ -173,6 +184,7 @@ BROWSER_TIMEOUT=30000
 ```
 
 ### **Seletores CSS Utilizados**
+
 ```python
 # tr.ementaClass - Links para PDFs
 ementa_elements = await page.query_selector_all("tr.ementaClass")
@@ -192,12 +204,14 @@ next_selectors = [
 ## 📈 **MÉTRICAS ATUAIS**
 
 ### **Performance Típica**
+
 - **PDFs por minuto**: 10-20 (com delays)
 - **Taxa de sucesso**: ~85-90%
 - **Tempo por página**: 5-10 segundos
 - **Memory usage**: 200-400MB
 
 ### **Limitações Conhecidas**
+
 - **Publicações perdidas**: ~10-15% (páginas divididas)
 - **Re-downloads**: 20-30% das páginas
 - **Rate limiting hits**: 2-5% das execuções
@@ -205,6 +219,7 @@ next_selectors = [
 ## 🚨 **PONTOS CRÍTICOS PARA PRESERVAR**
 
 ### **✅ Funcionalidades que FUNCIONAM**
+
 1. **Navegação automatizada** para consultaAvancada.do
 2. **Preenchimento de formulário** com data específica
 3. **Download de PDFs** via onclick events
@@ -217,6 +232,7 @@ next_selectors = [
 10. **API integration** via queue Redis
 
 ### **⚠️ Configurações Críticas**
+
 1. **User Agent**: Deve ser mantido para evitar bloqueio
 2. **Timeouts**: Valores atuais funcionam bem
 3. **Seletores CSS**: tr.ementaClass é estável
@@ -228,11 +244,13 @@ next_selectors = [
 ### **Se algo der errado com as melhorias:**
 
 1. **Voltar para este branch**:
+
    ```bash
    git checkout backup/current-scraper-implementation
    ```
 
 2. **Restaurar dependências**:
+
    ```bash
    cd backend/scraper
    pip install -r requirements.txt
@@ -244,6 +262,7 @@ next_selectors = [
    - PostgreSQL funcionando
 
 4. **Testar funcionamento básico**:
+
    ```bash
    python -m src.main
    ```
@@ -268,4 +287,4 @@ next_selectors = [
 **📅 Criado em**: 19/12/2025  
 **👨‍💻 Responsável**: Sistema automatizado de backup  
 **🔄 Versão**: 1.0.0-backup  
-**🌟 Status**: ✅ Funcional e estável 
+**🌟 Status**: ✅ Funcional e estável
