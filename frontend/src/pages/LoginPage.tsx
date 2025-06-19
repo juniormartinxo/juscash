@@ -33,6 +33,7 @@ export function LoginPage() {
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo ao JusCash!",
+        duration: 3000,
       })
       navigate('/dashboard')
     } catch (error) {
@@ -43,12 +44,14 @@ export function LoginPage() {
           title: "Credenciais inválidas",
           description: "Verifique o e-mail e a senha e tente novamente.",
           variant: "destructive",
+          duration: 5000,
         })
       } else {
         toast({
           title: "Erro no servidor",
           description: "Ocorreu um problema. Tente novamente mais tarde.",
           variant: "destructive",
+          duration: 5000,
         })
       }
     } finally {
