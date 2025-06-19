@@ -82,6 +82,7 @@ dump.rdb
 *.html
 *.txt
 *.json
+*.pdf
 backend/scraper/**/*.png
 backend/scraper/**/*.jpeg
 
