@@ -225,7 +225,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
       availability_date: prismaPublication.availability_date,
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
-      lawyers: prismaPublication.lawyers ? superjson.deserialize(prismaPublication.lawyers) : null,
+      lawyers: prismaPublication.lawyers ? (typeof prismaPublication.lawyers === 'string' ? JSON.parse(prismaPublication.lawyers) : prismaPublication.lawyers) : null,
       // Valores monetários já em centavos como bigint
       gross_value: prismaPublication.gross_value ? superjson.deserialize(prismaPublication.gross_value) : null,
       net_value: prismaPublication.net_value ? superjson.deserialize(prismaPublication.net_value) : null,
@@ -239,7 +239,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
       local: prismaPublication.local,
       parte: prismaPublication.parte,
       extraction_metadata: prismaPublication.extraction_metadata ?
-        superjson.deserialize(prismaPublication.extraction_metadata) : null,
+        (typeof prismaPublication.extraction_metadata === 'string' ? JSON.parse(prismaPublication.extraction_metadata) : prismaPublication.extraction_metadata) : null,
       createdAt: prismaPublication.created_at,
       updatedAt: prismaPublication.updated_at,
     }
