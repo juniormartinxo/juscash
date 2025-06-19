@@ -38,6 +38,7 @@ export function SignupPage() {
       toast({
         title: "Conta criada com sucesso",
         description: "Bem-vindo ao JusCash!",
+        duration: 3000,
       })
       navigate('/dashboard')
     } catch (error) {
@@ -48,12 +49,14 @@ export function SignupPage() {
           title: "E-mail já cadastrado",
           description: "Este e-mail já está em uso. Tente fazer login.",
           variant: "destructive",
+          duration: 5000,
         })
       } else {
         toast({
           title: "Erro no cadastro",
           description: "Ocorreu um problema. Tente novamente mais tarde.",
           variant: "destructive",
+          duration: 5000,
         })
       }
     } finally {
