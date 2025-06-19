@@ -29,6 +29,18 @@ class ReportSettings(BaseSettings):
         for dir_path in [self.base_dir, self.json_dir, self.log_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
+            # Verificar se o diretório é gravável
+            if not os.access(dir_path, os.W_OK):
+                try:
+                    # Tentar alterar permissões se necessário
+                    import stat
+
+                    dir_path.chmod(
+                        stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH
+                    )
+                except PermissionError:
+                    print(f"⚠️ Aviso: Sem permissão de escrita em {dir_path}")
+
         return self
 
     class Config:
