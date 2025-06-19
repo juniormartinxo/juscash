@@ -35,6 +35,13 @@ A documentação interativa da API estará disponível em:
 
 Executa um comando do scraper em background.
 
+Comandos disponíveis:
+
+- `monitor`: Inicia o monitoramento de arquivos JSON
+- `scraper`: Executa o scraper básico (scraper_cli.py run)
+- `multi_date_scraper`: Executa o scraper para múltiplas datas
+- `scraper_cli`: Executa o scraper via CLI (mesmo que 'scraper')
+
 Exemplo de requisição para iniciar o monitoramento:
 
 ```json
@@ -51,6 +58,45 @@ Exemplo de requisição para executar o scraper:
 ```json
 {
     "command": "scraper",
+    "args": {
+        "date": "2025-06-15"
+    }
+}
+```
+
+Exemplo de requisição para executar o multi-date scraper:
+
+```json
+{
+    "command": "multi_date_scraper",
+    "args": {
+        "start_date": "2025-06-15",
+        "end_date": "2025-06-17"
+    }
+}
+```
+
+### Endpoints Específicos
+
+**POST** `/run/multi-date-scraper`
+
+Executa o scraper para múltiplas datas em background.
+
+```json
+{
+    "args": {
+        "start_date": "2025-06-15",
+        "end_date": "2025-06-17"
+    }
+}
+```
+
+**POST** `/run/scraper-cli`
+
+Executa o scraper CLI em background.
+
+```json
+{
     "args": {
         "date": "2025-06-15"
     }
@@ -105,8 +151,30 @@ Para um serviço específico. O parâmetro `service` pode ser:
     curl http://localhost:8000/status
     ```
 
-4. Parar o monitoramento:
+4. Executar o multi-date scraper:
+
+    ```bash
+    curl -X POST http://localhost:8000/run/multi-date-scraper \
+    -H "Content-Type: application/json" \
+    -d '{"args": {"start_date": "2025-06-15", "end_date": "2025-06-17"}}'
+    ```
+
+5. Executar o scraper CLI:
+
+    ```bash
+    curl -X POST http://localhost:8000/run/scraper-cli \
+    -H "Content-Type: application/json" \
+    -d '{"args": {"date": "2025-06-15"}}'
+    ```
+
+6. Parar o monitoramento:
 
     ```bash
     curl -X POST http://localhost:8000/stop/monitor
+    ```
+
+7. Parar o multi-date scraper:
+
+    ```bash
+    curl -X POST http://localhost:8000/stop/multi_date_scraper
     ```
