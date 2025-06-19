@@ -14,12 +14,14 @@ export function Navbar() {
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso",
+        duration: 3000,
       })
     } catch (error) {
       toast({
         title: "Erro no logout",
         description: "Ocorreu um erro ao fazer logout",
         variant: "destructive",
+        duration: 5000,
       })
     }
   }
