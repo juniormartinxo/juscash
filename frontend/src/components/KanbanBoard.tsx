@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { CheckSquare } from 'lucide-react'
+import { CheckSquare, RefreshCw, Wifi } from 'lucide-react'
 import { PublicationCard } from './PublicationCard'
 import { PublicationModal } from './PublicationModal'
 import { useToast } from '@/hooks/use-toast'
+import { usePublicationCount, useUpdatePublicationStatus } from '@/hooks/usePublications'
 import { apiService } from '@/services/api'
-import { Publication, PublicationStatus, SearchFilters, KanbanColumn } from '@/types'
+import { Publication, PublicationStatus, SearchFilters, KanbanColumn, PublicationStatusName } from '@/types'
+import Spin from './Spin'
 
 interface KanbanBoardProps {
   filters: SearchFilters
@@ -27,8 +29,6 @@ const COLUMN_CONFIG: Record<PublicationStatus, { title: React.ReactNode; color: 
 }
 
 const ITEMS_PER_PAGE = 30
-const PRELOAD_THRESHOLD = 0.8 // Carregar quando 80% do scroll for atingido
-const SCROLL_THROTTLE_MS = 150
 
 // Regras de movimentação entre colunas
 const VALID_MOVES: Record<PublicationStatus, PublicationStatus[]> = {
@@ -36,30 +36,6 @@ const VALID_MOVES: Record<PublicationStatus, PublicationStatus[]> = {
   LIDA: [PublicationStatus.ENVIADA_PARA_ADV],
   ENVIADA_PARA_ADV: [PublicationStatus.CONCLUIDA, PublicationStatus.LIDA],
   CONCLUIDA: [],
-}
-
-// Hook personalizado para throttling
-function useThrottle<T extends (...args: any[]) => any>(callback: T, delay: number) {
-  const lastCall = useRef<number>(0)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  return useCallback((...args: Parameters<T>) => {
-    const now = Date.now()
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-
-    if (now - lastCall.current >= delay) {
-      lastCall.current = now
-      callback(...args)
-    } else {
-      timeoutRef.current = setTimeout(() => {
-        lastCall.current = Date.now()
-        callback(...args)
-      }, delay - (now - lastCall.current))
-    }
-  }, [callback, delay])
 }
 
 export function KanbanBoard({ filters }: KanbanBoardProps) {
@@ -73,14 +49,66 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   const [preloadingColumns, setPreloadingColumns] = useState<Set<PublicationStatus>>(new Set())
   const [scrollDetected, setScrollDetected] = useState<Set<PublicationStatus>>(new Set())
 
+  // Estado para controlar quando mostra indicador de polling
+  const [lastPollingTime, setLastPollingTime] = useState<Date>(new Date())
+
+  // UseRef para evitar loop infinito no useEffect
+  const previousCountsRef = useRef<Map<PublicationStatus, number>>(new Map())
+
   const { toast } = useToast()
 
-  // Debug: verificar autenticação
-  console.log('🔐 Authentication status:', {
-    isAuthenticated: apiService.isAuthenticated(),
-    currentUser: apiService.getCurrentUser(),
-    token: localStorage.getItem('accessToken') ? 'Present' : 'Missing'
-  })
+  // React Query hooks para buscar counts
+  const novaCount = usePublicationCount(PublicationStatus.NOVA, filters)
+  const lidaCount = usePublicationCount(PublicationStatus.LIDA, filters)
+  const enviadaCount = usePublicationCount(PublicationStatus.ENVIADA_PARA_ADV, filters)
+  const concluidaCount = usePublicationCount(PublicationStatus.CONCLUIDA, filters)
+
+  // Hook para atualizar status
+  const updateStatusMutation = useUpdatePublicationStatus()
+
+  // Detectar novos dados e mostrar notificação - CORRIGIDO para evitar loop infinito
+  useEffect(() => {
+    const currentCounts = new Map([
+      [PublicationStatus.NOVA, novaCount.data ?? 0],
+      [PublicationStatus.LIDA, lidaCount.data ?? 0],
+      [PublicationStatus.ENVIADA_PARA_ADV, enviadaCount.data ?? 0],
+      [PublicationStatus.CONCLUIDA, concluidaCount.data ?? 0],
+    ])
+
+    // Verificar se há novos dados (apenas após carregamento inicial)
+    if (!loading && previousCountsRef.current.size > 0) {
+      let hasNewData = false
+      let newDataMessages: string[] = []
+
+      currentCounts.forEach((currentCount, status) => {
+        const previousCount = previousCountsRef.current.get(status) ?? 0
+        if (currentCount > previousCount) {
+          hasNewData = true
+          const diff = currentCount - previousCount
+          const statusName = PublicationStatusName[status]
+          newDataMessages.push(`+${diff} em ${statusName}`)
+        }
+      })
+
+      if (hasNewData) {
+        toast({
+          title: "📢 Novas publicações disponíveis!",
+          description: newDataMessages.join(', '),
+          duration: 4000,
+        })
+      }
+    }
+
+    // Atualizar ref sem causar re-render
+    previousCountsRef.current = currentCounts
+  }, [novaCount.data, lidaCount.data, enviadaCount.data, concluidaCount.data, loading, toast])
+
+  // Atualizar timestamp do polling quando houver nova data
+  useEffect(() => {
+    if (novaCount.dataUpdatedAt || lidaCount.dataUpdatedAt || enviadaCount.dataUpdatedAt || concluidaCount.dataUpdatedAt) {
+      setLastPollingTime(new Date())
+    }
+  }, [novaCount.dataUpdatedAt, lidaCount.dataUpdatedAt, enviadaCount.dataUpdatedAt, concluidaCount.dataUpdatedAt])
 
   // Memoizar configurações das colunas
   const columnOrder = useMemo(() => [
@@ -105,17 +133,13 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     }
 
     try {
-      console.log(`🔄 API call for ${status}, page ${page}, filters:`, filters)
       const response = await apiService.getPublications(page, ITEMS_PER_PAGE, {
         ...filters,
         status,
       })
 
-      console.log(`📦 Raw API response for ${status}:`, response)
-
       // Verificação de segurança para garantir que data seja um array
       const publications = Array.isArray(response.data) ? response.data : []
-      console.log(`✅ Processed ${publications.length} publications for ${status}, total: ${response.total}`)
 
       setColumns(prev => {
         const newColumns = new Map(prev)
@@ -136,8 +160,8 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       setCurrentPage(prev => new Map(prev).set(status, response.page))
 
     } catch (error) {
+      const statusName = PublicationStatusName[status]
       console.error(`❌ Erro ao carregar publicações para ${status}:`, error)
-
 
       if (error instanceof Error) {
         console.error(`Error message: ${error.message}`)
@@ -147,8 +171,9 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       if (!isPreload) {
         toast({
           title: "Erro ao carregar publicações",
-          description: `Erro ao carregar ${status}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+          description: `Erro ao carregar ${statusName}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
           variant: "destructive",
+          duration: 5000,
         })
       }
     } finally {
@@ -195,33 +220,28 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     loadPublications(status, nextPage, false, isPreload)
   }, [hasMore, loadingMore, preloadingColumns, currentPage, loadPublications])
 
-  // Função de scroll otimizada com throttling e pre-loading
-  const handleColumnScroll = useCallback((status: PublicationStatus, event: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
-    const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
+  // Handler de scroll otimizado
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>, status: PublicationStatus) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
 
-    console.log(`Scroll em ${status}:`, {
-      scrollTop,
-      scrollHeight,
-      clientHeight,
-      scrollPercentage,
-      hasMore: hasMore.get(status),
-      isLoading: loadingMore.has(status),
-      isPreloading: preloadingColumns.has(status)
-    })
+    // Indicar visualmente que o scroll foi detectado
+    setScrollDetected(prev => new Set(prev).add(status))
+    setTimeout(() => {
+      setScrollDetected(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(status)
+        return newSet
+      })
+    }, 500)
 
-    // Pre-loading inteligente quando atinge 80% do scroll
-    if (scrollPercentage >= PRELOAD_THRESHOLD && scrollPercentage < 0.95) {
-      console.log(`Triggering preload for ${status}`)
-      loadMoreItems(status, true)
-    }
+    // Verificar se está próximo do final (100px de margem)
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100
 
-    // Carregamento normal quando chega ao final
-    if (scrollTop + clientHeight >= scrollHeight - 10) {
-      console.log(`Triggering load more for ${status}`)
+    if (isNearBottom && hasMore.get(status) && !loadingMore.has(status)) {
+      console.log(`🔄 Loading more for ${status}`)
       loadMoreItems(status, false)
     }
-  }, [hasMore, loadingMore, preloadingColumns, loadMoreItems])
+  }, [hasMore, loadingMore, loadMoreItems])
 
   const isValidMove = useCallback((from: PublicationStatus, to: PublicationStatus): boolean => {
     return VALID_MOVES[from]?.includes(to) || false
@@ -245,6 +265,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
         title: "Movimento não permitido",
         description: "Este movimento entre colunas não é permitido.",
         variant: "destructive",
+        duration: 4000,
       })
       return
     }
@@ -257,10 +278,11 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       return
     }
 
-    // Atualização otimística
+    console.log(`🚀 [KanbanBoard] Moving publication ${draggableId} from ${sourceStatus} to ${destStatus}`)
+
+    // Atualização otimística APENAS das colunas (não dos contadores)
     setColumns(prev => {
       const newColumns = new Map(prev)
-
 
       const sourceCol = newColumns.get(sourceStatus)
       if (sourceCol) {
@@ -269,7 +291,6 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
           publications: sourceCol.publications.filter(pub => pub.id !== draggableId),
         })
       }
-
 
       const destCol = newColumns.get(destStatus)
       if (destCol) {
@@ -287,29 +308,32 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
     })
 
     try {
-      await apiService.updatePublicationStatus(publication.id, destStatus)
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error)
-      toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status da publicação.",
-        variant: "destructive",
+      await updateStatusMutation.mutateAsync({
+        publicationId: publication.id,
+        newStatus: destStatus
       })
 
-      // Reverter mudanças e recarregar em caso de erro
+      console.log(`✅ [KanbanBoard] Successfully moved publication ${draggableId}`)
+
+    } catch (error) {
+      console.error('❌ [KanbanBoard] Error moving publication:', error)
+
+      // Reverter mudanças nas colunas em caso de erro
       await Promise.allSettled([
         loadPublications(sourceStatus, 1, true),
         loadPublications(destStatus, 1, true),
       ])
     }
-  }, [columns, isValidMove, toast, loadPublications])
+  }, [columns, isValidMove, toast, updateStatusMutation, loadPublications])
 
   const handleCardClick = useCallback((publication: Publication) => {
+    console.log('🖱️ [KanbanBoard] Card clicked:', publication.process_number)
     setSelectedPublication(publication)
     setIsModalOpen(true)
   }, [])
 
   const handleModalClose = useCallback(() => {
+    console.log('❌ [KanbanBoard] Modal closing')
     setIsModalOpen(false)
     setSelectedPublication(null)
   }, [])
@@ -317,29 +341,16 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="spinner" />
-        <div className="ml-4">
+        <div className="flex flex-row items-center gap-2">
+          <Spin h={8} w={8} />
           <p>Carregando publicações...</p>
-          {process.env.NODE_ENV === 'development' && (
-            <button
-              onClick={() => {
-                console.log('🔧 Debug: Clearing auth and redirecting to login')
-                apiService.clearCache()
-                localStorage.clear()
-                window.location.href = '/login'
-              }}
-              className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-xs"
-            >
-              🔧 Reset Auth (Debug)
-            </button>
-          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-full">
+    <div className="max-h-[calc(100vh-1000px)] mb-32 pb-32">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-4 gap-6 h-full">
           {columnOrder.map((status) => {
@@ -350,18 +361,50 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
               count: 0,
             }
 
+            // Obter count atualizado diretamente do React Query
+            const getColumnCount = () => {
+              switch (status) {
+                case PublicationStatus.NOVA:
+                  return novaCount.data ?? 0
+                case PublicationStatus.LIDA:
+                  return lidaCount.data ?? 0
+                case PublicationStatus.ENVIADA_PARA_ADV:
+                  return enviadaCount.data ?? 0
+                case PublicationStatus.CONCLUIDA:
+                  return concluidaCount.data ?? 0
+                default:
+                  return 0
+              }
+            }
+
             const isLoadingMore = loadingMore.has(status)
             const isPreloading = preloadingColumns.has(status)
+
+            // Verificar se o contador está carregando
+            const isCountLoading = (() => {
+              switch (status) {
+                case PublicationStatus.NOVA:
+                  return novaCount.isLoading || novaCount.isFetching
+                case PublicationStatus.LIDA:
+                  return lidaCount.isLoading || lidaCount.isFetching
+                case PublicationStatus.ENVIADA_PARA_ADV:
+                  return enviadaCount.isLoading || enviadaCount.isFetching
+                case PublicationStatus.CONCLUIDA:
+                  return concluidaCount.isLoading || concluidaCount.isFetching
+                default:
+                  return false
+              }
+            })()
 
             return (
               <div key={status} className="flex flex-col h-full">
                 {/* Header da coluna */}
-                <div className="rounded-t-lg border border-gray-200 bg-kanban-background p-4 flex flex-row justify-start items-center gap-4">
+                <div className="rounded-t-lg border border-gray-200 bg-kanban-background p-4 flex flex-row justify-start items-center gap-4 h-16">
                   <h3 className="font-semibold text-sm text-secondary">
                     {column.title}
                   </h3>
-                  <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-1">
-                    {column.publications.length}
+                  <span className={`text-xs ${isCountLoading ? 'text-green-500 animate-pulse font-semibold' : 'text-gray-500'}`}>
+                    {isCountLoading ? <Spin h={4} w={4} /> : getColumnCount()}
                   </span>
                   {isPreloading && (
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
@@ -383,30 +426,10 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                       `}
                       style={{
                         minHeight: '500px',
-                        maxHeight: '70vh', // Garantir que tenha scroll
-                        overflowY: 'auto' // Forçar scroll
+                        maxHeight: '70vh',
+                        overflowY: 'auto'
                       }}
-                      onScroll={(e) => {
-                        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-
-                        // Indicar visualmente que o scroll foi detectado
-                        setScrollDetected(prev => new Set(prev).add(status))
-                        setTimeout(() => {
-                          setScrollDetected(prev => {
-                            const newSet = new Set(prev)
-                            newSet.delete(status)
-                            return newSet
-                          })
-                        }, 500)
-
-                        // Verificar se está próximo do final (100px de margem)
-                        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100
-
-                        if (isNearBottom && hasMore.get(status) && !loadingMore.has(status)) {
-                          console.log(`🔄 Loading more for ${status}`)
-                          loadMoreItems(status, false)
-                        }
-                      }}
+                      onScroll={(e) => handleScroll(e, status)}
                     >
                       <div className="space-y-3">
                         {column.publications
@@ -435,7 +458,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
 
                         {isLoadingMore && (
                           <div className="flex justify-center py-4">
-                            <div className="spinner" />
+                            <Spin h={4} w={4} />
                             <span className="ml-2 text-sm text-gray-500">
                               Carregando mais cards...
                             </span>
@@ -451,7 +474,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
                         {/* Indicador de fim dos dados */}
                         {!hasMore.get(status) && column.publications.length > 0 && (
                           <div className="text-center py-4 text-xs text-gray-400 border-t border-gray-200">
-                            Todos os cards foram carregados {column.publications.length}/{column.count}
+                            Todos os cards foram carregados {column.publications.length}/{getColumnCount()}
                           </div>
                         )}
                       </div>
