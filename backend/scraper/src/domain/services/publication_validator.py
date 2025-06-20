@@ -47,27 +47,27 @@ class PublicationValidator:
             return False, f"Número do processo inválido: '{publication.process_number}'"
 
         # Verificar termos obrigatórios no conteúdo (pelo menos um deve estar presente)
-        if not PublicationValidator.contains_required_terms(
-            publication.content, required_terms
-        ):
-            return False, f"Nenhum dos termos obrigatórios encontrado: {required_terms}"
+        # if not PublicationValidator.contains_required_terms(
+        #    publication.content, required_terms
+        # ):
+        #    return False, f"Nenhum dos termos obrigatórios encontrado: {required_terms}"
 
         # Verificar campos obrigatórios
-        if not publication.authors:
-            return False, "Campo 'authors' está vazio ou None"
+        # if not publication.authors:
+        #    return False, "Campo 'authors' está vazio ou None"
 
-        if not publication.content.strip():
-            return False, "Campo 'content' está vazio"
+        # if not publication.content.strip():
+        #     return False, "Campo 'content' está vazio"
 
         # Verificar se availability_date está presente
-        if not publication.availability_date:
-            return False, "Campo 'availability_date' está ausente"
+        # if not publication.availability_date:
+        #    return False, "Campo 'availability_date' está ausente"
 
         # Verificar se authors contém apenas strings válidas
-        for i, author in enumerate(publication.authors):
-            if not author or not author.strip():
-                return False, f"Autor na posição {i} está vazio: '{author}'"
-            if len(author.strip()) < 3:
-                return False, f"Autor na posição {i} muito curto: '{author}'"
+        # for i, author in enumerate(publication.authors):
+        #    if not author or not author.strip():
+        #        return False, f"Autor na posição {i} está vazio: '{author}'"
+        #    if len(author.strip()) < 3:
+        #        return False, f"Autor na posição {i} muito curto: '{author}'"
 
         return True, "Publicação válida"
