@@ -83,7 +83,7 @@ export function PublicationModal({
 							<ul className="list-disc list-inside text-sm space-y-1 text-secondary/75">
 								{publication.lawyers.map((lawyer, index) => (
 									<li key={index}>
-										{lawyer.name} (OAB: {lawyer.oab})
+										{lawyer.name} ({lawyer.oab})
 									</li>
 								))}
 							</ul>
