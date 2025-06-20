@@ -431,15 +431,19 @@ class Application {
 // Create and start application
 const application = new Application()
 
-// Start server only if this file is run directly
-// More robust check for different environments (works better in containers)
+// Start server only if this file is run directly (not during tests or imports)
+const isTestEnvironment = process.env.NODE_ENV === 'test' ||
+  process.argv.some(arg => arg.includes('jest')) ||
+  process.argv.some(arg => arg.includes('.test.'))
+
 const isMainModule = process.argv[1] && (
-  import.meta.url === `file://${process.argv[1]}` ||
-  import.meta.url.endsWith(process.argv[1]) ||
-  process.argv[1].endsWith('src/app.ts')
+  process.argv[1].endsWith('src/app.ts') ||
+  process.argv[1].endsWith('dist/app.js') ||
+  process.argv[1].includes('app')
 )
 
-if (isMainModule) {
+// Only start the server if this is the main module AND not in test environment
+if (isMainModule && !isTestEnvironment) {
   application.start().catch((error) => {
     console.error('Failed to start application:', error)
     process.exit(1)
