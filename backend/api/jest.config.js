@@ -1,11 +1,6 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
@@ -14,6 +9,13 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        tsconfig: {
+          target: 'ES2022',
+          module: 'ES2022',
+          moduleResolution: 'node',
+          allowSyntheticDefaultImports: true,
+          esModuleInterop: true,
+        },
       },
     ],
   },
