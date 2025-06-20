@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { UpdatePublicationStatusUseCase } from '@/application/usecases/publications/update-publication-status.usecase'
-import { PublicationEntity } from '@/domain/entities/publication.entity'
+import { PublicationJsonEntity } from '@/domain/entities/publication.entity'
 import { PublicationRepository } from '@/domain/repositories/publication.repository'
 
 const mockPublicationRepository: jest.Mocked<PublicationRepository> = {
   findById: jest.fn(),
+  findByProcessNumber: jest.fn(),
   findMany: jest.fn(),
   updateStatus: jest.fn(),
   search: jest.fn(),
+  create: jest.fn(),
+  upsert: jest.fn(),
 }
 
 describe('UpdatePublicationStatusUseCase', () => {
@@ -18,7 +21,7 @@ describe('UpdatePublicationStatusUseCase', () => {
     useCase = new UpdatePublicationStatusUseCase(mockPublicationRepository)
   })
 
-  const mockPublication: PublicationEntity = {
+  const mockPublication: PublicationJsonEntity = {
     id: 'pub-123',
     process_number: '1234567-89.2024.8.26.0100',
     availability_date: new Date('2024-03-17'),
@@ -26,6 +29,18 @@ describe('UpdatePublicationStatusUseCase', () => {
     defendant: 'Instituto Nacional do Seguro Social - INSS',
     content: 'Test content',
     status: 'NOVA',
+    scraping_source: 'DJE-SP',
+    caderno: '3',
+    instancia: '1',
+    local: 'Capital',
+    parte: '1',
+    gross_value: null,
+    net_value: null,
+    interest_value: null,
+    attorney_fees: null,
+    publication_date: null,
+    lawyers: null,
+    extraction_metadata: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
