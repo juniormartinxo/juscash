@@ -61,6 +61,9 @@ describe('RegisterUserUseCase', () => {
           id: 'user-id',
           name: 'João Silva',
           email: 'joao@exemplo.com',
+          isActive: true,
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
         },
         tokens: {
           accessToken: 'access-token',
@@ -96,6 +99,7 @@ describe('RegisterUserUseCase', () => {
 
     it('should validate password strength', async () => {
       // Arrange
+      mockUserRepository.findByEmail.mockResolvedValue(null)
       const weakPasswordInput = {
         ...validInput,
         password: 'weak',
@@ -109,6 +113,7 @@ describe('RegisterUserUseCase', () => {
 
     it('should validate password complexity', async () => {
       // Arrange
+      mockUserRepository.findByEmail.mockResolvedValue(null)
       const simplePasswordInput = {
         ...validInput,
         password: 'simplepwd',
