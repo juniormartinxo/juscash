@@ -79,9 +79,16 @@ class LogSettings(BaseSettings):
 class SchedulerSettings(BaseSettings):
     """Configurações do scheduler"""
 
+    # Horários de execução (duas vezes por dia)
+    morning_execution_hour: int = Field(default=6, env="SCHEDULER_MORNING_HOUR")
+    morning_execution_minute: int = Field(default=0, env="SCHEDULER_MORNING_MINUTE")
+    afternoon_execution_hour: int = Field(default=14, env="SCHEDULER_AFTERNOON_HOUR")
+    afternoon_execution_minute: int = Field(default=0, env="SCHEDULER_AFTERNOON_MINUTE")
+    start_date: str = Field(default="2025-01-21", env="SCHEDULER_START_DATE")
+
+    # Compatibilidade com configuração antiga
     daily_execution_hour: int = Field(default=6, env="SCHEDULER_DAILY_HOUR")
     daily_execution_minute: int = Field(default=0, env="SCHEDULER_DAILY_MINUTE")
-    start_date: str = Field(default="2025-03-17", env="SCHEDULER_START_DATE")
 
 
 class Settings(BaseSettings):
