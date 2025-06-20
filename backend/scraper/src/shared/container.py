@@ -3,6 +3,7 @@ Container de dependências - Injeção de Dependência
 """
 
 from infrastructure.web.dje_scraper_adapter import DJEScraperAdapter
+from infrastructure.web.dje_scraper_optimized import DJEScraperOptimized
 from infrastructure.api.api_client_adapter import ApiClientAdapter
 from infrastructure.logging.logger import setup_logger
 
@@ -14,17 +15,22 @@ class Container:
     Container de dependências seguindo padrão de injeção de dependência
     """
 
-    def __init__(self):
+    def __init__(self, use_optimized_scraper: bool = True):
         self._web_scraper = None
         self._scraping_repository = None
+        self._use_optimized_scraper = use_optimized_scraper
         logger.info("📦 Container de dependências inicializado")
 
     @property
-    def web_scraper(self) -> DJEScraperAdapter:
+    def web_scraper(self):
         """Lazy loading do web scraper"""
         if self._web_scraper is None:
-            self._web_scraper = DJEScraperAdapter()
-            logger.debug("🕷️  DJE Scraper Adapter criado")
+            if self._use_optimized_scraper:
+                self._web_scraper = DJEScraperOptimized()
+                logger.info("⚡ DJE Scraper Otimizado criado (sem PDFs)")
+            else:
+                self._web_scraper = DJEScraperAdapter()
+                logger.info("📄 DJE Scraper Tradicional criado (com PDFs)")
         return self._web_scraper
 
     @property
