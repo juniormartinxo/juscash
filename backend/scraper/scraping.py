@@ -38,30 +38,62 @@ class DJEScraperPlaywright:
         self.json_saver = ReportJsonSaver()
         self.temp_dir = tempfile.mkdtemp()
 
-    async def setup_browser(self):
+    async def setup_browser(self, headless: bool = None):
         """Configura o browser Playwright"""
         playwright = await async_playwright().start()
+
+        # Auto-detectar se está em ambiente Docker/sem display
+        if headless is None:
+            headless = self._should_run_headless()
+
         self.browser = await playwright.chromium.launch(
-            headless=False,  # Para debug, mude para True em produção
+            headless=headless,
             downloads_path=self.temp_dir,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+            ],
         )
         self.page = await self.browser.new_page()
 
         # Configurar timeouts
         self.page.set_default_timeout(30000)
 
-        logger.info("🌐 Browser Playwright configurado")
+        mode = "headless" if headless else "com interface gráfica"
+        logger.info(f"🌐 Browser Playwright configurado ({mode})")
+
+    def _should_run_headless(self) -> bool:
+        """Detecta se deve executar em modo headless"""
+        import os
+
+        # Verificar se está em Docker
+        if os.path.exists("/.dockerenv"):
+            return True
+
+        # Verificar se tem DISPLAY disponível
+        if not os.environ.get("DISPLAY"):
+            return True
+
+        # Verificar se está em ambiente CI
+        if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+            return True
+
+        # Por padrão, usar headless em produção
+        return True
 
     async def close_browser(self):
         """Fecha o browser"""
         if self.browser:
             await self.browser.close()
 
-    async def scrape_by_date_range(
+    async def scrape_by_date_range_internal(
         self, start_date: str, end_date: str
     ) -> Dict[str, Any]:
         """
-        Executa scraping por período de datas
+        Executa scraping por período de datas (método interno, browser já configurado)
 
         Args:
             start_date: Data início (YYYY-MM-DD)
@@ -80,8 +112,6 @@ class DJEScraperPlaywright:
         }
 
         try:
-            await self.setup_browser()
-
             # Converter strings para datetime
             current_date = datetime.strptime(start_date, "%Y-%m-%d")
             final_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -133,18 +163,18 @@ class DJEScraperPlaywright:
         """
         stats = {"total_found": 0, "successful": 0, "failed": 0}
 
-        # 1. Acessar página de busca avançada
+        # 1. Acessar página de busca avançada (URL correta do projeto)
         await self.page.goto(
-            "https://dje.tjsp.jus.br/cdje/consultaAvancada.do#buscaavancada"
+            "https://esaj.tjsp.jus.br/cdje/consultaAvancada.do#buscaavancada"
         )
-        await self.page.wait_for_load_state("domcontentloaded")
+        await self.page.wait_for_load_state("networkidle")
+        await asyncio.sleep(3)
 
         # 2. Preencher formulário de pesquisa
         await self._fill_search_form(date_str)
 
         # 3. Executar busca
-        await self.page.click('input[name="dadosConsulta.pesquisaLivre"]')
-        await self.page.wait_for_timeout(3000)
+        await self._execute_search()
 
         # 4. Verificar se há resultados
         if not await self._has_search_results():
@@ -184,77 +214,404 @@ class DJEScraperPlaywright:
     async def _fill_search_form(self, date_str: str):
         """Preenche o formulário de busca avançada"""
 
-        # Desbloquear e preencher campo data início
-        await self.page.evaluate(
-            'document.getElementById("dtInicioString").removeAttribute("readonly")'
+        # Forçar data início usando o padrão do projeto
+        data_inicio_script = f"""
+        (() => {{
+            const dataInicio = document.querySelector('#dtInicioString');
+            if (dataInicio) {{
+                dataInicio.removeAttribute('readonly');
+                dataInicio.disabled = false;
+                dataInicio.value = '{date_str}';
+                dataInicio.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                return dataInicio.value;
+            }}
+            return null;
+        }})()
+        """
+
+        # Forçar data fim usando o padrão do projeto
+        data_fim_script = f"""
+        (() => {{
+            const dataFim = document.querySelector('#dtFimString');
+            if (dataFim) {{
+                dataFim.removeAttribute('readonly');
+                dataFim.disabled = false;
+                dataFim.value = '{date_str}';
+                dataFim.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                return dataFim.value;
+            }}
+            return null;
+        }})()
+        """
+
+        # Executar scripts para definir datas
+        data_inicio_result = await self.page.evaluate(data_inicio_script)
+        data_fim_result = await self.page.evaluate(data_fim_script)
+
+        logger.info(f"📅 Data início definida: {data_inicio_result}")
+        logger.info(f"📅 Data fim definida: {data_fim_result}")
+
+        # Aguardar e selecionar caderno (seletor correto do projeto)
+        await self.page.wait_for_selector(
+            'select[name="dadosConsulta.cdCaderno"]', state="visible"
         )
-        await self.page.fill("#dtInicioString", date_str)
+        await self._select_caderno()
 
-        # Desbloquear e preencher campo data fim
-        await self.page.evaluate(
-            'document.getElementById("dtFimString").removeAttribute("readonly")'
-        )
-        await self.page.fill("#dtFimString", date_str)
-
-        # Selecionar caderno 12
-        await self.page.select_option("#cadernos", "12")
-
-        # Preencher termo de busca
+        # Preencher termo de busca (campo correto do projeto)
         search_term = '"RPV" e "pagamento pelo INSS"'
-        await self.page.fill('input[name="dadosConsulta.pesquisaLivre"]', search_term)
+        await self._fill_search_field(search_term)
 
         logger.info(f"📝 Formulário preenchido para {date_str}")
 
-    async def _has_search_results(self) -> bool:
-        """Verifica se a busca retornou resultados"""
+    async def _select_caderno(self):
+        """Seleciona o caderno correto usando o seletor do projeto"""
         try:
-            # Aguardar elementos aparecerem
-            await self.page.wait_for_timeout(2000)
+            # Seletor correto do projeto
+            caderno_selector = 'select[name="dadosConsulta.cdCaderno"]'
+            await self.page.wait_for_timeout(1000)
 
-            # Verificar se div de resultados existe
-            results_div = await self.page.query_selector("#divResultadosSuperior")
-            if not results_div:
-                return False
-
-            # Verificar se não há mensagem de "nenhum registro"
-            no_results = await self.page.query_selector(
-                '.ementaClass:has-text("Não foi encontrado nenhum registro")'
+            # Obter todas as opções disponíveis
+            options = await self.page.evaluate(
+                f"""
+                () => {{
+                    const select = document.querySelector('{caderno_selector}');
+                    if (!select) return null;
+                    const options = Array.from(select.options);
+                    return options.map(option => ({
+                        value: option.value,
+                        text: option.text
+                    }));
+                }}
+            """
             )
-            if no_results:
-                return False
 
-            return True
+            if not options:
+                logger.error("❌ Nenhuma opção encontrada no campo cadernos")
+                return
 
-        except Exception:
+            logger.info(f"🔍 Opções disponíveis no caderno: {options}")
+
+            # Usar value="12" que corresponde ao Caderno 3 (padrão do projeto)
+            try:
+                await self.page.select_option(caderno_selector, value="12")
+
+                # Verificar seleção
+                selected_option = await self.page.evaluate(
+                    f"""
+                    () => {{
+                        const select = document.querySelector('{caderno_selector}');
+                        const selectedOption = select.options[select.selectedIndex];
+                        return {{
+                            value: select.value,
+                            text: selectedOption.text
+                        }};
+                    }}
+                    """
+                )
+
+                logger.info(
+                    f"✅ Caderno selecionado: {selected_option['text']} (value: {selected_option['value']})"
+                )
+            except Exception as e:
+                logger.error(f"❌ Erro ao selecionar caderno 12: {e}")
+                # Tentar primeira opção disponível
+                if options:
+                    first_option = options[0]["value"]
+                    await self.page.select_option(caderno_selector, value=first_option)
+                    logger.warning(
+                        f"⚠️ Usando primeira opção disponível: {first_option}"
+                    )
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao selecionar caderno: {e}")
+            pass
+
+    async def _fill_search_field(self, search_term: str):
+        """Preenche o campo de busca usando o seletor correto do projeto"""
+        try:
+            # Aguardar campo estar disponível (seletor correto do projeto)
+            await self.page.wait_for_selector("#procura", timeout=10000)
+
+            # Preencher usando JavaScript para garantir (padrão do projeto)
+            keywords_script = f"""
+            (() => {{
+                const campo = document.querySelector('#procura');
+                if (campo) {{
+                    campo.value = '{search_term}';
+                    campo.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    campo.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    return campo.value;
+                }}
+                return null;
+            }})()
+            """
+
+            filled_value = await self.page.evaluate(keywords_script)
+            logger.info(f"✅ Palavras-chave preenchidas: '{filled_value}'")
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao preencher campo de busca: {e}")
+
+    async def _execute_search(self):
+        """Executa a busca usando o padrão do projeto com múltiplos seletores"""
+        try:
+            # Aguardar um pouco antes de submeter
+            await asyncio.sleep(2)
+
+            # Submeter formulário com tratamento melhorado (padrão do projeto)
+            submit_selectors = [
+                'input[value="Pesquisar"]',
+                'input[name="pbConsultar"]',
+                'button:text("Pesquisar")',
+                'input[type="submit"]',
+                'button[type="submit"]',
+                ".botaoPesquisar",
+                "#pbConsultar",
+                '[onclick*="consultar"]',
+            ]
+
+            submitted = False
+            last_error = None
+
+            for selector in submit_selectors:
+                try:
+                    # Verificar se o elemento existe
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        # Verificar se é visível e habilitado
+                        is_visible = await element.is_visible()
+                        is_enabled = await element.is_enabled()
+
+                        if is_visible and is_enabled:
+                            logger.info(
+                                f"🎯 Tentando submeter com selector: {selector}"
+                            )
+                            await element.click()
+
+                            # Aguardar navegação ou carregamento
+                            try:
+                                await self.page.wait_for_load_state(
+                                    "networkidle", timeout=15000
+                                )
+                                await asyncio.sleep(3)  # Aguardar resultados carregarem
+
+                                # Verificar se a submissão foi bem-sucedida
+                                current_url = self.page.url
+                                if (
+                                    "consultaAvancada" not in current_url
+                                    or "resultado" in current_url.lower()
+                                ):
+                                    logger.info(
+                                        f"✅ Formulário submetido com sucesso (selector: {selector})"
+                                    )
+                                    submitted = True
+                                    break
+                                else:
+                                    logger.debug(
+                                        f"⚠️ URL não mudou após submissão: {current_url}"
+                                    )
+                            except Exception as e:
+                                logger.debug(
+                                    f"⚠️ Timeout aguardando resposta para {selector}: {e}"
+                                )
+                                # Continuar tentando outros seletores
+                        else:
+                            logger.debug(
+                                f"❌ Elemento {selector} não está visível ou habilitado"
+                            )
+                except Exception as e:
+                    last_error = e
+                    logger.debug(f"❌ Falha ao tentar {selector}: {e}")
+                    continue
+
+            if not submitted:
+                error_msg = f"Falha ao submeter formulário. Último erro: {last_error}"
+                logger.error(f"❌ {error_msg}")
+
+                # Tentar submissão por JavaScript como último recurso
+                try:
+                    logger.info("🔄 Tentando submissão via JavaScript...")
+                    submit_result = await self.page.evaluate(
+                        """
+                        () => {
+                            const forms = document.querySelectorAll('form');
+                            for (const form of forms) {
+                                if (form.action && form.action.includes('consulta')) {
+                                    form.submit();
+                                    return 'Formulário submetido via JavaScript';
+                                }
+                            }
+                            return 'Nenhum formulário encontrado';
+                        }
+                    """
+                    )
+                    logger.info(f"📝 Resultado JavaScript: {submit_result}")
+
+                    if "submetido" in submit_result:
+                        await asyncio.sleep(5)  # Aguardar mais tempo para JS
+                        submitted = True
+                        logger.info("✅ Formulário submetido via JavaScript")
+                except Exception as js_error:
+                    logger.error(f"❌ Falha na submissão JavaScript: {js_error}")
+
+            if not submitted:
+                raise Exception(error_msg)
+
+            logger.info("✅ Pesquisa executada com critérios específicos")
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao executar busca: {e}")
+            raise
+
+    async def _has_search_results(self) -> bool:
+        """Verifica se a busca retornou resultados seguindo o padrão do projeto"""
+        try:
+            logger.info("🔍 Buscando resultados da pesquisa...")
+
+            # Aguardar carregamento dos resultados
+            await asyncio.sleep(3)
+
+            # Tentar aguardar elementos aparecerem (padrão do projeto)
+            try:
+                await self.page.wait_for_selector("tr.ementaClass", timeout=10000)
+                logger.info("✅ Elementos tr.ementaClass encontrados")
+                return True
+            except:
+                logger.warning("⚠️ Timeout aguardando tr.ementaClass")
+
+            # Verificar se há outros elementos com onclick (fallback do projeto)
+            onclick_elements = await self.page.query_selector_all(
+                '[onclick*="consultaSimples.do"]'
+            )
+            if onclick_elements:
+                logger.info(
+                    f"✅ Encontrados {len(onclick_elements)} elementos com consultaSimples.do"
+                )
+                return True
+
+            # Verificar mensagens de "nenhum registro"
+            no_results_selectors = [
+                'td:has-text("Não foi encontrado nenhum registro")',
+                'div:has-text("Não foi encontrado nenhum registro")',
+                '*:has-text("nenhum registro")',
+            ]
+
+            for selector in no_results_selectors:
+                no_results = await self.page.query_selector(selector)
+                if no_results:
+                    logger.info("📭 Mensagem 'nenhum registro' encontrada")
+                    return False
+
+            logger.info("📭 Nenhum resultado encontrado")
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao verificar resultados: {e}")
             return False
 
     async def _get_publication_links(self) -> List[str]:
-        """Obtém links para download dos PDFs das publicações"""
+        """Obtém links para download dos PDFs seguindo o padrão do projeto"""
         links = []
 
         try:
-            # Aguardar resultados carregarem
-            await self.page.wait_for_selector("#divResultadosInferior tr.ementaClass")
+            logger.info("🔍 Buscando links de PDF nos resultados")
 
-            # Buscar todos os links de visualização
-            link_elements = await self.page.query_selector_all(
-                'tr.ementaClass a.layout[title="Visualizar"]'
+            # Aguardar carregamento dos resultados
+            await asyncio.sleep(3)
+
+            # Tentar aguardar elementos aparecerem
+            try:
+                await self.page.wait_for_selector("tr.ementaClass", timeout=10000)
+            except:
+                logger.warning("⚠️ Timeout aguardando tr.ementaClass")
+
+            # Encontrar todos os elementos tr com class="ementaClass"
+            ementa_elements = await self.page.query_selector_all("tr.ementaClass")
+
+            if not ementa_elements:
+                logger.warning("⚠️ Nenhum elemento tr.ementaClass encontrado")
+
+                # Debug: verificar se há elementos com onclick diretamente
+                onclick_elements = await self.page.query_selector_all(
+                    '[onclick*="consultaSimples.do"]'
+                )
+                logger.info(
+                    f"🔍 Elementos com consultaSimples.do: {len(onclick_elements)}"
+                )
+
+                if onclick_elements:
+                    logger.info(
+                        "✅ Encontrados elementos com consultaSimples.do, processando diretamente..."
+                    )
+                    # Processar elementos com onclick diretamente
+                    for element in onclick_elements:
+                        try:
+                            onclick_attr = await element.get_attribute("onclick")
+                            if onclick_attr and "consultaSimples.do" in onclick_attr:
+                                pdf_url = await self._extract_pdf_url_from_onclick(
+                                    onclick_attr
+                                )
+                                if pdf_url:
+                                    links.append(pdf_url)
+                        except Exception as e:
+                            logger.warning(f"⚠️ Erro ao processar elemento onclick: {e}")
+                            continue
+
+                return links
+
+            logger.info(
+                f"✅ Encontrados {len(ementa_elements)} elementos tr.ementaClass"
             )
 
-            for element in link_elements:
-                href = await element.get_attribute("href")
-                if href:
-                    # Converter para URL absoluta se necessário
-                    if href.startswith("/"):
-                        href = f"https://dje.tjsp.jus.br{href}"
-                    links.append(href)
+            # Processar cada elemento para extrair links (padrão do projeto)
+            for i, element in enumerate(ementa_elements):
+                try:
+                    # Buscar elementos com onclick que contém links para PDF
+                    onclick_elements = await element.query_selector_all(
+                        '[onclick*="popup"]'
+                    )
 
-            logger.info(f"🔗 Encontrados {len(links)} links de publicações")
+                    for onclick_element in onclick_elements:
+                        onclick_attr = await onclick_element.get_attribute("onclick")
+
+                        if onclick_attr and "consultaSimples.do" in onclick_attr:
+                            # Extrair URL do PDF do atributo onclick
+                            pdf_url = await self._extract_pdf_url_from_onclick(
+                                onclick_attr
+                            )
+
+                            if pdf_url:
+                                links.append(pdf_url)
+
+                except Exception as e:
+                    logger.warning(f"⚠️ Erro ao processar elemento {i + 1}: {e}")
+                    continue
+
+            logger.info(f"🔗 Encontrados {len(links)} links de PDF")
 
         except Exception as e:
             logger.error(f"❌ Erro ao obter links: {e}")
 
         return links
+
+    async def _extract_pdf_url_from_onclick(self, onclick_attr: str) -> Optional[str]:
+        """Extrai URL do PDF do atributo onclick (padrão do projeto)"""
+        try:
+            import re
+
+            # Buscar padrão consultaSimples.do com parâmetros
+            match = re.search(r"consultaSimples\.do\?([^'\"]+)", onclick_attr)
+            if match:
+                params = match.group(1)
+                base_url = "https://esaj.tjsp.jus.br/cdje/consultaSimples.do"
+                pdf_url = f"{base_url}?{params}"
+                return pdf_url
+
+            return None
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao extrair URL do PDF: {e}")
+            return None
 
     async def _process_publication(
         self, pdf_link: str, date_str: str
@@ -659,7 +1016,12 @@ def cli():
 @cli.command()
 @click.option("--start-date", required=True, help="Data início (YYYY-MM-DD)")
 @click.option("--end-date", required=True, help="Data fim (YYYY-MM-DD)")
-def run(start_date: str, end_date: str):
+@click.option(
+    "--headless/--no-headless",
+    default=None,
+    help="Forçar modo headless ou com interface gráfica",
+)
+def run(start_date: str, end_date: str, headless: bool):
     """Executa scraping por período de datas"""
 
     click.echo("🚀 Iniciando DJE Scraper com Playwright")
@@ -669,7 +1031,9 @@ def run(start_date: str, end_date: str):
         scraper = DJEScraperPlaywright()
 
         try:
-            stats = await scraper.scrape_by_date_range(start_date, end_date)
+            # Configurar browser com modo headless especificado
+            await scraper.setup_browser(headless=headless)
+            stats = await scraper.scrape_by_date_range_internal(start_date, end_date)
 
             click.echo("\n📊 Resultados da Execução:")
             click.echo(
