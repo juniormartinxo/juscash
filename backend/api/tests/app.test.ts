@@ -1,18 +1,14 @@
-import request from 'supertest'
 import express from 'express'
-import http from 'http'
-import { EventEmitter } from 'events'
-import { ApiResponseBuilder } from '../src/shared/utils/api-response'
-import { Container } from '../src/shared/container/container'
+import request from 'supertest'
+import { setupSwagger } from '../src/infrastructure/docs/swagger'
 import { MetricsCollector } from '../src/infrastructure/monitoring/metrics-collector'
 import { RateLimitMiddleware } from '../src/infrastructure/web/middleware/rate-limit.middleware'
-import { setupSwagger } from '../src/infrastructure/docs/swagger'
 import { createAuthRoutes } from '../src/infrastructure/web/routes/auth.route'
+import { createMetricsRoutes } from '../src/infrastructure/web/routes/metrics.route'
 import { createPublicationRoutes } from '../src/infrastructure/web/routes/publication.route'
 import { createScraperRoutes } from '../src/infrastructure/web/routes/scraper.route'
-import { createMetricsRoutes } from '../src/infrastructure/web/routes/metrics.route'
-import { LoggingMiddleware } from '../src/infrastructure/web/middleware/logging.middleware'
-import { MetricsController } from '../src/infrastructure/web/controllers/metrics.controller'
+import { Container } from '../src/shared/container/container'
+import { ApiResponseBuilder } from '../src/shared/utils/api-response'
 
 jest.mock('express', () => {
     const actual = jest.requireActual('express')
