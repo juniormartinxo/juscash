@@ -178,3 +178,36 @@ Para um serviço específico. O parâmetro `service` pode ser:
     ```bash
     curl -X POST http://localhost:8000/stop/multi_date_scraper
     ```
+
+## 🧪 Testes
+
+O sistema de scraper possui uma suite completa de testes unitários e de integração.
+
+### Executar Testes
+
+```bash
+cd backend/scraper
+
+# Instalar dependências de teste
+pip install -r tests/requirements-test.txt
+
+# Executar todos os testes
+python -m pytest tests/ -v
+
+# Testes unitários apenas
+python -m pytest tests/unit/ -v
+
+# Testes de integração apenas
+python -m pytest tests/integration/ -v
+
+# Verificar setup do sistema
+python scripts/verify-scraper-setup.py
+```
+
+### Documentação Completa
+
+Para informações detalhadas sobre a estrutura de testes, cobertura e melhorias realizadas, consulte:
+
+📖 **[Documentação Completa dos Testes](TESTES-AUDITORIA.md)**
+
+---
