@@ -1,4 +1,4 @@
-import { PublicationEntity } from '@/domain/entities/publication.entity'
+import { PublicationEntity, PublicationJsonEntity } from '@/domain/entities/publication.entity'
 import { PublicationRepository } from '@/domain/repositories/publication.repository'
 
 export class UpdatePublicationStatusUseCase {
@@ -14,10 +14,22 @@ export class UpdatePublicationStatusUseCase {
     // Validar transições de status
     this.validateStatusTransition(publication.status, input.newStatus)
 
-    return await this.publicationRepository.updateStatus(
+    const updatedPublication = await this.publicationRepository.updateStatus(
       input.publicationId,
       input.newStatus
     )
+
+    return this.convertToEntity(updatedPublication)
+  }
+
+  private convertToEntity(jsonEntity: PublicationJsonEntity): PublicationEntity {
+    return {
+      ...jsonEntity,
+      gross_value: jsonEntity.gross_value ? BigInt(jsonEntity.gross_value) : null,
+      net_value: jsonEntity.net_value ? BigInt(jsonEntity.net_value) : null,
+      interest_value: jsonEntity.interest_value ? BigInt(jsonEntity.interest_value) : null,
+      attorney_fees: jsonEntity.attorney_fees ? BigInt(jsonEntity.attorney_fees) : null,
+    }
   }
 
   private validateStatusTransition(
