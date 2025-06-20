@@ -38,6 +38,14 @@ class ScraperArgs(BaseModel):
     args: Optional[Dict[str, Any]] = None
 
 
+class ScrapingRequest(BaseModel):
+    """Modelo para requisição de scraping com datas específicas."""
+
+    start_date: str  # YYYY-MM-DD
+    end_date: str  # YYYY-MM-DD
+    headless: bool = True
+
+
 def run_command_background(command: str, args: Optional[Dict[str, Any]] = None) -> None:
     """Executa um comando do scraper em background."""
     try:
@@ -96,6 +104,54 @@ def run_command_background(command: str, args: Optional[Dict[str, Any]] = None) 
     except Exception as e:
         logger.error(f"❌ Erro ao executar comando: {e}")
         print(f"Erro ao executar comando: {e}")
+        raise
+
+
+def run_scraping_py_background(
+    start_date: str, end_date: str, headless: bool = True
+) -> None:
+    """Executa o scraping.py com datas específicas em background."""
+    try:
+        # Verificar se o arquivo scraping.py existe
+        scraping_py_path = SCRIPT_DIR / "scraping.py"
+
+        if not scraping_py_path.exists():
+            raise FileNotFoundError(
+                f"scraping.py não encontrado em: {scraping_py_path}"
+            )
+
+        # Construir comando
+        cmd = [
+            sys.executable,
+            str(scraping_py_path),
+            "run",
+            "--start-date",
+            start_date,
+            "--end-date",
+            end_date,
+        ]
+
+        # Adicionar flag headless se necessário
+        if headless:
+            cmd.append("--headless")
+        else:
+            cmd.append("--no-headless")
+
+        logger.info(f"🚀 Executando scraping.py: {' '.join(cmd)}")
+        logger.info(f"📂 Diretório: {SCRIPT_DIR}")
+        logger.info(f"📅 Período: {start_date} até {end_date}")
+        logger.info(f"🖥️ Modo: {'headless' if headless else 'com interface'}")
+
+        # Executa o comando
+        process = subprocess.Popen(
+            cmd, cwd=str(SCRIPT_DIR), env={**os.environ, "PYTHONPATH": str(SCRIPT_DIR)}
+        )
+
+        logger.info(f"✅ Scraping iniciado com PID: {process.pid}")
+
+    except Exception as e:
+        logger.error(f"❌ Erro ao executar scraping.py: {e}")
+        print(f"Erro ao executar scraping.py: {e}")
         raise
 
 
@@ -212,6 +268,104 @@ async def run_scraper_cli(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/run/scraping")
+async def run_scraping_manual(
+    background_tasks: BackgroundTasks, request: ScrapingRequest
+):
+    """
+    Executa o scraping.py com datas específicas (equivalente ao comando manual).
+
+    Este endpoint executa exatamente o mesmo comando que você executaria manualmente:
+    python scraping.py run --start-date YYYY-MM-DD --end-date YYYY-MM-DD [--headless]
+    """
+    try:
+        # Validar formato de data básico
+        import re
+
+        date_pattern = r"^\d{4}-\d{2}-\d{2}$"
+
+        if not re.match(date_pattern, request.start_date):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Formato de start_date inválido. Use YYYY-MM-DD, recebido: {request.start_date}",
+            )
+
+        if not re.match(date_pattern, request.end_date):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Formato de end_date inválido. Use YYYY-MM-DD, recebido: {request.end_date}",
+            )
+
+        # Executar scraping em background
+        background_tasks.add_task(
+            run_scraping_py_background,
+            request.start_date,
+            request.end_date,
+            request.headless,
+        )
+
+        command_str = f"python scraping.py run --start-date {request.start_date} --end-date {request.end_date}"
+        if request.headless:
+            command_str += " --headless"
+        else:
+            command_str += " --no-headless"
+
+        return {
+            "status": "success",
+            "message": f"Scraping iniciado para período {request.start_date} até {request.end_date}",
+            "command": command_str,
+            "parameters": {
+                "start_date": request.start_date,
+                "end_date": request.end_date,
+                "headless": request.headless,
+            },
+            "note": "Mesmo comando que você executaria manualmente via terminal",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/run/scraping/today")
+async def run_scraping_today(background_tasks: BackgroundTasks, headless: bool = True):
+    """
+    Executa o scraping da data atual (hoje) - conveniência.
+
+    Equivale a:
+    python scraping.py run --start-date HOJE --end-date HOJE [--headless]
+    """
+    try:
+        from datetime import datetime
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # Usar o mesmo endpoint interno
+        background_tasks.add_task(run_scraping_py_background, today, today, headless)
+
+        command_str = f"python scraping.py run --start-date {today} --end-date {today}"
+        if headless:
+            command_str += " --headless"
+        else:
+            command_str += " --no-headless"
+
+        return {
+            "status": "success",
+            "message": f"Scraping da data atual ({today}) iniciado",
+            "command": command_str,
+            "parameters": {
+                "start_date": today,
+                "end_date": today,
+                "headless": headless,
+            },
+            "note": "Execução automática da data atual",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 async def root():
     """Informações básicas da API."""
@@ -221,6 +375,8 @@ async def root():
         "description": "API para execução de comandos do scraper DJE",
         "endpoints": {
             "run_command": "POST /run",
+            "run_scraping_manual": "POST /run/scraping",
+            "run_scraping_today": "POST /run/scraping/today",
             "run_multi_date_scraper": "POST /run/multi-date-scraper",
             "run_scraper_cli": "POST /run/scraper-cli",
             "status": "GET /status",
