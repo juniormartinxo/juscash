@@ -1,29 +1,29 @@
 #!/bin/bash
 
 # Database backup script
-set - e
+set -e
 
-BACKUP_DIR = "/backups"
-DATE = $(date +% Y % m % d_ % H % M % S)
-DB_NAME = "${DB_NAME:-dje_db}"
-DB_USER = "${DB_USER:-dje_user}"
-DB_HOST = "${DB_HOST:-localhost}"
-DB_PORT = "${DB_PORT:-5432}"
-RETENTION_DAYS = "${RETENTION_DAYS:-7}"
+BACKUP_DIR="/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+DB_NAME="${DB_NAME:-dje_db}"
+DB_USER="${DB_USER:-dje_user}"
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-5432}"
+RETENTION_DAYS="${RETENTION_DAYS:-7}"
 
-mkdir - p "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR"
 
 echo "🗄️  Starting database backup..."
 
 # Create backup
-BACKUP_FILE = "$BACKUP_DIR/dje_backup_$DATE.sql"
-PGPASSWORD = "$POSTGRES_PASSWORD" pg_dump \
--h "$DB_HOST" \
--p "$DB_PORT" \
--U "$DB_USER" \
--d "$DB_NAME" \
---no - owner \
---no - privileges \
+BACKUP_FILE="$BACKUP_DIR/dje_backup_$DATE.sql"
+PGPASSWORD="$POSTGRES_PASSWORD" pg_dump \
+    -h "$DB_HOST" \
+    -p "$DB_PORT" \
+    -U "$DB_USER" \
+    -d "$DB_NAME" \
+    --no-owner \
+    --no-privileges \
     > "$BACKUP_FILE"
 
 # Compress backup
@@ -31,11 +31,11 @@ gzip "$BACKUP_FILE"
 echo "✅ Backup created: ${BACKUP_FILE}.gz"
 
 # Clean old backups
-find "$BACKUP_DIR" - name "dje_backup_*.sql.gz" - mtime + $RETENTION_DAYS - delete
-  echo "🧹 Cleaned backups older than $RETENTION_DAYS days"
+find "$BACKUP_DIR" -name "dje_backup_*.sql.gz" -mtime +$RETENTION_DAYS -delete
+echo "🧹 Cleaned backups older than $RETENTION_DAYS days"
 
 # Optional: Upload to cloud storage
-if [-n "$AWS_S3_BUCKET"]; then
+if [ -n "$AWS_S3_BUCKET" ]; then
     aws s3 cp "${BACKUP_FILE}.gz" "s3://$AWS_S3_BUCKET/backups/"
     echo "☁️  Backup uploaded to S3"
 fi
