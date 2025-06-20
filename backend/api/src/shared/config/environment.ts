@@ -1,5 +1,36 @@
 import { z } from 'zod'
 
+// Check if we're running tests
+const isTestEnvironment = process.env.NODE_ENV === 'test' ||
+  process.argv.some(arg => arg.includes('jest')) ||
+  process.argv.some(arg => arg.includes('.test.'))
+
+// Default values for testing
+const testDefaults = {
+  API_PORT: '3000',
+  DATABASE_URL: 'postgresql://test_user:test_password@localhost:5432/test_db',
+  CORS_ORIGIN: '*',
+  JWT_ACCESS_SECRET: 'test-access-secret-at-least-32-chars-long',
+  JWT_REFRESH_SECRET: 'test-refresh-secret-at-least-32-chars-long',
+  RATE_LIMIT_WINDOW_MS: '60000',
+  RATE_LIMIT_MAX_REQUESTS: '100',
+  MAX_REQUEST_SIZE: '50mb',
+  ENABLE_SECURITY_MIDDLEWARE: 'false',
+  ENABLE_METRICS: 'false',
+  METRICS_PATH: '/metrics',
+  LOG_LEVEL: 'error',
+  ENABLE_FILE_LOGGING: 'false',
+  REDIS_URL: 'redis://localhost:6379',
+  SCRAPER_API_KEY: 'test-scraper-api-key',
+  MAIL_PORT: '587',
+  MAIL_SECURE: 'false',
+  MAIL_BOX_CONTACT: 'test@example.com',
+  MAIL_BOX_BILLING: 'billing@example.com',
+  MAIL_USER: 'test@example.com',
+  MAIL_PASS: 'test-password',
+  MAIL_HOST: 'localhost'
+}
+
 const envSchema = z.object({
   API_PORT: z.string().transform(Number),
   DATABASE_URL: z.string(),
@@ -28,16 +59,27 @@ const envSchema = z.object({
 let env: z.infer<typeof envSchema>
 
 try {
-  env = envSchema.parse(process.env)
+  // Use test defaults if running tests, otherwise require all env vars
+  const envToValidate = isTestEnvironment
+    ? { ...testDefaults, ...process.env }
+    : process.env
+
+  env = envSchema.parse(envToValidate)
 } catch (error) {
-  console.error('❌ Erro na validação das variáveis de ambiente:')
-  if (error instanceof z.ZodError) {
-    error.errors.forEach((err) => {
-      console.error(`  - ${err.path.join('.')}: ${err.message}`)
-    })
+  if (isTestEnvironment) {
+    // In test environment, just log the warning but don't exit
+    console.warn('⚠️  Using default test environment variables')
+    env = envSchema.parse(testDefaults)
+  } else {
+    console.error('❌ Erro na validação das variáveis de ambiente:')
+    if (error instanceof z.ZodError) {
+      error.errors.forEach((err) => {
+        console.error(`  - ${err.path.join('.')}: ${err.message}`)
+      })
+    }
+    console.error('💡 Dica: Crie um arquivo .env baseado no .env.example')
+    process.exit(1)
   }
-  console.error('💡 Dica: Crie um arquivo .env baseado no .env.example')
-  process.exit(1)
 }
 
 export const config = {
