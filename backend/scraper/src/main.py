@@ -7,6 +7,7 @@ import asyncio
 import signal
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Adicionar o diretório src ao PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent))
@@ -53,33 +54,40 @@ class ScraperApplication:
             raise
 
     async def _setup_scheduler(self):
-        """Configura o scheduler para execução diária"""
-        # Agendar execução diária
-        self.scheduler.schedule_daily_scraping(
+        """Configura o scheduler para execução duas vezes por dia"""
+        # Agendar execução duas vezes por dia
+        self.scheduler.schedule_twice_daily_scraping(
             start_date=self.settings.scheduler.start_date,
-            hour=self.settings.scheduler.daily_execution_hour,
-            minute=self.settings.scheduler.daily_execution_minute,
-            scraping_function=self._run_daily_scraping
+            morning_hour=self.settings.scheduler.morning_execution_hour,
+            morning_minute=self.settings.scheduler.morning_execution_minute,
+            afternoon_hour=self.settings.scheduler.afternoon_execution_hour,
+            afternoon_minute=self.settings.scheduler.afternoon_execution_minute,
+            scraping_function=self._run_daily_scraping,
         )
 
+        logger.info(f"⏰ Scheduler configurado para execução duas vezes por dia:")
         logger.info(
-            f"⏰ Scheduler configurado para execução diária às "
-            f"{self.settings.scheduler.daily_execution_hour:02d}:"
-            f"{self.settings.scheduler.daily_execution_minute:02d}"
+            f"🌅 Manhã: {self.settings.scheduler.morning_execution_hour:02d}:"
+            f"{self.settings.scheduler.morning_execution_minute:02d}"
+        )
+        logger.info(
+            f"🌇 Tarde: {self.settings.scheduler.afternoon_execution_hour:02d}:"
+            f"{self.settings.scheduler.afternoon_execution_minute:02d}"
         )
 
     async def _run_daily_scraping(self):
-        """Executa o scraping diário"""
+        """Executa o scraping (manhã ou tarde)"""
         try:
-            logger.info("🔄 Iniciando execução diária do scraping")
+            current_time = datetime.now().strftime("%H:%M")
+            logger.info(f"🔄 Iniciando execução do scraping às {current_time}")
             result = await self.orchestrator.execute_daily_scraping()
 
-            logger.info(f"✅ Execução diária concluída: {result.execution_id}")
+            logger.info(f"✅ Execução concluída: {result.execution_id}")
             logger.info(f"📊 Publicações encontradas: {result.publications_found}")
             logger.info(f"💾 Publicações salvas: {result.publications_saved}")
 
         except Exception as error:
-            logger.error(f"❌ Erro na execução diária: {error}")
+            logger.error(f"❌ Erro na execução: {error}")
 
     def _register_signal_handlers(self):
         """Registra handlers para shutdown graceful"""
