@@ -6,7 +6,6 @@ import {
   PublicationJsonResult,
 } from '@/domain/repositories/publication.repository'
 import { PrismaClient } from '@/generated/prisma/index'
-import superjson from 'superjson'
 
 export class PrismaPublicationRepository implements PublicationRepository {
   constructor(private prisma: PrismaClient) { }
@@ -226,11 +225,11 @@ export class PrismaPublicationRepository implements PublicationRepository {
       authors: prismaPublication.authors,
       defendant: prismaPublication.defendant,
       lawyers: prismaPublication.lawyers ? (typeof prismaPublication.lawyers === 'string' ? JSON.parse(prismaPublication.lawyers) : prismaPublication.lawyers) : null,
-      // Valores monetários já em centavos como bigint
-      gross_value: prismaPublication.gross_value ? superjson.deserialize(prismaPublication.gross_value) : null,
-      net_value: prismaPublication.net_value ? superjson.deserialize(prismaPublication.net_value) : null,
-      interest_value: prismaPublication.interest_value ? superjson.deserialize(prismaPublication.interest_value) : null,
-      attorney_fees: prismaPublication.attorney_fees ? superjson.deserialize(prismaPublication.attorney_fees) : null,
+      // Valores monetários são BigInt nativos do Prisma - converter para string para compatibilidade
+      gross_value: prismaPublication.gross_value ? prismaPublication.gross_value.toString() : null,
+      net_value: prismaPublication.net_value ? prismaPublication.net_value.toString() : null,
+      interest_value: prismaPublication.interest_value ? prismaPublication.interest_value.toString() : null,
+      attorney_fees: prismaPublication.attorney_fees ? prismaPublication.attorney_fees.toString() : null,
       content: prismaPublication.content,
       status: prismaPublication.status,
       scraping_source: prismaPublication.scraping_source,
