@@ -1,0 +1,7 @@
+[typescript]
+testingFramework = "Jest"
+mockingFramework = "Jest mocks"
+
+[undefined]
+testingFramework = "Jest"
+mockingFramework = "Jest mocks"
