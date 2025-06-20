@@ -224,15 +224,18 @@ class ESAJProcessScraper:
                         if author_name:
                             parties_data["authors"].append(author_name)
 
-                # Extrair advogados
-                lawyer_elements = await page.query_selector_all("text=Advogado")
-                for element in lawyer_elements:
-                    parent = await element.query_selector("xpath=..")
-                    if parent:
-                        text = await parent.text_content()
-                        lawyer_info = self._extract_lawyer_info(text)
-                        if lawyer_info:
-                            parties_data["lawyers"].append(lawyer_info)
+                # Extrair advogados - buscar todo o conteúdo da página
+                parties_content = await page.text_content("body")
+                if parties_content:
+                    lawyers = self._extract_lawyers_from_content(parties_content)
+
+                    # Buscar OABs nas movimentações "Remetido ao DJE"
+                    oab_info = await self._extract_oab_from_movements(page)
+                    if oab_info:
+                        # Combinar informações de OAB com os nomes dos advogados
+                        lawyers = self._combine_lawyers_with_oab(lawyers, oab_info)
+
+                    parties_data["lawyers"] = lawyers
 
             logger.info(
                 f"✅ Extraídas {len(parties_data['authors'])} partes e {len(parties_data['lawyers'])} advogados"
@@ -343,21 +346,203 @@ class ESAJProcessScraper:
         except Exception:
             return None
 
-    def _extract_lawyer_info(self, text: str) -> Optional[Dict[str, str]]:
+    def _extract_lawyers_from_content(self, content: str) -> List[Dict[str, str]]:
         """
-        Extrai informações do advogado do texto
+        Extrai informações dos advogados do conteúdo completo
+        Busca por padrões "Advogado: NOME" ou "Advogada: NOME"
+        """
+        lawyers = []
+        try:
+            # Padrão para capturar advogados: "Advogado:" ou "Advogada:" seguido do nome
+            patterns = [r"Advogado:\s*([^\n\r]+)", r"Advogada:\s*([^\n\r]+)"]
+
+            for pattern in patterns:
+                matches = re.findall(pattern, content, re.IGNORECASE)
+                for match in matches:
+                    name = match.strip()
+                    # Limpar o nome (remover caracteres especiais desnecessários)
+                    name = re.sub(r"\s+", " ", name)  # Normalizar espaços
+                    name = name.split("\n")[0].strip()  # Pegar só a primeira linha
+
+                    if name and len(name) > 2:  # Nome deve ter pelo menos 3 caracteres
+                        lawyers.append(
+                            {
+                                "name": name,
+                                "oab": "OAB/SP",  # Placeholder - pode ser extraído posteriormente
+                            }
+                        )
+                        logger.info(f"✅ Advogado encontrado: {name}")
+
+            # Remover duplicatas baseado no nome
+            unique_lawyers = []
+            seen_names = set()
+            for lawyer in lawyers:
+                if lawyer["name"] not in seen_names:
+                    unique_lawyers.append(lawyer)
+                    seen_names.add(lawyer["name"])
+
+            return unique_lawyers
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao extrair advogados: {e}")
+            return []
+
+    async def _extract_oab_from_movements(self, page: Page) -> List[Dict[str, str]]:
+        """
+        Extrai informações de OAB das movimentações "Remetido ao DJE"
+        """
+        oab_lawyers = []
+        try:
+            logger.info("🔍 Buscando OABs nas movimentações...")
+
+            # Buscar TDs com class="descricaoMovimentacao" que contenham "Remetido ao DJE"
+            movement_elements = await page.query_selector_all(
+                "td.descricaoMovimentacao"
+            )
+
+            for element in movement_elements:
+                text = await element.text_content()
+                if "Remetido ao DJE" in text:
+                    logger.info("✅ Encontrou movimentação 'Remetido ao DJE'")
+
+                    # Buscar spans dentro deste TD
+                    spans = await element.query_selector_all("span")
+                    for span in spans:
+                        span_text = await span.text_content()
+                        if "Advogados(s):" in span_text:
+                            logger.info("📋 Encontrou seção 'Advogados(s):'")
+
+                            # Extrair informações dos advogados após "Advogados(s):"
+                            lawyers_info = self._parse_oab_lawyers(span_text)
+                            oab_lawyers.extend(lawyers_info)
+
+                            logger.info(
+                                f"✅ Extraídos {len(lawyers_info)} advogados com OAB"
+                            )
+
+            return oab_lawyers
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao extrair OABs: {e}")
+            return []
+
+    def _parse_oab_lawyers(self, text: str) -> List[Dict[str, str]]:
+        """
+        Extrai nomes e OABs do texto após "Advogados(s):"
+        """
+        lawyers = []
+        try:
+            # Encontrar texto após "Advogados(s):"
+            if "Advogados(s):" in text:
+                after_lawyers = text.split("Advogados(s):")[1]
+
+                # Padrões para capturar advogados com OAB
+                # Formato comum: "NOME (OAB XXXXX/SP)"
+                patterns = [
+                    r"([A-ZÁÊÇÕ][a-záêçõ\s]+)\s*\(OAB\s*(\d+/[A-Z]{2})\)",
+                    r"([A-ZÁÊÇÕ][a-záêçõ\s]+)\s*-\s*OAB\s*(\d+/[A-Z]{2})",
+                    r"([A-ZÁÊÇÕ][a-záêçõ\s]+)\s*OAB\s*(\d+/[A-Z]{2})",
+                ]
+
+                for pattern in patterns:
+                    matches = re.findall(pattern, after_lawyers, re.IGNORECASE)
+                    for match in matches:
+                        name = match[0].strip()
+                        oab = match[1].strip()
+
+                        if len(name) > 2:  # Nome válido
+                            lawyers.append({"name": name, "oab": oab})
+                            logger.info(f"✅ OAB encontrado: {name} - {oab}")
+
+                # Se não encontrou com padrões específicos, tentar extrair manualmente
+                if not lawyers:
+                    logger.info("🔍 Tentando extração manual de OABs...")
+                    lawyers = self._manual_oab_extraction(after_lawyers)
+
+            return lawyers
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao fazer parse de OABs: {e}")
+            return []
+
+    def _manual_oab_extraction(self, text: str) -> List[Dict[str, str]]:
+        """
+        Extração manual mais flexível de advogados e OABs
+        """
+        lawyers = []
+        try:
+            # Buscar todos os números de OAB no texto
+            oab_numbers = re.findall(r"(\d+/[A-Z]{2})", text)
+
+            # Buscar nomes próximos aos números de OAB
+            lines = text.split("\n")
+            for line in lines:
+                line = line.strip()
+                if any(oab in line for oab in oab_numbers):
+                    # Extrair nome e OAB desta linha
+                    for oab in oab_numbers:
+                        if oab in line:
+                            # Tentar extrair o nome antes do OAB
+                            parts = line.split(oab)[0]
+                            name = re.sub(r"[^\w\s]", " ", parts).strip()
+                            name = " ".join(name.split())  # Normalizar espaços
+
+                            if len(name) > 2:
+                                lawyers.append({"name": name, "oab": oab})
+                                logger.info(f"✅ OAB manual: {name} - {oab}")
+                                break
+
+            return lawyers
+
+        except Exception as e:
+            logger.error(f"❌ Erro na extração manual: {e}")
+            return []
+
+    def _combine_lawyers_with_oab(
+        self, lawyers: List[Dict[str, str]], oab_info: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        """
+        Combina informações de advogados com seus respectivos OABs
         """
         try:
-            if "Advogado" in text:
-                # Extrair nome e OAB do advogado
-                # Implementar lógica específica baseada no formato do HTML
-                return {
-                    "name": "Nome do Advogado",  # Placeholder
-                    "oab": "OAB/SP",  # Placeholder
-                }
-            return None
-        except Exception:
-            return None
+            # Criar um mapa de nomes para OABs
+            oab_map = {}
+            for oab_lawyer in oab_info:
+                name = oab_lawyer["name"].lower().strip()
+                oab_map[name] = oab_lawyer["oab"]
+
+            # Atualizar advogados com OABs encontrados
+            updated_lawyers = []
+            for lawyer in lawyers:
+                lawyer_name = lawyer["name"].lower().strip()
+
+                # Buscar OAB exato ou similar
+                found_oab = None
+                for oab_name, oab_number in oab_map.items():
+                    # Comparação exata
+                    if lawyer_name == oab_name:
+                        found_oab = oab_number
+                        break
+                    # Comparação parcial (nome contém ou é contido)
+                    elif lawyer_name in oab_name or oab_name in lawyer_name:
+                        found_oab = oab_number
+                        break
+
+                updated_lawyers.append(
+                    {
+                        "name": lawyer["name"],
+                        "oab": found_oab if found_oab else "OAB/SP",  # Fallback
+                    }
+                )
+
+                if found_oab:
+                    logger.info(f"🔗 Combinado: {lawyer['name']} -> {found_oab}")
+
+            return updated_lawyers
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao combinar advogados com OAB: {e}")
+            return lawyers  # Retorna lista original em caso de erro
 
     def _extract_publication_date(self, text: str) -> Optional[str]:
         """
@@ -397,30 +582,71 @@ class ESAJProcessScraper:
                 "attorney_fees": None,
             }
 
-            # a) Valor bruto após "composto pelas seguintes parcelas:"
-            gross_match = re.search(
-                r"composto pelas seguintes parcelas:\s*([R$\d\.,]+)", text
-            )
-            if gross_match:
-                calc_details["gross_value"] = self._parse_monetary_value(
-                    gross_match.group(1)
-                )
+            logger.info(f"🔍 Analisando conteúdo: {text[:200]}...")
 
-            # b) Valor dos juros antes de "- juros moratórios"
-            interest_match = re.search(r"([R$\d\.,]+)\s*-\s*juros moratórios", text)
-            if interest_match:
-                calc_details["interest_value"] = self._parse_monetary_value(
-                    interest_match.group(1)
-                )
+            # Padrões melhorados para capturar valores monetários
+            # a) Valor bruto - múltiplos padrões
+            gross_patterns = [
+                r"composto pelas seguintes parcelas:\s*R?\$?\s*([\d\.,]+)",
+                r"(?:valor|total|principal).*?R\$\s*([\d\.,]+)",
+                r"R\$\s*([\d\.,]+).*?(?:principal|bruto|total)",
+                r"(\d{1,3}(?:\.\d{3})*,\d{2})",  # Formato brasileiro padrão
+            ]
 
-            # c) Valor dos honorários antes de "referente aos honorários advocatícios"
+            for pattern in gross_patterns:
+                gross_match = re.search(pattern, text, re.IGNORECASE)
+                if gross_match:
+                    value = self._parse_monetary_value(gross_match.group(1))
+                    if value and value > 1000:  # Valor mínimo razoável
+                        calc_details["gross_value"] = value
+                        logger.info(f"✅ Valor bruto encontrado: R$ {value:.2f}")
+                        break
+
+            # b) Valor dos juros - padrões melhorados
+            interest_patterns = [
+                r"([R$\d\.,]+)\s*-\s*juros moratórios",
+                r"juros.*?R\$\s*([\d\.,]+)",
+                r"(\d{1,2},\d{2})\s*-\s*juros",  # Para valores pequenos como 18,49
+            ]
+
+            for pattern in interest_patterns:
+                interest_match = re.search(pattern, text, re.IGNORECASE)
+                if interest_match:
+                    value = self._parse_monetary_value(interest_match.group(1))
+                    if value:
+                        calc_details["interest_value"] = value
+                        logger.info(f"✅ Valor juros encontrado: R$ {value:.2f}")
+                        break
+
+                        # c) Valor dos honorários - padrão original que funcionava
             fees_match = re.search(
                 r"([R$\d\.,]+),\s*referente aos honorários advocatícios", text
             )
             if fees_match:
-                calc_details["attorney_fees"] = self._parse_monetary_value(
-                    fees_match.group(1)
-                )
+                value = self._parse_monetary_value(fees_match.group(1))
+                if value:
+                    calc_details["attorney_fees"] = value
+                    logger.info(f"✅ Valor honorários encontrado: R$ {value:.2f}")
+
+            # Se não encontrou o valor bruto pelos padrões específicos,
+            # tentar capturar todos os valores e pegar o maior
+            if not calc_details["gross_value"]:
+                all_values = re.findall(r"R\$\s*([\d\.,]+)", text)
+                all_values.extend(re.findall(r"(\d{1,3}(?:\.\d{3})*,\d{2})", text))
+
+                if all_values:
+                    parsed_values = []
+                    for val in all_values:
+                        parsed = self._parse_monetary_value(val)
+                        if parsed and parsed > 1000:  # Filtrar valores muito pequenos
+                            parsed_values.append(parsed)
+
+                    if parsed_values:
+                        # Pegar o maior valor como valor bruto
+                        calc_details["gross_value"] = max(parsed_values)
+                        logger.info(
+                            f"✅ Valor bruto (maior encontrado): R$ {calc_details['gross_value']:.2f}"
+                        )
 
             return calc_details
 
@@ -431,11 +657,44 @@ class ESAJProcessScraper:
     def _parse_monetary_value(self, value_str: str) -> Optional[float]:
         """
         Converte string monetária para float
+        Suporta formatos: 48.754,23 | R$ 48.754,23 | 48754,23 | 1.039,75
         """
         try:
-            # Remover símbolos e converter
-            clean_value = re.sub(r"[R$\s]", "", value_str)
-            clean_value = clean_value.replace(".", "").replace(",", ".")
-            return float(clean_value)
-        except Exception:
+            if not value_str:
+                return None
+
+            # Remover símbolos monetários, espaços e vírgulas/pontos extras no final
+            clean_value = re.sub(r"[R$\s]", "", value_str.strip())
+            clean_value = re.sub(
+                r"[,\.]+$", "", clean_value
+            )  # Remove vírgulas/pontos no final
+
+            # Se não tem vírgula nem ponto, assumir que são centavos
+            if "," not in clean_value and "." not in clean_value:
+                return (
+                    float(clean_value) / 100
+                    if len(clean_value) <= 4
+                    else float(clean_value)
+                )
+
+            # Formato brasileiro: 48.754,23 ou 1.039,75
+            if "," in clean_value:
+                # Se tem ponto antes da vírgula, é separador de milhares
+                if "." in clean_value and clean_value.rindex(".") < clean_value.rindex(
+                    ","
+                ):
+                    # Remover pontos (separadores de milhares) e trocar vírgula por ponto
+                    clean_value = clean_value.replace(".", "").replace(",", ".")
+                else:
+                    # Apenas vírgula decimal
+                    clean_value = clean_value.replace(",", ".")
+
+            # Formato americano ou já limpo: 48754.23
+            result = float(clean_value)
+
+            logger.debug(f"💰 Convertido '{value_str}' -> {result}")
+            return result
+
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao converter valor '{value_str}': {e}")
             return None
