@@ -49,10 +49,8 @@ class DJEScraperAdapter(WebScraperPort):
         # Controle de PDFs problemáticos
         self.failed_pdfs = set()  # URLs que falharam múltiplas vezes
 
-        # Instanciar o salvador de relatórios JSON
-        from infrastructure.files.report_json_saver import ReportJsonSaver
-
-        self.json_saver = ReportJsonSaver()
+        # JSON será salvo apenas no final pelo UnifiedScraperService após enriquecimento
+        # Removido ReportJsonSaver para evitar salvamentos duplicados
 
     async def initialize(self) -> None:
         """Inicializa o browser e navegação"""
@@ -387,6 +385,9 @@ class DJEScraperAdapter(WebScraperPort):
         logger.info("🔍 Buscando links de PDF nos resultados")
 
         current_page = 1
+        processed_urls = set()  # Controle de URLs já processadas
+        consecutive_empty_pages = 0  # Controle de páginas vazias consecutivas
+        max_empty_pages = 3  # Máximo de páginas vazias antes de parar
 
         while current_page <= max_pages:
             logger.info(f"📄 Processando página {current_page}/{max_pages}")
@@ -441,6 +442,16 @@ class DJEScraperAdapter(WebScraperPort):
                                             )
                                             continue
 
+                                        # Verificar se este PDF já foi processado
+                                        if pdf_url in processed_urls:
+                                            logger.warning(
+                                                f"⏭️ Pulando PDF já processado: {pdf_url}"
+                                            )
+                                            continue
+
+                                        processed_urls.add(pdf_url)
+                                        pdfs_found_this_page += 1
+
                                         async for (
                                             publication
                                         ) in self._download_and_process_pdf(pdf_url):
@@ -456,6 +467,9 @@ class DJEScraperAdapter(WebScraperPort):
                 logger.info(
                     f"✅ Encontrados {len(ementa_elements)} elementos com links"
                 )
+
+                # Controle de páginas vazias
+                pdfs_found_this_page = 0
 
                 # Processar cada elemento para extrair links
                 for i, element in enumerate(ementa_elements):
@@ -484,6 +498,15 @@ class DJEScraperAdapter(WebScraperPort):
                                         )
                                         continue
 
+                                    # Verificar se este PDF já foi processado
+                                    if pdf_url in processed_urls:
+                                        logger.warning(
+                                            f"⏭️ Pulando PDF já processado: {pdf_url}"
+                                        )
+                                        continue
+
+                                    processed_urls.add(pdf_url)
+
                                     # Baixar e processar PDF
                                     async for (
                                         publication
@@ -493,6 +516,24 @@ class DJEScraperAdapter(WebScraperPort):
                     except Exception as e:
                         logger.warning(f"⚠️ Erro ao processar elemento {i + 1}: {e}")
                         continue
+
+                # Verificar se esta página teve PDFs
+                if pdfs_found_this_page == 0:
+                    consecutive_empty_pages += 1
+                    logger.warning(
+                        f"📄 Página {current_page} sem PDFs válidos ({consecutive_empty_pages}/{max_empty_pages})"
+                    )
+
+                    if consecutive_empty_pages >= max_empty_pages:
+                        logger.info(
+                            f"🚫 Parando após {consecutive_empty_pages} páginas consecutivas sem PDFs"
+                        )
+                        break
+                else:
+                    consecutive_empty_pages = 0  # Reset contador se encontrou PDFs
+                    logger.info(
+                        f"✅ Página {current_page}: {pdfs_found_this_page} PDFs processados"
+                    )
 
                 # Tentar navegar para próxima página
                 has_next = await self._navigate_to_next_page()
@@ -609,7 +650,7 @@ class DJEScraperAdapter(WebScraperPort):
                         )
                         debug_path = self.pdf_debug_dir / debug_filename
                         try:
-                            shutil.move(str(pdf_path), str(debug_path))
+                            # shutil.move(str(pdf_path), str(debug_path))
                             logger.info(f"🐛 PDF salvo para debug: {debug_path}")
                         except Exception as move_error:
                             logger.warning(
@@ -635,25 +676,8 @@ class DJEScraperAdapter(WebScraperPort):
                                 content, pdf_url
                             )
                             for publication in publications:
-                                # Salvar como JSON
-                                try:
-                                    json_path = (
-                                        await self.json_saver.save_publication_json(
-                                            publication
-                                        )
-                                    )
-                                    if json_path:
-                                        logger.info(
-                                            f"📋 JSON salvo (HTML fallback): {json_path}"
-                                        )
-                                    else:
-                                        logger.warning(
-                                            f"⚠️ Falha ao salvar JSON para {publication.process_number}"
-                                        )
-                                except Exception as json_error:
-                                    logger.error(
-                                        f"❌ Erro ao salvar JSON (HTML fallback): {json_error}"
-                                    )
+                                # JSON será salvo apenas no final após enriquecimento
+                                yield publication
 
                 finally:
                     await pdf_page.close()
@@ -740,43 +764,7 @@ class DJEScraperAdapter(WebScraperPort):
                                 f"✅ Publicação extraída (aprimorado): {publication.process_number}"
                             )
 
-                            # Salvar como JSON
-                            try:
-                                json_path = await self.json_saver.save_publication_json(
-                                    publication
-                                )
-                                if json_path:
-                                    logger.info(f"📋 JSON salvo: {json_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
-                                    )
-                            except Exception as json_error:
-                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
-
-                            yield publication
-                        logger.info(
-                            f"✅ Parser aprimorado extraiu {len(enhanced_publications)} publicações"
-                        )
-                        for publication in enhanced_publications:
-                            logger.info(
-                                f"✅ Publicação extraída (aprimorado): {publication.process_number}"
-                            )
-
-                            # Salvar como JSON
-                            try:
-                                json_path = await self.json_saver.save_publication_json(
-                                    publication
-                                )
-                                if json_path:
-                                    logger.info(f"📋 JSON salvo: {json_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
-                                    )
-                            except Exception as json_error:
-                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
-
+                            # JSON será salvo apenas no final após enriquecimento
                             yield publication
                     else:
                         # Fallback para parser tradicional
@@ -790,20 +778,7 @@ class DJEScraperAdapter(WebScraperPort):
                                 f"✅ Publicação extraída (tradicional): {publication.process_number}"
                             )
 
-                            # Salvar como JSON
-                            try:
-                                json_path = await self.json_saver.save_publication_json(
-                                    publication
-                                )
-                                if json_path:
-                                    logger.info(f"📋 JSON salvo: {json_path}")
-                                else:
-                                    logger.warning(
-                                        f"⚠️ Falha ao salvar JSON para {publication.process_number}"
-                                    )
-                            except Exception as json_error:
-                                logger.error(f"❌ Erro ao salvar JSON: {json_error}")
-
+                            # JSON será salvo apenas no final após enriquecimento
                             yield publication
 
                 except Exception as e:
@@ -820,20 +795,7 @@ class DJEScraperAdapter(WebScraperPort):
                             f"✅ Publicação extraída (fallback): {publication.process_number}"
                         )
 
-                        # Salvar como JSON
-                        try:
-                            json_path = await self.json_saver.save_publication_json(
-                                publication
-                            )
-                            if json_path:
-                                logger.info(f"📋 JSON salvo: {json_path}")
-                            else:
-                                logger.warning(
-                                    f"⚠️ Falha ao salvar JSON para {publication.process_number}"
-                                )
-                        except Exception as json_error:
-                            logger.error(f"❌ Erro ao salvar JSON: {json_error}")
-
+                        # JSON será salvo apenas no final após enriquecimento
                         yield publication
             else:
                 logger.warning("⚠️ Conteúdo do PDF muito pequeno ou vazio")
@@ -844,6 +806,9 @@ class DJEScraperAdapter(WebScraperPort):
     async def _navigate_to_next_page(self) -> bool:
         """Navega para a próxima página de resultados"""
         try:
+            # Salvar URL atual para comparação
+            current_url = self.page.url
+
             # Procurar por link de próxima página
             next_selectors = [
                 'a:text("Próxima")',
@@ -855,10 +820,28 @@ class DJEScraperAdapter(WebScraperPort):
             for selector in next_selectors:
                 next_element = await self.page.query_selector(selector)
                 if next_element:
-                    await next_element.click()
-                    await self.page.wait_for_load_state("networkidle")
-                    logger.info("✅ Navegação para próxima página")
-                    return True
+                    # Verificar se o elemento está habilitado
+                    is_enabled = await next_element.is_enabled()
+                    is_visible = await next_element.is_visible()
+
+                    if is_enabled and is_visible:
+                        await next_element.click()
+
+                        # Aguardar carregamento e verificar se URL mudou
+                        await asyncio.sleep(3)
+                        await self.page.wait_for_load_state(
+                            "networkidle", timeout=15000
+                        )
+
+                        new_url = self.page.url
+                        if new_url != current_url:
+                            logger.info("✅ Navegação para próxima página")
+                            return True
+                        else:
+                            logger.warning(
+                                "⚠️ URL não mudou após clique - possivelmente última página"
+                            )
+                            return False
 
             logger.info("📄 Nenhum link para próxima página encontrado")
             return False
