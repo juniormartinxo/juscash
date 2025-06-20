@@ -57,12 +57,22 @@ graph TB
 git clone https://github.com/juniormartinxo/juscash.git
 cd juscash
 
-# 2. Executar instalação automática
+# 2. Executar instalação automática completa (7 etapas)
 ./install.sh
 
-# 3. Iniciar os serviços
+# 3. Iniciar todos os serviços
 ./start.sh
 ```
+
+#### 🤖 Scripts de Gerenciamento Disponíveis
+
+| Script | Função | Descrição |
+|--------|--------|-----------|
+| `./install.sh` | 🚀 **Instalação Completa** | Configura todo o ambiente automaticamente |
+| `./start.sh` | ▶️ **Iniciar Sistema** | Inicia todos os containers |
+| `./restart.sh` | 🔄 **Reiniciar Sistema** | Reconstrói e reinicia todos os serviços |
+
+**📋 [Ver todos os scripts disponíveis](./scripts/README.md)**
 
 ### 🐳 Instalação Manual com Docker
 
@@ -371,12 +381,26 @@ python -m pytest
 npm run test:e2e
 ```
 
-## 📚 Documentação Adicional
+## 📚 Documentação Completa
 
-- [Documentação Técnica](./docs/documentacao-tecnica.md)
-- [Manual do Produto](./docs/MANUAL-DO-PRODUTO.md)
-- [API do Scraper](./backend/scraper/docs/API_README.md)
-- [Guia de Contribuição](./CONTRIBUTING.md)
+A documentação do JusCash foi **unificada e reorganizada** para facilitar a navegação:
+
+### 👤 Para Usuários
+- **[📖 Manual do Usuário](./docs/MANUAL-USUARIO.md)** - Guia completo de uso
+- **[🚀 Guia de Instalação](./docs/GUIA-INSTALACAO.md)** - Instalação passo-a-passo
+- **[🛠️ Troubleshooting](./docs/TROUBLESHOOTING.md)** - Solução de problemas
+
+### 👨‍💻 Para Desenvolvedores
+- **[🔌 API Documentation](./docs/api/)** - Documentação técnica e exemplos
+- **[🕷️ Scraper Guide](./docs/scraper/)** - Sistema de scraping
+- **[⚛️ Frontend Guide](./docs/frontend/)** - Interface React
+
+### 🚀 Para DevOps
+- **[🐳 Docker Guide](./docs/deployment/DOCKER.md)** - Containerização
+- **[📊 Monitoring](./docs/deployment/MONITORING.md)** - Observabilidade
+- **[💾 Backup](./docs/deployment/BACKUP.md)** - Estratégias de backup
+
+**📋 [Índice Completo da Documentação](./docs/README.md)**
 
 ## 🆘 Solução de Problemas
 
