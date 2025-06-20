@@ -12,15 +12,6 @@ NC='\033[0m'
 log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 log_success() { echo -e "${GREEN}✅ $1${NC}"; }
 
-# Verificar se a pasta reports existe
-if [ -d "backend/scraper/reports" ]; then
-    # verificar se a pasta reports/json existe
-    if [ -d "backend/scraper/reports/json" ]; then
-        log_success "Pasta reports/json encontrada."
-        rm backend/scraper/reports/**/*.json
-    fi
-fi
-
 # Verificar se estamos no diretório correto
 if [ ! -f "docker-compose.yml" ]; then
     echo "❌ Execute o script a partir do diretório raiz do projeto."
