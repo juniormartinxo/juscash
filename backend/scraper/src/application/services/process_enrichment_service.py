@@ -284,13 +284,14 @@ class ProcessEnrichmentService:
             logger.info(
                 f"   📅 Data disponibilidade: {consolidated.get('availability_date')} (fonte: {consolidated['data_sources'].get('availability_date_source', 'N/A')})"
             )
-            logger.info(
-                f"   💰 Valor bruto: R$ {consolidated.get('gross_value', 0):,.2f}"
-            )
-            logger.info(f"   💰 Juros: R$ {consolidated.get('interest_value', 0):,.2f}")
-            logger.info(
-                f"   💰 Honorários: R$ {consolidated.get('attorney_fees', 0):,.2f}"
-            )
+            # Formatação segura dos valores monetários
+            gross_value = consolidated.get("gross_value") or 0
+            interest_value = consolidated.get("interest_value") or 0
+            attorney_fees = consolidated.get("attorney_fees") or 0
+
+            logger.info(f"   💰 Valor bruto: R$ {gross_value:,.2f}")
+            logger.info(f"   💰 Juros: R$ {interest_value:,.2f}")
+            logger.info(f"   💰 Honorários: R$ {attorney_fees:,.2f}")
             logger.info(f"   👥 Autores: {len(consolidated['parties']['authors'])}")
             logger.info(f"   👨‍💼 Advogados: {len(consolidated['parties']['lawyers'])}")
 
