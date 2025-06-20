@@ -148,6 +148,13 @@ LOG_DIR=./logs
 LOG_ROTATION_DAYS=7
 LOG_MAX_SIZE_MB=10
 
+# ===========================================
+# SCRAPING SCHEDULER
+# ===========================================
+SCHEDULER_DAILY_HOUR=6
+SCHEDULER_DAILY_MINUTE=0
+SCHEDULER_START_DATE=2025-03-17
+
 EOF
 
 echo "✅ Arquivo .env criado com sucesso!"
