@@ -24,7 +24,9 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from infrastructure.logging.logger import setup_logger
 from infrastructure.config.settings import get_settings
 from application.services.scraping_orchestrator import ScrapingOrchestrator
+from application.services.process_enrichment_service import ProcessEnrichmentService
 from shared.container import Container
+from domain.entities.publication import MonetaryValue
 
 logger = setup_logger(__name__)
 
@@ -39,6 +41,8 @@ class DateProcessingStatus:
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     publications_found: int = 0
+    publications_enriched: int = 0
+    enrichment_errors: int = 0
     error: Optional[str] = None
     retry_count: int = 0
 
@@ -76,7 +80,9 @@ class MultiDateScraper:
 
         # Container e configurações
         self.settings = get_settings()
-        self.container = Container()
+        # Temporariamente voltar ao scraper tradicional devido a problemas com o otimizado
+        # TODO: Corrigir scraper otimizado para nova estrutura do site
+        self.container = Container(use_optimized_scraper=False)
 
         self._load_or_create_progress_file()
 
@@ -297,6 +303,13 @@ class MultiDateScraper:
             status.end_time = datetime.now().isoformat()
             status.publications_found = execution.publications_found
 
+            # Extrair estatísticas de enriquecimento do execution
+            if hasattr(execution, "enrichment_stats"):
+                status.publications_enriched = execution.enrichment_stats.get(
+                    "enriched", 0
+                )
+                status.enrichment_errors = execution.enrichment_stats.get("failed", 0)
+
             # Atualizar progresso do worker
             self.workers_progress[
                 worker_id
@@ -304,7 +317,8 @@ class MultiDateScraper:
 
             logger.info(
                 f"✅ Data {date_str} processada pelo worker {worker_id}: "
-                f"{execution.publications_found} publicações encontradas"
+                f"{execution.publications_found} publicações encontradas, "
+                f"{status.publications_enriched} enriquecidas"
             )
 
         except Exception as e:
@@ -371,11 +385,183 @@ class MultiDateScraper:
                 publications.append(publication)
                 execution.publications_found += 1
 
-            # Salvar publicações
+                # Enriquecer publicações com dados do e-SAJ ANTES de salvar
+            enriched_publications = []
+            enrichment_stats = {"enriched": 0, "failed": 0}
+            enriched_mapping = {}  # Mapear process_number -> dados enriquecidos
+
+            # Verificar se o enriquecimento está habilitado
+            enable_enrichment = os.getenv("ENABLE_ENRICHMENT", "true").lower() == "true"
+
+            logger.info(
+                f"🔧 Configuração de enriquecimento: ENABLE_ENRICHMENT={enable_enrichment}"
+            )
+            logger.info(f"📊 Publicações encontradas: {len(publications)}")
+
+            if not enable_enrichment:
+                logger.warning("⚠️ Enriquecimento e-SAJ desabilitado por configuração")
+
+            if publications and enable_enrichment:
+                logger.info(
+                    f"🔍 Iniciando enriquecimento de {len(publications)} publicações para {date_str}"
+                )
+
+                try:
+                    async with ProcessEnrichmentService() as enrichment_service:
+                        logger.debug("✅ ProcessEnrichmentService inicializado")
+                        enriched_data_list = (
+                            await enrichment_service.enrich_publications(publications)
+                        )
+                        logger.info(
+                            f"📊 Retornados {len(enriched_data_list)} dados enriquecidos"
+                        )
+
+                        for enriched_data in enriched_data_list:
+                            if enriched_data and enriched_data.get("esaj_data"):
+                                enriched_publications.append(enriched_data)
+                                enrichment_stats["enriched"] += 1
+                                # Mapear para atualização posterior
+                                process_number = enriched_data.get("process_number")
+                                if process_number:
+                                    enriched_mapping[process_number] = enriched_data
+                            else:
+                                enrichment_stats["failed"] += 1
+
+                except Exception as e:
+                    logger.error(f"❌ Erro ao executar ProcessEnrichmentService: {e}")
+                    import traceback
+
+                    traceback.print_exc()
+                    enriched_data_list = []
+
+                logger.info(
+                    f"✅ Enriquecimento concluído para {date_str}: "
+                    f"{enrichment_stats['enriched']} sucessos, {enrichment_stats['failed']} falhas"
+                )
+
+                # IMPORTANTE: Atualizar publicações ANTES de salvar
+                logger.info("📝 Atualizando publicações com dados enriquecidos...")
+
+                for publication in publications:
+                    if publication.process_number in enriched_mapping:
+                        enriched_data = enriched_mapping[publication.process_number]
+                        esaj_data = enriched_data.get("esaj_data", {})
+
+                        # Atualizar valores monetários do e-SAJ se disponíveis
+                        if esaj_data and esaj_data.get("movements", {}).get(
+                            "homologation_details"
+                        ):
+                            homolog = esaj_data["movements"]["homologation_details"]
+
+                            if homolog.get("gross_value"):
+                                try:
+                                    # Converter string formatada para float
+                                    value_str = (
+                                        homolog["gross_value"]
+                                        .replace("R$", "")
+                                        .replace(".", "")
+                                        .replace(",", ".")
+                                        .strip()
+                                    )
+                                    publication.gross_value = MonetaryValue.from_real(
+                                        float(value_str)
+                                    )
+                                    logger.debug(
+                                        f"   💰 Valor atualizado para {publication.process_number}: R$ {float(value_str):,.2f}"
+                                    )
+                                except Exception as e:
+                                    logger.error(
+                                        f"   ❌ Erro ao atualizar valor bruto: {e}"
+                                    )
+
+                            if homolog.get("interest_value"):
+                                try:
+                                    value_str = (
+                                        homolog["interest_value"]
+                                        .replace("R$", "")
+                                        .replace(".", "")
+                                        .replace(",", ".")
+                                        .strip()
+                                    )
+                                    publication.interest_value = (
+                                        MonetaryValue.from_real(float(value_str))
+                                    )
+                                except:
+                                    pass
+
+                            if homolog.get("attorney_fees"):
+                                try:
+                                    value_str = (
+                                        homolog["attorney_fees"]
+                                        .replace("R$", "")
+                                        .replace(".", "")
+                                        .replace(",", ".")
+                                        .strip()
+                                    )
+                                    publication.attorney_fees = MonetaryValue.from_real(
+                                        float(value_str)
+                                    )
+                                except:
+                                    pass
+
+                        # Atualizar advogados com OAB do e-SAJ
+                        if esaj_data and esaj_data.get("parties", {}).get("lawyers"):
+                            from domain.entities.publication import Lawyer
+
+                            old_lawyers_count = len(publication.lawyers)
+                            publication.lawyers = [
+                                Lawyer(
+                                    name=lawyer.get("name", ""),
+                                    oab=lawyer.get("oab", ""),
+                                )
+                                for lawyer in esaj_data["parties"]["lawyers"]
+                            ]
+                            new_lawyers_count = len(publication.lawyers)
+                            logger.debug(
+                                f"   👨‍💼 Advogados atualizados para {publication.process_number}: {old_lawyers_count} → {new_lawyers_count}"
+                            )
+
+                        # Atualizar data de disponibilidade
+                        if esaj_data and esaj_data.get("movements", {}).get(
+                            "availability_date"
+                        ):
+                            try:
+                                from datetime import datetime
+
+                                avail_date_str = esaj_data["movements"][
+                                    "availability_date"
+                                ]
+                                # Converter formato DD/MM/YYYY para datetime
+                                publication.availability_date = datetime.strptime(
+                                    avail_date_str, "%d/%m/%Y"
+                                )
+                                logger.debug(
+                                    f"   📅 Data disponibilidade atualizada: {avail_date_str}"
+                                )
+                            except:
+                                pass
+
+                logger.info(
+                    f"✅ {len(enriched_mapping)} publicações atualizadas com dados e-SAJ"
+                )
+
+            # AGORA salvar publicações JÁ ENRIQUECIDAS
             if publications:
+                logger.info("💾 Salvando publicações enriquecidas...")
                 save_stats = await save_usecase.execute(publications)
                 execution.publications_saved = save_stats["saved"]
                 execution.publications_failed = save_stats["failed"]
+
+                # Salvar dados enriquecidos separadamente (para análise/backup)
+                if enriched_publications:
+                    await self._save_enriched_data(enriched_publications, date_str)
+            else:
+                # Caso não haja publicações, apenas registrar
+                execution.publications_saved = 0
+                execution.publications_failed = 0
+
+            # Adicionar estatísticas de enriquecimento ao execution
+            execution.enrichment_stats = enrichment_stats
 
             execution.mark_as_completed()
 
@@ -387,6 +573,63 @@ class MultiDateScraper:
             raise
 
         return execution
+
+    async def _save_enriched_data(
+        self, enriched_publications: List[dict], date_str: str
+    ):
+        """Salva dados enriquecidos em arquivos JSON separados"""
+        try:
+            # Criar diretório para dados enriquecidos se não existir
+            enriched_dir = Path("reports/enriched")
+            enriched_dir.mkdir(parents=True, exist_ok=True)
+
+            # Salvar cada publicação enriquecida em arquivo separado
+            for enriched_data in enriched_publications:
+                process_number = enriched_data.get("process_number", "unknown")
+                safe_process_number = process_number.replace(".", "_").replace("-", "_")
+
+                filename = (
+                    f"{safe_process_number}_{date_str.replace('/', '_')}_enriched.json"
+                )
+                filepath = enriched_dir / filename
+
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump(
+                        enriched_data, f, indent=2, ensure_ascii=False, default=str
+                    )
+
+                logger.debug(f"💾 Dados enriquecidos salvos: {filepath}")
+
+            # Salvar resumo consolidado
+            summary_file = enriched_dir / f"summary_{date_str.replace('/', '_')}.json"
+            summary_data = {
+                "date": date_str,
+                "timestamp": datetime.now().isoformat(),
+                "total_enriched": len(enriched_publications),
+                "processes": [
+                    {
+                        "process_number": data.get("process_number"),
+                        "has_esaj_data": bool(data.get("esaj_data")),
+                        "has_monetary_values": bool(
+                            data.get("consolidated_data", {}).get("gross_value")
+                        ),
+                        "lawyers_count": len(
+                            data.get("consolidated_data", {}).get("lawyers", [])
+                        ),
+                    }
+                    for data in enriched_publications
+                ],
+            }
+
+            with open(summary_file, "w", encoding="utf-8") as f:
+                json.dump(summary_data, f, indent=2, ensure_ascii=False)
+
+            logger.info(
+                f"📊 Resumo de enriquecimento salvo: {len(enriched_publications)} processos em {summary_file}"
+            )
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao salvar dados enriquecidos para {date_str}: {e}")
 
     async def _configure_scraper_for_date(self, web_scraper, date_str: str):
         """Configura o scraper para usar uma data específica"""
@@ -459,15 +702,27 @@ class MultiDateScraper:
         total_publications = sum(
             status.publications_found for status in self.progress_data.values()
         )
+        total_enriched = sum(
+            status.publications_enriched for status in self.progress_data.values()
+        )
+        total_enrichment_errors = sum(
+            status.enrichment_errors for status in self.progress_data.values()
+        )
 
         active_workers = sum(
             1 for worker in self.workers_progress.values() if worker.status == "working"
+        )
+
+        enrichment_rate = (
+            (total_enriched / total_publications * 100) if total_publications > 0 else 0
         )
 
         logger.info(
             f"📊 Progresso: {processed_dates}/{total_dates} datas processadas "
             f"({processed_dates / total_dates * 100:.1f}%) | "
             f"{total_publications} publicações | "
+            f"{total_enriched} enriquecidas ({enrichment_rate:.1f}%) | "
+            f"{total_enrichment_errors} erros enriquecimento | "
             f"{active_workers} workers ativos"
         )
 
