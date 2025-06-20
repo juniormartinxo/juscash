@@ -22,4 +22,25 @@ rm -rf backend/scraper/venv
 echo "🔒 Removendo pasta generated do Prisma no backend..."
 rm -rf backend/generated
 
+if [ -f "backend/scraper/src/scrap_workers.json" ]; then
+    echo "📝 Removendo arquivo scrap_workers.json do scraper..."
+    rm backend/scraper/src/scrap_workers.json
+fi
+
+# Verificar se a pasta reports existe
+if [ -d "backend/scraper/reports" ]; then
+    # verificar se a pasta reports/json existe
+    if [ -d "backend/scraper/reports/json" ]; then
+        echo "📝 Removendo arquivos .json do scraper..."
+        rm backend/scraper/reports/**/*.json
+    fi
+    
+    if [ -d "backend/scraper/reports/pdf" ]; then
+        echo "📝 Removendo arquivos .pdf do scraper..."
+        rm backend/scraper/reports/**/*.pdf
+    fi
+fi
+
+
+
 echo "✨ Limpeza concluída com sucesso!" 
