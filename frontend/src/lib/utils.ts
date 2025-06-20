@@ -23,25 +23,46 @@ export function formatCurrency(value: any): string {
     if (value === null || value === undefined) return 'N/A'
 
     try {
-        // Se for um objeto superjson, deserializar
-        let deserializedValue = value
+        let numericValue: number
+
+        // Se for um objeto superjson (vem da API), deserializar
         if (value && typeof value === 'object' && value.json !== undefined && value.meta !== undefined) {
-            deserializedValue = superjson.deserialize(value)
+            const deserializedValue = superjson.deserialize(value)
+            numericValue = typeof deserializedValue === 'bigint'
+                ? Number(deserializedValue)
+                : Number(deserializedValue)
+        }
+        // Se for string (vem dos JSONs diretos do scraper ou da API como string), converter para número
+        else if (typeof value === 'string') {
+            numericValue = parseInt(value, 10)
+        }
+        // Se for número direto
+        else if (typeof value === 'number') {
+            numericValue = value
+        }
+        // Se for BigInt direto
+        else if (typeof value === 'bigint') {
+            numericValue = Number(value)
+        }
+        else {
+            console.warn('Formato de valor monetário não reconhecido:', typeof value, value)
+            return 'N/A'
         }
 
-        // Converter BigInt para number (dividindo por 100 para centavos)
-        const numericValue = typeof deserializedValue === 'bigint'
-            ? Number(deserializedValue)
-            : deserializedValue
+        // Verificar se é um número válido
+        if (!Number.isFinite(numericValue) || isNaN(numericValue)) {
+            console.warn('Valor monetário inválido:', numericValue)
+            return 'N/A'
+        }
 
-        if (typeof numericValue !== 'number' || isNaN(numericValue)) return 'N/A'
-
+        // Formatar como moeda brasileira (valor já está em centavos)
         return new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-        }).format(numericValue / 100) // Valor em centavos
+        }).format(numericValue / 100)
+
     } catch (error) {
-        console.warn('Erro ao formatar currency:', error)
+        console.warn('Erro ao formatar currency:', error, 'Value:', value)
         return 'N/A'
     }
 }
