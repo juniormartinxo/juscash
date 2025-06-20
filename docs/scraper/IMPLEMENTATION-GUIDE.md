@@ -598,7 +598,7 @@ python monitor_performance.py
 - **Endpoint**: `POST /api/scraper/publications`
 - **Headers**: `X-API-Key`, `Content-Type: application/json`
 - **Rate Limit**: 1000 req/15min
-- **Docs**: Consultar `scraper-api-documentation.md`
+- **Docs**: Consultar `../api/SCRAPER-INTEGRATION.md`
 
 ### 2. Configuração Dinâmica
 
