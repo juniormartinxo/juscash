@@ -119,20 +119,24 @@ class ReportJsonSaver:
             ),
             "lawyers": lawyers_json if lawyers_json else [],
             "gross_value": (
-                publication.gross_value.amount_cents if publication.gross_value else 0
+                str(publication.gross_value.amount_cents)
+                if publication.gross_value
+                else None
             ),
             "net_value": (
-                publication.net_value.amount_cents if publication.net_value else 0
+                str(publication.net_value.amount_cents)
+                if publication.net_value
+                else None
             ),
             "interest_value": (
-                publication.interest_value.amount_cents
+                str(publication.interest_value.amount_cents)
                 if publication.interest_value
-                else 0
+                else None
             ),
             "attorney_fees": (
-                publication.attorney_fees.amount_cents
+                str(publication.attorney_fees.amount_cents)
                 if publication.attorney_fees
-                else 0
+                else None
             ),
             "content": publication.content,
             "status": publication.status if publication.status else "NOVA",
