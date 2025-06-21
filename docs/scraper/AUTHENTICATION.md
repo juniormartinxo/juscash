@@ -7,11 +7,13 @@
 ## 🔐 **Nova Arquitetura de Segurança**
 
 ### Fluxo Seguro
+
 ```
 Frontend → API Principal (JWT) → API Scraper (API Key)
 ```
 
 ### Antiga Abordagem (INSEGURA) ❌
+
 ```
 Frontend → API Scraper (API Key exposta)
 ```
@@ -19,12 +21,14 @@ Frontend → API Scraper (API Key exposta)
 ## 🛡️ **Sistema de Proxy Implementado**
 
 ### Endpoints do Proxy (API Principal)
+
 - `GET /api/scraper-proxy/status` - Status do scraper
 - `POST /api/scraper-proxy/run` - Iniciar scraping  
 - `POST /api/scraper-proxy/force-stop` - Parar scraping
 - `POST /api/scraper-proxy/today` - Scraping do dia atual
 
 ### Autenticação Necessária
+
 - **Frontend**: JWT Token (Bearer Authentication)
 - **API Principal**: API Key para comunicar com scraper
 
@@ -33,6 +37,7 @@ Frontend → API Scraper (API Key exposta)
 ### Variáveis de Ambiente
 
 #### API Principal (backend/api)
+
 ```bash
 # API Key para comunicar com o scraper
 SCRAPER_API_KEY=scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP
@@ -42,6 +47,7 @@ SCRAPER_API_URL=http://localhost:5000
 ```
 
 #### API do Scraper (backend/scraper)
+
 ```bash
 # API Key para autenticar requisições
 SCRAPER_API_KEY=scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP
@@ -51,6 +57,7 @@ CORS_ORIGIN=http://localhost:3000
 ```
 
 #### Frontend
+
 ```bash
 # ✅ REMOVIDO: VITE_SCRAPER_API_KEY (não é mais necessário)
 # Frontend agora usa JWT para autenticar com API principal
@@ -59,12 +66,14 @@ CORS_ORIGIN=http://localhost:3000
 ## 🔒 **Benefícios de Segurança**
 
 ### ✅ **Problemas Resolvidos**
+
 - **API Key oculta**: Nunca exposta no navegador
 - **Código seguro**: Não há secrets no JavaScript
 - **DevTools seguro**: Nenhuma informação sensível
 - **Build seguro**: Sem keys no bundle de produção
 
 ### 🛡️ **Camadas de Proteção**
+
 1. **JWT Authentication**: Frontend → API Principal
 2. **API Key Protection**: API Principal → API Scraper  
 3. **Rate Limiting**: Específico para operações do scraper
@@ -73,6 +82,7 @@ CORS_ORIGIN=http://localhost:3000
 ## 💻 **Implementação Frontend**
 
 ### Antes (INSEGURO) ❌
+
 ```typescript
 // ❌ API key exposta no navegador!
 const headers = {
@@ -83,6 +93,7 @@ fetch('http://localhost:5000/status', { headers })
 ```
 
 ### Agora (SEGURO) ✅
+
 ```typescript
 // ✅ Apenas JWT, API key fica no servidor
 const getAuthHeaders = () => {
@@ -102,6 +113,7 @@ fetch(`${API_BASE_URL}/scraper-proxy/status`, {
 ## 🔧 **Implementação Backend (Proxy)**
 
 ### Middleware de Segurança
+
 ```typescript
 // Autenticação JWT obrigatória
 router.use(authMiddleware.authenticate)
@@ -111,6 +123,7 @@ router.use(scraperRateLimit.middleware)
 ```
 
 ### Exemplo de Endpoint Proxy
+
 ```typescript
 router.get('/status', asyncHandler(async (req: Request, res: Response) => {
   // API key fica segura no servidor
@@ -128,6 +141,7 @@ router.get('/status', asyncHandler(async (req: Request, res: Response) => {
 ## 📊 **Monitoramento**
 
 ### Logs de Segurança
+
 ```
 [INFO] Proxy request: GET /api/scraper-proxy/status - User: john@example.com
 [WARN] Unauthorized proxy attempt: Missing JWT token
@@ -135,6 +149,7 @@ router.get('/status', asyncHandler(async (req: Request, res: Response) => {
 ```
 
 ### Códigos de Status
+
 - **200**: Requisição proxy bem-sucedida
 - **401**: JWT token ausente/inválido  
 - **502**: Erro de comunicação com scraper
@@ -143,6 +158,7 @@ router.get('/status', asyncHandler(async (req: Request, res: Response) => {
 ## 🚀 **Deployment**
 
 ### Checklist de Segurança
+
 - [ ] `SCRAPER_API_KEY` configurada nos dois serviços
 - [ ] `SCRAPER_API_URL` apontando corretamente
 - [ ] CORS configurado apenas para origens necessárias
@@ -150,6 +166,7 @@ router.get('/status', asyncHandler(async (req: Request, res: Response) => {
 - [ ] Rate limiting ativo em produção
 
 ### Testando a Segurança
+
 ```bash
 # ❌ Tentativa direta (deve falhar)
 curl -H "X-API-Key: invalid" http://localhost:5000/status
@@ -161,6 +178,7 @@ curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/api/scraper-pro
 ## 🆘 **Troubleshooting**
 
 ### Erro: "Serviço do scraper indisponível"
+
 ```bash
 # Verificar se scraper está rodando
 curl http://localhost:5000/
@@ -170,6 +188,7 @@ tail -f backend/api/logs/app.log
 ```
 
 ### Erro: "Erro de autenticação com o scraper"
+
 ```bash
 # Verificar se API keys coincidem
 echo $SCRAPER_API_KEY
@@ -181,6 +200,7 @@ curl -H "X-API-Key: $SCRAPER_API_KEY" http://localhost:5000/status
 ## 📋 **Exemplos de Uso**
 
 ### 1. Frontend (React/TypeScript)
+
 ```typescript
 // Obter status do scraper
 const checkStatus = async () => {
@@ -209,6 +229,7 @@ const startScraping = async (startDate: string, endDate: string) => {
 ```
 
 ### 2. cURL (com JWT)
+
 ```bash
 # Obter JWT token primeiro
 API_URL=${VITE_API_URL:-"http://localhost:8000/api"}
@@ -240,4 +261,4 @@ curl -H "Authorization: Bearer $JWT_TOKEN" \
 
 ---
 
-**✅ MIGRAÇÃO CONCLUÍDA**: Sistema de proxy seguro implementado com sucesso. API keys nunca mais serão expostas no frontend. 
+**✅ MIGRAÇÃO CONCLUÍDA**: Sistema de proxy seguro implementado com sucesso. API keys nunca mais serão expostas no frontend.
