@@ -39,7 +39,7 @@ cd juscash
 ./start.sh
 ```
 
-#### 🔍 O que o script `./install.sh` faz:
+#### 🔍 O que o script `./install.sh` faz
 
 O script de instalação executa automaticamente **7 etapas** de configuração:
 
@@ -52,13 +52,14 @@ O script de instalação executa automaticamente **7 etapas** de configuração:
 7. **🕷️ Configuração do Scraper** - Python com Playwright
 
 **⚠️ Importante**: O script:
+
 - **Solicita confirmação** antes de executar
 - **Para containers existentes** automaticamente
 - **Limpa o workspace** antes de instalar
 - **Exibe logs coloridos** para acompanhar o progresso
 - **Para a execução** se alguma etapa falhar
 
-#### 🚀 O que o script `./start.sh` faz:
+#### 🚀 O que o script `./start.sh` faz
 
 - **Verifica dependências** (Docker, Docker Compose)
 - **Valida arquivos necessários** (.env, docker-compose.yml)
@@ -70,6 +71,7 @@ O script de instalação executa automaticamente **7 etapas** de configuração:
 Se quiser executar etapas específicas ou verificar componentes individuais:
 
 #### 🔍 Scripts de Verificação
+
 ```bash
 # Verificar se portas estão livres
 ./scripts/check-ports.sh
@@ -82,6 +84,7 @@ Se quiser executar etapas específicas ou verificar componentes individuais:
 ```
 
 #### ⚙️ Scripts de Configuração
+
 ```bash
 # Configurar banco de dados PostgreSQL
 ./scripts/setup-database.sh
@@ -100,6 +103,7 @@ Se quiser executar etapas específicas ou verificar componentes individuais:
 ```
 
 #### 🛠️ Scripts de Manutenção
+
 ```bash
 # Limpar workspace (remove containers, volumes, etc.)
 ./scripts/clean-workspace.sh
@@ -115,6 +119,7 @@ Se quiser executar etapas específicas ou verificar componentes individuais:
 ```
 
 #### 📚 Documentação dos Scripts
+
 ```bash
 # Ver documentação completa dos scripts
 cat ./scripts/README.md
@@ -302,7 +307,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 docker-compose down
 ```
 
-#### 🔄 O que o script `./restart.sh` faz:
+#### 🔄 O que o script `./restart.sh` faz
 
 - **Para todos os containers** em execução
 - **Reconstrói as imagens** com `--build`
@@ -407,4 +412,4 @@ Se encontrar problemas durante a instalação:
 
 ---
 
-**Desenvolvido com ❤️ para facilitar o gerenciamento de publicações DJE** 
+**Desenvolvido com ❤️ para facilitar o gerenciamento de publicações DJE**
