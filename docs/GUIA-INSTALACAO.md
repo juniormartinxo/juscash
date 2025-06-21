@@ -411,5 +411,3 @@ Se encontrar problemas durante a instalação:
 - **Abra uma issue** no [GitHub](https://github.com/juniormartinxo/juscash/issues)
 
 ---
-
-**Desenvolvido com ❤️ para facilitar o gerenciamento de publicações DJE**
