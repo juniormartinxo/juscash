@@ -4,9 +4,10 @@ API REST para execução de comandos do scraper.
 
 import os
 import sys
-import json
 import subprocess
 import logging
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -46,6 +47,65 @@ class ScrapingRequest(BaseModel):
     headless: bool = True
 
 
+def validate_date_range(start_date: str, end_date: str) -> None:
+    """
+    Valida formato e lógica das datas.
+
+    Args:
+        start_date: Data inicial no formato YYYY-MM-DD
+        end_date: Data final no formato YYYY-MM-DD
+
+    Raises:
+        HTTPException: Se as datas são inválidas
+    """
+    date_pattern = r"^\d{4}-\d{2}-\d{2}$"
+
+    # Validar formato
+    if not re.match(date_pattern, start_date):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Formato de start_date inválido. Use YYYY-MM-DD, recebido: {start_date}",
+        )
+
+    if not re.match(date_pattern, end_date):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Formato de end_date inválido. Use YYYY-MM-DD, recebido: {end_date}",
+        )
+
+    # Validar se as datas são válidas e se end_date não é anterior a start_date
+    try:
+        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+
+        if end_date_obj < start_date_obj:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data final ({end_date}) não pode ser anterior à data inicial ({start_date})",
+            )
+
+        # verifica se as datas não são maiores que hoje
+        if end_date_obj > datetime.now():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data final ({end_date}) não pode ser maior que a data atual ({datetime.now().strftime('%Y-%m-%d')})",
+            )
+
+        if start_date_obj > datetime.now():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data inicial ({start_date}) não pode ser maior que a data atual ({datetime.now().strftime('%Y-%m-%d')})",
+            )
+
+    except ValueError as e:
+        if "Data final" not in str(e):  # Se não foi nosso erro customizado
+            raise HTTPException(
+                status_code=400,
+                detail=f"Erro ao processar datas: {e}",
+            )
+        raise  # Re-raise nosso erro customizado
+
+
 def run_command_background(command: str, args: Optional[Dict[str, Any]] = None) -> None:
     """Executa um comando do scraper em background."""
     try:
@@ -55,38 +115,36 @@ def run_command_background(command: str, args: Optional[Dict[str, Any]] = None) 
         logger.info(f"📂 Diretório de trabalho: {SCRIPT_DIR}")
 
         if command == "monitor":
+            api_endpoint = os.getenv("API_BASE_URL", "http://localhost:8000")
+            if args and "api_endpoint" in args:
+                api_endpoint = args["api_endpoint"]
+
             cmd = [
                 sys.executable,
                 str(SCRIPT_DIR / "monitor_json_files.py"),
                 "--api-endpoint",
-                args.get("api_endpoint", "http://localhost:8000"),
+                api_endpoint,
                 "--monitored-path",
                 str(SCRIPT_DIR / "reports" / "json"),
                 "--log-path",
                 str(SCRIPT_DIR / "reports" / "log"),
             ]
-        elif command == "scraper":
-            cmd = [sys.executable, str(SCRIPT_DIR / "scraper_cli.py"), "run"]
-            if args:
-                for key, value in args.items():
-                    cmd.extend([f"--{key}", str(value)])
-        elif command == "multi_date_scraper":
-            script_path = SCRIPT_DIR / "run_multi_date_scraper.py"
-            logger.info(f"🔍 Verificando se o script existe: {script_path}")
-            logger.info(f"📄 Arquivo existe: {script_path.exists()}")
-
-            if not script_path.exists():
-                raise FileNotFoundError(f"Script não encontrado: {script_path}")
-
-            cmd = [sys.executable, str(script_path)]
-            if args:
-                for key, value in args.items():
-                    cmd.extend([f"--{key}", str(value)])
-        elif command == "scraper_cli":
-            cmd = [sys.executable, str(SCRIPT_DIR / "scraper_cli.py"), "run"]
-            if args:
-                for key, value in args.items():
-                    cmd.extend([f"--{key}", str(value)])
+        elif command == "scraping":
+            cmd = [sys.executable, str(SCRIPT_DIR / "scraping.py"), "run"]
+            if args and "start_date" in args and "end_date" in args:
+                cmd.extend(
+                    [
+                        "--start-date",
+                        args["start_date"],
+                        "--end-date",
+                        args["end_date"],
+                        "--headless" if args.get("headless", True) else "--no-headless",
+                    ]
+                )
+            else:
+                raise ValueError(
+                    f"Comando {command} requer argumentos start_date e end_date"
+                )
         else:
             raise ValueError(f"Comando inválido: {command}")
 
@@ -119,6 +177,12 @@ def run_scraping_py_background(
             raise FileNotFoundError(
                 f"scraping.py não encontrado em: {scraping_py_path}"
             )
+
+        # verifica se a data final é maior que a data inicial
+        if datetime.strptime(end_date, "%Y-%m-%d") < datetime.strptime(
+            start_date, "%Y-%m-%d"
+        ):
+            raise ValueError("A data final não pode ser menor que a data inicial")
 
         # Construir comando
         cmd = [
@@ -155,28 +219,10 @@ def run_scraping_py_background(
         raise
 
 
-@app.post("/run")
-async def run_command(command: ScraperCommand, background_tasks: BackgroundTasks):
-    """
-    Executa um comando do scraper.
-
-    Comandos disponíveis:
-    - monitor: Inicia o monitoramento de arquivos JSON
-    - scraper: Executa o scraper básico (scraper_cli.py run)
-    - multi_date_scraper: Executa o scraper para múltiplas datas
-    - scraper_cli: Executa o scraper via CLI (mesmo que 'scraper')
-    """
-    try:
-        background_tasks.add_task(run_command_background, command.command, command.args)
-        return {"status": "success", "message": f"Comando {command.command} iniciado"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/status")
 async def get_status():
     """Retorna o status dos serviços do scraper."""
-    status = {"monitor": False, "scraper": False, "multi_date_scraper": False}
+    status = {"monitor": False, "scraping": False}
     pids = {}
 
     try:
@@ -189,18 +235,12 @@ async def get_status():
             pids["monitor"] = result.stdout.strip().split("\n")
 
         result = subprocess.run(
-            ["pgrep", "-f", "scraper_cli.py"], capture_output=True, text=True
+            ["pgrep", "-f", "scraping.py"], capture_output=True, text=True
         )
-        if result.stdout.strip():
-            status["scraper"] = True
-            pids["scraper"] = result.stdout.strip().split("\n")
 
-        result = subprocess.run(
-            ["pgrep", "-f", "run_multi_date_scraper.py"], capture_output=True, text=True
-        )
         if result.stdout.strip():
-            status["multi_date_scraper"] = True
-            pids["multi_date_scraper"] = result.stdout.strip().split("\n")
+            status["scraping"] = True
+            pids["scraping"] = result.stdout.strip().split("\n")
 
         return {
             "status": status,
@@ -218,10 +258,8 @@ async def stop_service(service: str):
     try:
         if service == "monitor":
             subprocess.run(["pkill", "-f", "monitor_json_files.py"], check=True)
-        elif service == "scraper":
-            subprocess.run(["pkill", "-f", "scraper_cli.py"], check=True)
-        elif service == "multi_date_scraper":
-            subprocess.run(["pkill", "-f", "run_multi_date_scraper.py"], check=True)
+        elif service == "scraping":
+            subprocess.run(["pkill", "-f", "scraping.py"], check=True)
         else:
             raise HTTPException(status_code=400, detail=f"Serviço inválido: {service}")
 
@@ -232,43 +270,7 @@ async def stop_service(service: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/run/multi-date-scraper")
-async def run_multi_date_scraper(
-    background_tasks: BackgroundTasks, request: Optional[ScraperArgs] = None
-):
-    """Executa o scraper para múltiplas datas em background."""
-    try:
-        args = request.args if request else None
-        background_tasks.add_task(run_command_background, "multi_date_scraper", args)
-        return {
-            "status": "success",
-            "message": "Multi-date scraper iniciado em background",
-            "command": "python run_multi_date_scraper.py",
-            "args": args,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/run/scraper-cli")
-async def run_scraper_cli(
-    background_tasks: BackgroundTasks, request: Optional[ScraperArgs] = None
-):
-    """Executa o scraper CLI em background."""
-    try:
-        args = request.args if request else None
-        background_tasks.add_task(run_command_background, "scraper_cli", args)
-        return {
-            "status": "success",
-            "message": "Scraper CLI iniciado em background",
-            "command": "python scraper_cli.py run",
-            "args": args,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/run/scraping")
+@app.post("/run")
 async def run_scraping_manual(
     background_tasks: BackgroundTasks, request: ScrapingRequest
 ):
@@ -279,22 +281,8 @@ async def run_scraping_manual(
     python scraping.py run --start-date YYYY-MM-DD --end-date YYYY-MM-DD [--headless]
     """
     try:
-        # Validar formato de data básico
-        import re
-
-        date_pattern = r"^\d{4}-\d{2}-\d{2}$"
-
-        if not re.match(date_pattern, request.start_date):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Formato de start_date inválido. Use YYYY-MM-DD, recebido: {request.start_date}",
-            )
-
-        if not re.match(date_pattern, request.end_date):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Formato de end_date inválido. Use YYYY-MM-DD, recebido: {request.end_date}",
-            )
+        # Validar formato e lógica das datas
+        validate_date_range(request.start_date, request.end_date)
 
         # Executar scraping em background
         background_tasks.add_task(
@@ -328,7 +316,19 @@ async def run_scraping_manual(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/run/scraping/today")
+@app.post("/scraping/monitor")
+async def run_scraping_monitor(
+    background_tasks: BackgroundTasks, api_endpoint: str = "http://localhost:8000"
+):
+    """
+    Executa o monitoramento de arquivos JSON.
+    """
+    args = {"api_endpoint": api_endpoint}
+    background_tasks.add_task(run_command_background, "monitor", args)
+    return {"status": "success", "message": "Monitoramento de arquivos JSON iniciado"}
+
+
+@app.post("/scraping/today")
 async def run_scraping_today(background_tasks: BackgroundTasks, headless: bool = True):
     """
     Executa o scraping da data atual (hoje) - conveniência.
@@ -337,8 +337,6 @@ async def run_scraping_today(background_tasks: BackgroundTasks, headless: bool =
     python scraping.py run --start-date HOJE --end-date HOJE [--headless]
     """
     try:
-        from datetime import datetime
-
         today = datetime.now().strftime("%Y-%m-%d")
 
         # Usar o mesmo endpoint interno
@@ -374,18 +372,16 @@ async def root():
         "version": "1.0.0",
         "description": "API para execução de comandos do scraper DJE",
         "endpoints": {
-            "run_command": "POST /run",
-            "run_scraping_manual": "POST /run/scraping",
-            "run_scraping_today": "POST /run/scraping/today",
-            "run_multi_date_scraper": "POST /run/multi-date-scraper",
-            "run_scraper_cli": "POST /run/scraper-cli",
+            "run_scraping": "POST /run",
+            "run_scraping_today": "POST /scraping/today",
+            "run_scraping_monitor": "POST /scraping/monitor",
             "status": "GET /status",
             "stop_service": "POST /stop/{service}",
             "debug_paths": "GET /debug/paths",
             "debug_test_command": "POST /debug/test-command",
             "docs": "GET /docs",
         },
-        "available_services": ["monitor", "scraper", "multi_date_scraper"],
+        "available_services": ["monitor", "scraping"],
         "debug_info": {
             "script_directory": str(SCRIPT_DIR),
             "python_executable": sys.executable,
@@ -403,21 +399,17 @@ async def debug_paths():
         "python_executable": sys.executable,
         "working_directory": os.getcwd(),
         "files_in_script_dir": [f.name for f in script_dir.iterdir() if f.is_file()],
-        "run_multi_date_scraper_exists": (
-            script_dir / "run_multi_date_scraper.py"
-        ).exists(),
-        "run_multi_date_scraper_path": str(script_dir / "run_multi_date_scraper.py"),
-        "run_multi_date_scraper_is_executable": os.access(
-            script_dir / "run_multi_date_scraper.py", os.X_OK
-        ),
+        "scraping_exists": (script_dir / "scraping.py").exists(),
+        "scraping_path": str(script_dir / "scraping.py"),
+        "scraping_is_executable": os.access(script_dir / "scraping.py", os.X_OK),
     }
 
 
 @app.post("/debug/test-command")
 async def test_command():
-    """Testa a execução do comando multi_date_scraper de forma síncrona para debug."""
+    """Testa a execução do comando scraping de forma síncrona para debug."""
     try:
-        script_path = SCRIPT_DIR / "run_multi_date_scraper.py"
+        script_path = SCRIPT_DIR / "scraping.py"
 
         if not script_path.exists():
             raise HTTPException(
