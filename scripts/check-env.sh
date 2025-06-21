@@ -10,18 +10,46 @@ if [ -f ".env" ]; then
     cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 fi
 
-# Gera um hash único para a API_KEY do scraper com prefixo "scraper-dje-" com 32 caracteres
-SCRAPER_API_KEY=$(echo "scraper-dje-$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+# Função para gerar hash seguro
+generate_secure_hash() {
+    local length=${1:-32}
+    
+    # Detecta o sistema operacional
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+        # Windows (Git Bash, WSL, Cygwin)
+        if command -v openssl >/dev/null 2>&1; then
+            openssl rand -hex $((length/2))
+        elif command -v powershell >/dev/null 2>&1; then
+            # Chama PowerShell do Git Bash
+            powershell -Command "-join ((65..90) + (97..122) + (48..57) | Get-Random -Count $length | ForEach-Object {[char]\$_})"
+        else
+            # Fallback para Windows
+            local result=""
+            local chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            for i in $(seq 1 $length); do
+                local rand=$((RANDOM % 62))
+                result="${result}${chars:$rand:1}"
+            done
+            echo "$result"
+        fi
+    else
+        # Linux/macOS
+        if [ -r /dev/urandom ]; then
+            cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $length | head -n 1
+        elif command -v openssl >/dev/null 2>&1; then
+            openssl rand -hex $((length/2))
+        else
+            # Último recurso
+            echo "$(date +%s%N)$$RANDOM" | sha256sum | cut -c 1-$length
+        fi
+    fi
+}
 
-# Gera um hash unico para a senha do Redis sem suffixo com 32 caracteres
-REDIS_PASSWORD=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
-
-# Gera um hash unico para a senha do Postgres sem suffixo com 32 caracteres
-POSTGRES_PASSWORD=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
-
-# Gera um hash unico para a senha do JWT sem suffixo com 32 caracteres
-JWT_ACCESS_SECRET=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
-JWT_REFRESH_SECRET=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+# Gera as variáveis
+REDIS_PASSWORD=$(generate_secure_hash 32)
+POSTGRES_PASSWORD=$(generate_secure_hash 32)
+JWT_ACCESS_SECRET=$(generate_secure_hash 32)
+JWT_REFRESH_SECRET=$(generate_secure_hash 32)
 
 # ===========================================
 # CONFIGURAÇÕES DA API
@@ -56,6 +84,14 @@ REDIS_PASSWORD="${REDIS_PASSWORD}"
 REDIS_PORT="6379"
 REDIS_HOST_PORT="6379"
 REDIS_URL="redis://${REDIS_CONTAINER_NAME}:${REDIS_PORT}"
+
+# ===========================================
+# CONFIGURAÇÕES DO SCRAPER
+# ===========================================
+SCRAPER_CONTAINER_NAME="juscash-scraper"
+SCRAPER_API_KEY="scraper-dje-$(generate_secure_hash 64)"
+SCRAPER_API_PORT="5000"
+SCRAPER_API_URL="http://${SCRAPER_CONTAINER_NAME}:${SCRAPER_API_PORT}"
 
 # PRISMA
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_CONTAINER_NAME}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public&connection_limit=20"
@@ -128,16 +164,16 @@ REDIS_SAVE_POLICY='60 1 300 100 600 1'
 # GOOGLE
 MAIL_PORT='587'
 MAIL_SECURE=false
-MAIL_BOX_CONTACT=''
-MAIL_BOX_BILLING=''
-MAIL_USER=''
-MAIL_PASS=''
+MAIL_BOX_CONTACT='exemplo@gmail.com'
+MAIL_BOX_BILLING='exemplo@gmail.com'
+MAIL_USER='exemplo@gmail.com'
+MAIL_PASS='exemplo@123'
 MAIL_HOST='smtp.gmail.com'
 
 # ===========================================
 # CONFIGURAÇÕES DO SCRAPER
 # ===========================================
-SCRAPER_CONTAINER_NAME='juscash-scraper'
+SCRAPER_CONTAINER_NAME='${SCRAPER_CONTAINER_NAME}'
 SCRAPER_INTERVAL=86400
 SCRAPER_TIMEOUT=30
 SCRAPER_MAX_RETRIES=3
@@ -146,7 +182,8 @@ SCRAPER_MAX_PAGES=20
 SCRAPER_TARGET_URL=https://dje.tjsp.jus.br/cdje/index.do
 SCRAPER_SEARCH_TERMS="RPV,pagamento pelo INSS"
 SCRAPER_API_KEY='${SCRAPER_API_KEY}'
-SCRAPER_API_PORT=5000
+SCRAPER_API_PORT=${SCRAPER_API_PORT}
+SCRAPER_API_URL='${SCRAPER_API_URL}'
 
 # Configurações do navegador
 BROWSER_HEADLESS=false
