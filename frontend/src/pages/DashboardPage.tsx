@@ -24,6 +24,7 @@ export function DashboardPage() {
     endDate: '',
   })
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isDrawerAnimating, setIsDrawerAnimating] = useState(false)
 
   // Estados do formulário de scraping
   const [isScrapingLoading, setIsScrapingLoading] = useState(false)
@@ -54,6 +55,24 @@ export function DashboardPage() {
     // Converte YYYY-MM-DD para DD/MM/YYYY
     const [year, month, day] = dateString.split('-')
     return `${day}/${month}/${year}`
+  }
+
+  const handleOpenDrawer = () => {
+    setIsDrawerOpen(true)
+    setIsDrawerAnimating(true)
+    // Pequeno delay para iniciar a animação após o elemento estar no DOM
+    requestAnimationFrame(() => {
+      setTimeout(() => setIsDrawerAnimating(false), 10)
+    })
+  }
+
+  const handleCloseDrawer = () => {
+    setIsDrawerAnimating(true)
+    // Aguarda a animação completar antes de remover o drawer do DOM
+    setTimeout(() => {
+      setIsDrawerOpen(false)
+      setIsDrawerAnimating(false)
+    }, 350) // 350ms duração da animação + buffer
   }
 
   // Função para verificar o status do scraper
@@ -128,6 +147,20 @@ export function DashboardPage() {
       }
     }
   }, [])
+
+  // Fechar drawer com ESC
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isDrawerOpen && !isDrawerAnimating) {
+        handleCloseDrawer()
+      }
+    }
+
+    if (isDrawerOpen) {
+      document.addEventListener('keydown', handleEscKey)
+      return () => document.removeEventListener('keydown', handleEscKey)
+    }
+  }, [isDrawerOpen, isDrawerAnimating])
 
   const handleStartScraping = async () => {
     try {
@@ -364,7 +397,7 @@ export function DashboardPage() {
           {/* Botão tipo aba no canto direito */}
           <div className="fixed right-0 top-1/2 transform -translate-y-1/2 z-10">
             <button
-              onClick={() => setIsDrawerOpen(true)}
+              onClick={handleOpenDrawer}
               className="bg-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-l-lg p-4 border border-r-0 border-gray-200 hover:translate-x-1 cursor-pointer relative"
               title="Configurações"
             >
@@ -383,13 +416,21 @@ export function DashboardPage() {
         <div className="fixed inset-0 z-50 overflow-hidden">
           {/* Overlay */}
           <div
-            className="absolute inset-0 bg-black/45 transition-opacity"
-            onClick={() => setIsDrawerOpen(false)}
+            className={`absolute inset-0 bg-black/45 transition-all duration-300 ease-out ${isDrawerAnimating ? 'opacity-0' : 'opacity-100'
+              }`}
+            onClick={handleCloseDrawer}
           />
 
           {/* Drawer content */}
-          <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl transform transition-transform">
-            <div className="flex flex-col h-full">
+          <div
+            className={`absolute right-0 top-0 h-full w-96 bg-white shadow-2xl transform transition-all duration-300 ease-out ${isDrawerAnimating ? 'translate-x-full opacity-95' : 'translate-x-0 opacity-100'
+              }`}
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 20px -6px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <div className={`flex flex-col h-full transition-all duration-300 delay-75 ${isDrawerAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+              }`}>
               {/* Header */}
               <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
                 <div className="flex items-center space-x-2">
@@ -399,7 +440,7 @@ export function DashboardPage() {
                   </h2>
                 </div>
                 <button
-                  onClick={() => setIsDrawerOpen(false)}
+                  onClick={handleCloseDrawer}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                 >
                   <X size={20} className="text-gray-500" />
