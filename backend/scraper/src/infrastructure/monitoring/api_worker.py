@@ -6,6 +6,7 @@ import json
 import logging
 import re
 import time
+import os
 from datetime import datetime, date
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
@@ -49,7 +50,7 @@ class APIWorker:
         failed_queue: str = "json_files_failed",
         max_retries: int = 5,
         processing_interval: float = 0.5,
-        api_key: str = "scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP",
+        api_key: Optional[str] = None,
     ):
         """Initialize the improved API worker."""
         self.redis_url = redis_url
@@ -61,7 +62,18 @@ class APIWorker:
         self.max_retries = max_retries
         self.processing_interval = processing_interval
         self.redis_client: Optional[redis.Redis] = None
-        self.api_key = api_key
+
+        # Use API key from parameter or environment variable
+        self.api_key = api_key or os.getenv("SCRAPER_API_KEY")
+
+        if not self.api_key:
+            logger.error("❌ SCRAPER_API_KEY not configured!")
+            logger.error("   Set SCRAPER_API_KEY environment variable")
+            raise ValueError("SCRAPER_API_KEY is required")
+        elif len(self.api_key) < 32:
+            logger.warning("⚠️ SCRAPER_API_KEY seems too short (< 32 characters)")
+
+        logger.info(f"🔑 API Key configured: {'✅' if self.api_key else '❌'}")
 
         # Ensure log directory exists with proper permission handling
         self._ensure_log_directory()
