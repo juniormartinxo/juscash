@@ -130,3 +130,19 @@ export interface ApiError {
 export interface FormErrors {
     [key: string]: string | undefined
 }
+
+export interface ScraperStatus {
+    status: {
+        monitor: boolean
+        scraping: boolean
+    }
+    pids: Record<string, string[]>
+    script_directory: string
+    python_executable: string
+}
+
+export interface ScrapingRequest {
+    start_date: string
+    end_date: string
+    headless?: boolean
+}
