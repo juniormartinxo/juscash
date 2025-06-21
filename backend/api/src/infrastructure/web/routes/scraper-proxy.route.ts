@@ -13,11 +13,16 @@ export function createScraperProxyRoutes(authMiddleware: AuthMiddleware): Router
 
   // Rate limiting específico para operações do scraper
   const scraperRateLimit = new RateLimitMiddleware(
-    5 * 60 * 1000, // 5 minutos
-    10 // 10 requests por 5 minutos (mais restritivo)
+    1 * 60 * 1000, // 1 minuto
+    10 // 10 requests por minuto (mais restritivo para operações de escrita)
   )
 
-  router.use(scraperRateLimit.middleware)
+  // Rate limiting mais permissivo para status
+  const statusRateLimit = new RateLimitMiddleware(
+    1 * 60 * 1000, // 1 minuto
+    120 // 120 requests por minuto (2 por segundo em média)
+  )
+
   router.use(authMiddleware.authenticate) // Requer autenticação JWT
 
   const SCRAPER_API_URL = process.env.SCRAPER_API_URL || 'http://localhost:5000'
@@ -31,7 +36,7 @@ export function createScraperProxyRoutes(authMiddleware: AuthMiddleware): Router
    * GET /api/scraper-proxy/status
    * Verifica status do scraper via proxy seguro
    */
-  router.get('/status', asyncHandler(async (req: Request, res: Response) => {
+  router.get('/status', statusRateLimit.middleware, asyncHandler(async (req: Request, res: Response) => {
     try {
       const response = await fetch(`${SCRAPER_API_URL}/status`, {
         headers: {
@@ -62,7 +67,7 @@ export function createScraperProxyRoutes(authMiddleware: AuthMiddleware): Router
    * POST /api/scraper-proxy/run
    * Inicia scraping via proxy seguro
    */
-  router.post('/run', asyncHandler(async (req: Request, res: Response) => {
+  router.post('/run', scraperRateLimit.middleware, asyncHandler(async (req: Request, res: Response) => {
     try {
       const { start_date, end_date, headless = true } = req.body
 
@@ -112,7 +117,7 @@ export function createScraperProxyRoutes(authMiddleware: AuthMiddleware): Router
    * POST /api/scraper-proxy/force-stop
    * Força parada do scraping via proxy seguro
    */
-  router.post('/force-stop', asyncHandler(async (req: Request, res: Response) => {
+  router.post('/force-stop', scraperRateLimit.middleware, asyncHandler(async (req: Request, res: Response) => {
     try {
       const response = await fetch(`${SCRAPER_API_URL}/force-stop-scraping`, {
         method: 'POST',
@@ -144,7 +149,7 @@ export function createScraperProxyRoutes(authMiddleware: AuthMiddleware): Router
    * POST /api/scraper-proxy/today
    * Executa scraping do dia atual via proxy seguro
    */
-  router.post('/today', asyncHandler(async (req, res) => {
+  router.post('/today', scraperRateLimit.middleware, asyncHandler(async (req, res) => {
     try {
       const { headless = true } = req.body
 

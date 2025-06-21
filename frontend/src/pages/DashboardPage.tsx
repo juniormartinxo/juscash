@@ -60,7 +60,7 @@ export function DashboardPage() {
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('accessToken')
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
