@@ -20,7 +20,7 @@ Agora os arquivos JSON são excluídos em três situações:
 2. **🔄 Duplicatas (409)**: Arquivo excluído se publicação já existe
 3. **❌ Erros Não Recuperáveis**: Arquivos excluídos para erros como:
    - `VALIDATION_ERROR`
-   - `BAD_REQUEST` 
+   - `BAD_REQUEST`
    - `CLIENT_ERROR`
 
 ### 3. Limpeza Automática Periódica
@@ -71,6 +71,7 @@ python redis_queue_cli.py peek
 ### Limpeza Automática
 
 No `api_worker.py`:
+
 - **Intervalo**: 3600 segundos (1 hora)
 - **Idade máxima**: 2 horas
 - **Verificação de fila**: Sim
@@ -78,6 +79,7 @@ No `api_worker.py`:
 ### Script Manual
 
 Opções disponíveis:
+
 - `--json-dir`: Diretório customizado (padrão: `reports/json`)
 - `--max-age-hours`: Idade máxima em horas (padrão: 24)
 - `--dry-run`: Apenas mostra o que seria removido
@@ -88,17 +90,20 @@ Opções disponíveis:
 ### Logs a Observar
 
 1. **Exclusão bem-sucedida**:
+
    ```
    🗑️ Arquivo JSON excluído: /path/to/file.json
    ```
 
 2. **Limpeza automática**:
+
    ```
    🧹 Starting periodic cleanup of orphaned JSON files...
    🧹 Cleanup completed: X orphaned files removed
    ```
 
 3. **Erros de exclusão**:
+
    ```
    ❌ Erro de permissão ao excluir arquivo JSON
    ❌ Erro inesperado ao excluir arquivo JSON
@@ -122,16 +127,19 @@ du -h backend/scraper/reports/json/
 ### Arquivos Ainda Não São Excluídos
 
 1. **Verificar logs do APIWorker**:
+
    ```bash
    tail -f backend/scraper/reports/log/worker_*.log
    ```
 
 2. **Verificar se API Worker está rodando**:
+
    ```bash
    ps aux | grep api_worker
    ```
 
 3. **Verificar permissões do diretório**:
+
    ```bash
    ls -la backend/scraper/reports/json/
    ```
@@ -181,7 +189,8 @@ Após a implementação das correções:
 ## 📞 Suporte
 
 Se o problema persistir, verificar:
+
 - Logs do APIWorker em `reports/log/`
 - Status das filas Redis
 - Permissões do sistema de arquivos
-- Conectividade com a API 
+- Conectividade com a API
