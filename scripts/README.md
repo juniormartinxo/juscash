@@ -56,6 +56,7 @@ Configura automaticamente o Redis para funcionar em qualquer ambiente.
 - Testa a configuração completa
 
 #### `setup-database.sh` ⭐ **NOVO**
+
 Configura o banco de dados PostgreSQL executando comandos do Prisma no container da API.
 
 ```bash
@@ -63,6 +64,7 @@ Configura o banco de dados PostgreSQL executando comandos do Prisma no container
 ```
 
 **O que faz:**
+
 - Verifica se containers API e PostgreSQL estão rodando
 - Inicia containers se necessário
 - Aguarda containers ficarem saudáveis
@@ -71,6 +73,7 @@ Configura o banco de dados PostgreSQL executando comandos do Prisma no container
 - Executa `npx prisma db seed` no container da API
 
 **Comandos executados:**
+
 1. `npx prisma generate` - Gera cliente Prisma
 2. `npx prisma migrate dev` - Executa migrações do banco
 3. `npx prisma db seed` - Executa seed inicial (opcional)
