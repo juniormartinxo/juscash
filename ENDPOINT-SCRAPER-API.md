@@ -264,6 +264,12 @@ async function scrapingHoje() {
 - **Exemplos válidos:** `2025-01-21`, `2024-12-31`
 - **Exemplos inválidos:** `21/01/2025`, `2025-1-21`, `21-01-2025`
 
+### **Lógica de Datas:**
+- **Data final não pode ser anterior à data inicial**
+- **Exemplo inválido:** `start_date: "2025-03-17"`, `end_date: "2025-01-21"`
+- **Exemplo válido:** `start_date: "2025-01-21"`, `end_date: "2025-03-17"`
+- **Mesma data é válida:** `start_date: "2025-01-21"`, `end_date: "2025-01-21"`
+
 ### **Parâmetros:**
 - `start_date`: **Obrigatório**, string no formato YYYY-MM-DD
 - `end_date`: **Obrigatório**, string no formato YYYY-MM-DD  
@@ -277,6 +283,13 @@ async function scrapingHoje() {
 ```json
 {
   "detail": "Formato de start_date inválido. Use YYYY-MM-DD, recebido: 21/01/2025"
+}
+```
+
+### **Erro 400 - Data Final Anterior à Data Inicial:**
+```json
+{
+  "detail": "Data final (2025-01-21) não pode ser anterior à data inicial (2025-03-17)"
 }
 ```
 
