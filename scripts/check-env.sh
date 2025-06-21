@@ -10,6 +10,19 @@ if [ -f ".env" ]; then
     cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 fi
 
+# Gera um hash único para a API_KEY do scraper com prefixo "scraper-dje-" com 32 caracteres
+SCRAPER_API_KEY=$(echo "scraper-dje-$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+
+# Gera um hash unico para a senha do Redis sem suffixo com 32 caracteres
+REDIS_PASSWORD=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+
+# Gera um hash unico para a senha do Postgres sem suffixo com 32 caracteres
+POSTGRES_PASSWORD=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+
+# Gera um hash unico para a senha do JWT sem suffixo com 32 caracteres
+JWT_ACCESS_SECRET=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+JWT_REFRESH_SECRET=$(echo "$(date +%s)" | sha256sum | cut -d' ' -f1 | cut -c 1-32)
+
 # ===========================================
 # CONFIGURAÇÕES DA API
 # ===========================================
@@ -32,14 +45,14 @@ VITE_API_URL="http://localhost:${API_HOST_PORT}/api"
 POSTGRES_CONTAINER_NAME="juscash-postgres"
 POSTGRES_USER="juscash_user"
 POSTGRES_DB="juscash_db"
-POSTGRES_PASSWORD="6IVxDUQkY9TUf5ij8Af3zIDhiTdgn"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"
 POSTGRES_PORT="5432"
 POSTGRES_HOST_PORT="5433"
 POSTGRES_URL_ASYNC="postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_CONTAINER_NAME}:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 # REDIS
 REDIS_CONTAINER_NAME="juscash-redis"
-REDIS_PASSWORD="do1HDF1uT5lC49VHuD2xom"
+REDIS_PASSWORD="${REDIS_PASSWORD}"
 REDIS_PORT="6379"
 REDIS_HOST_PORT="6379"
 REDIS_URL="redis://${REDIS_CONTAINER_NAME}:${REDIS_PORT}"
@@ -63,8 +76,8 @@ API_BASE_URL='http://${API_CONTAINER_NAME}:${API_PORT}/api'
 
 # Configurações de segurança e limites
 CORS_ORIGIN='http://localhost:5173'
-JWT_ACCESS_SECRET='fUXZOvvcAit2HcrAcXsaY3AnZ5PihzyL'
-JWT_REFRESH_SECRET='FjOkrtGSfalZaPdfyNJEynzYrGmZFRdW'
+JWT_ACCESS_SECRET='${JWT_ACCESS_SECRET}'
+JWT_REFRESH_SECRET='${JWT_REFRESH_SECRET}'
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=2000
 MAX_REQUEST_SIZE='10mb'
@@ -115,10 +128,10 @@ REDIS_SAVE_POLICY='60 1 300 100 600 1'
 # GOOGLE
 MAIL_PORT='587'
 MAIL_SECURE=false
-MAIL_BOX_CONTACT='contato@juniormartins.dev'
-MAIL_BOX_BILLING='contato@juniormartins.dev'
-MAIL_USER='contato@juniormartins.dev'
-MAIL_PASS='juniormartins@123'
+MAIL_BOX_CONTACT=''
+MAIL_BOX_BILLING=''
+MAIL_USER=''
+MAIL_PASS=''
 MAIL_HOST='smtp.gmail.com'
 
 # ===========================================
@@ -131,8 +144,8 @@ SCRAPER_MAX_RETRIES=3
 SCRAPER_RETRY_DELAY=5
 SCRAPER_MAX_PAGES=20
 SCRAPER_TARGET_URL=https://dje.tjsp.jus.br/cdje/index.do
-SCRAPER_SEARCH_TERMS=aposentadoria,benefício,INSS
-SCRAPER_API_KEY='scraper-dj-1t0blW7epxd72BnoGezVjjXUtmbE11WXp0oSDhXJUFNo3ZEC5UVDhYfjLJX1Jqb12fbRB4ZUjP'
+SCRAPER_SEARCH_TERMS="RPV,pagamento pelo INSS"
+SCRAPER_API_KEY='${SCRAPER_API_KEY}'
 SCRAPER_API_PORT=5000
 
 # Configurações do navegador
