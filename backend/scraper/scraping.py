@@ -187,7 +187,9 @@ class DJEScraperPlaywright:
 
         for i, link in enumerate(publication_links):
             try:
-                logger.info(f"📄 Processando publicação {i+1}/{len(publication_links)}")
+                logger.info(
+                    f"📄 Processando publicação {i + 1}/{len(publication_links)}"
+                )
                 publication = await self._process_publication(link, date_str)
 
                 if publication:
@@ -206,7 +208,7 @@ class DJEScraperPlaywright:
                     stats["failed"] += 1
 
             except Exception as e:
-                logger.error(f"❌ Erro ao processar publicação {i+1}: {e}")
+                logger.error(f"❌ Erro ao processar publicação {i + 1}: {e}")
                 stats["failed"] += 1
 
         return stats
@@ -277,10 +279,10 @@ class DJEScraperPlaywright:
                     const select = document.querySelector('{caderno_selector}');
                     if (!select) return null;
                     const options = Array.from(select.options);
-                    return options.map(option => ({
+                    return options.map(option => ({{
                         value: option.value,
                         text: option.text
-                    }));
+                    }}));
                 }}
             """
             )
@@ -293,7 +295,7 @@ class DJEScraperPlaywright:
 
             # Usar value="12" que corresponde ao Caderno 3 (padrão do projeto)
             try:
-                await self.page.select_option(caderno_selector, value="12")
+                await self.page.select_option(caderno_selector, "12")
 
                 # Verificar seleção
                 selected_option = await self.page.evaluate(
@@ -317,7 +319,7 @@ class DJEScraperPlaywright:
                 # Tentar primeira opção disponível
                 if options:
                     first_option = options[0]["value"]
-                    await self.page.select_option(caderno_selector, value=first_option)
+                    await self.page.select_option(caderno_selector, first_option)
                     logger.warning(
                         f"⚠️ Usando primeira opção disponível: {first_option}"
                     )
