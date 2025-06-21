@@ -70,43 +70,6 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
   // Hook para detectar quando o scraping termina
   const { isScrapingRunning } = useScrapingCompletionDetector()
 
-  // Detectar novos dados e mostrar notificação - CORRIGIDO para evitar loop infinito
-  useEffect(() => {
-    const currentCounts = new Map([
-      [PublicationStatus.NOVA, novaCount.data ?? 0],
-      [PublicationStatus.LIDA, lidaCount.data ?? 0],
-      [PublicationStatus.ENVIADA_PARA_ADV, enviadaCount.data ?? 0],
-      [PublicationStatus.CONCLUIDA, concluidaCount.data ?? 0],
-    ])
-
-    // Verificar se há novos dados (apenas após carregamento inicial)
-    if (!loading && previousCountsRef.current.size > 0) {
-      let hasNewData = false
-      let newDataMessages: string[] = []
-
-      currentCounts.forEach((currentCount, status) => {
-        const previousCount = previousCountsRef.current.get(status) ?? 0
-        if (currentCount > previousCount) {
-          hasNewData = true
-          const diff = currentCount - previousCount
-          const statusName = PublicationStatusName[status]
-          newDataMessages.push(`+${diff} em ${statusName}`)
-        }
-      })
-
-      if (hasNewData) {
-        toast({
-          title: "📢 Novas publicações disponíveis!",
-          description: newDataMessages.join(', '),
-          duration: 4000,
-        })
-      }
-    }
-
-    // Atualizar ref sem causar re-render
-    previousCountsRef.current = currentCounts
-  }, [novaCount.data, lidaCount.data, enviadaCount.data, concluidaCount.data, loading, toast])
-
   // Atualizar timestamp do polling quando houver nova data
   useEffect(() => {
     if (novaCount.dataUpdatedAt || lidaCount.dataUpdatedAt || enviadaCount.dataUpdatedAt || concluidaCount.dataUpdatedAt) {
@@ -194,6 +157,57 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
       })
     }
   }, [filters, toast])
+
+  // Detectar novos dados em tempo real e recarregar cards conforme necessário
+  useEffect(() => {
+    const currentCounts = new Map([
+      [PublicationStatus.NOVA, novaCount.data ?? 0],
+      [PublicationStatus.LIDA, lidaCount.data ?? 0],
+      [PublicationStatus.ENVIADA_PARA_ADV, enviadaCount.data ?? 0],
+      [PublicationStatus.CONCLUIDA, concluidaCount.data ?? 0],
+    ])
+
+    // Verificar se há novos dados (apenas após carregamento inicial)
+    if (!loading && previousCountsRef.current.size > 0) {
+      let hasNewData = false
+      let newDataMessages: string[] = []
+      const columnsToReload: PublicationStatus[] = []
+
+      currentCounts.forEach((currentCount, status) => {
+        const previousCount = previousCountsRef.current.get(status) ?? 0
+        if (currentCount > previousCount) {
+          hasNewData = true
+          const diff = currentCount - previousCount
+          const statusName = PublicationStatusName[status]
+          newDataMessages.push(`+${diff} em ${statusName}`)
+          columnsToReload.push(status)
+        }
+      })
+
+      if (hasNewData) {
+        console.log('🔄 [KanbanBoard] New data detected, reloading affected columns:', columnsToReload)
+
+        // Recarregar apenas as colunas que tiveram novos dados
+        const reloadAffectedColumns = async () => {
+          for (const status of columnsToReload) {
+            console.log(`Reloading cards for ${status} due to new data`)
+            await loadPublications(status, 1, true) // reset = true para recarregar do início
+          }
+        }
+
+        reloadAffectedColumns()
+
+        toast({
+          title: "📢 Novas publicações carregadas!",
+          description: newDataMessages.join(', '),
+          duration: 3000,
+        })
+      }
+    }
+
+    // Atualizar ref sem causar re-render
+    previousCountsRef.current = currentCounts
+  }, [novaCount.data, lidaCount.data, enviadaCount.data, concluidaCount.data, loading, toast, loadPublications])
 
   // Carregar dados iniciais sequencialmente para evitar rate limiting
   useEffect(() => {
@@ -366,7 +380,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
               </span>
             </div>
             <span className="text-xs text-orange-600">
-              Novas publicações serão exibidas automaticamente quando o processo for concluído
+              Novas publicações aparecerão automaticamente conforme forem encontradas
             </span>
           </div>
         </div>
