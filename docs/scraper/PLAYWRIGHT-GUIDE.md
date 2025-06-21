@@ -22,6 +22,7 @@ Scraper completo implementado do zero usando Playwright para extrair informaçõ
 ## 🔧 Instalação
 
 1. **Execute o script de instalação:**
+
 ```bash
 cd backend/scraper
 chmod +x install-scraper.sh
@@ -29,6 +30,7 @@ chmod +x install-scraper.sh
 ```
 
 2. **Ou instale manualmente:**
+
 ```bash
 pip install -r requirements-scraper.txt
 playwright install chromium
@@ -37,11 +39,13 @@ playwright install chromium
 ## 📖 Como usar
 
 ### Comando básico
+
 ```bash
 python scraping.py run --start-date YYYY-MM-DD --end-date YYYY-MM-DD
 ```
 
 ### Opções disponíveis
+
 - `--start-date`: Data de início no formato YYYY-MM-DD
 - `--end-date`: Data de fim no formato YYYY-MM-DD  
 - `--headless`: Força execução sem interface gráfica (padrão em Docker)
@@ -50,26 +54,31 @@ python scraping.py run --start-date YYYY-MM-DD --end-date YYYY-MM-DD
 ### Exemplos
 
 **Scraping de um único dia (modo automático):**
+
 ```bash
 python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
 ```
 
 **Scraping de um período:**
+
 ```bash
 python scraping.py run --start-date 2025-01-15 --end-date 2025-01-20
 ```
 
 **Scraping da semana passada:**
+
 ```bash
 python scraping.py run --start-date 2025-01-08 --end-date 2025-01-14
 ```
 
 **Forçar modo headless:**
+
 ```bash
 python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --headless
 ```
 
 **Forçar interface gráfica (apenas fora do Docker):**
+
 ```bash
 python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --no-headless
 ```
@@ -146,43 +155,53 @@ Cada arquivo contém todos os dados estruturados da publicação.
 ## ⚙️ Configurações
 
 ### Browser
+
 - **Modo automático**: Detecta automaticamente se deve executar em modo headless
 - **Docker**: Sempre executa em modo headless (sem interface gráfica)
 - **Ambiente local**: Por padrão executa em modo headless
 - **Forçar modo**: Use `--headless` ou `--no-headless` para controlar manualmente
 
 ### Detecção automática de ambiente
+
 O scraper detecta automaticamente:
+
 - Se está executando em container Docker (arquivo `/.dockerenv`)
 - Se há servidor X disponível (variável `$DISPLAY`)
 - Se está em ambiente CI/CD
 - Força modo headless nesses cenários
 
 ### Timeouts
+
 - Timeout padrão: 30 segundos
 - Pause entre datas: 2 segundos
 - Aguardo após cliques: 2-3 segundos
 
 ### Arquivos Temporários
+
 - PDFs são baixados em diretório temporário
 - Limpeza automática ao final da execução
 
 ## 🛠️ Manutenção
 
 ### Logs
+
 O scraper gera logs detalhados mostrando:
+
 - Progresso do processamento
 - Erros encontrados
 - Estatísticas de cada dia
 
 ### Monitoramento
+
 Ao final da execução, são exibidas estatísticas:
+
 - Dias processados
 - Publicações encontradas
 - Publicações salvas com sucesso
 - Falhas ocorridas
 
 ### Tratamento de Erros
+
 - Continua execução mesmo com falhas pontuais
 - Registra todos os erros para análise
 - Limpa recursos automaticamente
@@ -191,39 +210,46 @@ Ao final da execução, são exibidas estatísticas:
 
 Para problemas específicos, consulte o [**Guia de Troubleshooting**](TROUBLESHOOTING.md).
 
-### Debug rápido do campo caderno:
+### Debug rápido do campo caderno
+
 ```bash
 python debug-caderno.py
 ```
 
-### Problemas comuns:
+### Problemas comuns
 
 **Erro "playwright not found":**
+
 ```bash
 playwright install chromium
 ```
 
 **Erro "PyPDF2 not found":**
+
 ```bash
 pip install PyPDF2==3.0.1
 ```
 
 **Timeout na seleção do caderno:**
+
 - Execute `python debug-caderno.py` para ver opções disponíveis
 - O scraper agora detecta automaticamente as opções corretas
 - Verifique logs para ver qual caderno foi selecionado
 
 **Timeout nos sites:**
+
 - Verifique conexão com internet
 - Sites podem estar temporariamente lentos
 - Tente novamente mais tarde
 
 **PDFs não encontrados:**
+
 - Pode não haver publicações para a data
 - Verifique se os termos de busca estão corretos
 - Execute debug para verificar se a busca está funcionando
 
 **Erro de permissão:**
+
 ```bash
 chmod +x scraping.py
 chmod +x install-scraper.sh
@@ -241,7 +267,8 @@ chmod +x debug-caderno.py
 ## 🔗 Integração com o Projeto
 
 Este scraper usa os mesmos padrões de:
+
 - Manipulação de datas via JavaScript com eventos
 - Estrutura de entidades (Publication, Lawyer, MonetaryValue)
 - Sistema de logs da infraestrutura
-- Formato JSON compatível com ReportJsonSaver 
+- Formato JSON compatível com ReportJsonSaver
