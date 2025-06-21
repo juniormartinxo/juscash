@@ -285,6 +285,93 @@ async def stop_service(service: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/force-stop-scraping")
+async def force_stop_scraping():
+    """
+    Força a parada completa do scraping, incluindo todos os processos relacionados.
+
+    Este endpoint é mais agressivo que o /stop/scraping normal e tenta:
+    1. Parar processos do scraping.py
+    2. Parar processos relacionados ao Playwright/Chrome
+    3. Limpar recursos orfãos
+    """
+    stopped_processes = []
+    errors = []
+
+    try:
+        # 1. Parar processos do scraping.py
+        try:
+            result = subprocess.run(
+                ["pkill", "-f", "scraping.py"], capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                stopped_processes.append("scraping.py")
+            else:
+                logger.info("Nenhum processo scraping.py encontrado")
+        except Exception as e:
+            errors.append(f"Erro ao parar scraping.py: {str(e)}")
+
+        # 2. Parar processos do Playwright/Chrome relacionados
+        playwright_patterns = ["chromium", "chrome", "playwright", "node.*playwright"]
+
+        for pattern in playwright_patterns:
+            try:
+                result = subprocess.run(
+                    ["pkill", "-f", pattern], capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    stopped_processes.append(f"processes matching '{pattern}'")
+            except Exception as e:
+                errors.append(f"Erro ao parar {pattern}: {str(e)}")
+
+        # 3. Força parada usando SIGKILL para processos persistentes
+        try:
+            subprocess.run(
+                ["pkill", "-9", "-f", "scraping.py"], capture_output=True, text=True
+            )
+        except Exception as e:
+            errors.append(f"Erro no SIGKILL: {str(e)}")
+
+        # 4. Verificar se ainda há processos rodando
+        still_running = []
+        try:
+            result = subprocess.run(
+                ["pgrep", "-f", "scraping.py"], capture_output=True, text=True
+            )
+            if result.stdout.strip():
+                still_running.append("scraping.py")
+        except Exception:
+            pass
+
+        # Preparar resposta
+        message = "Comando de parada forçada executado"
+        if stopped_processes:
+            message += f". Parou: {', '.join(stopped_processes)}"
+        if still_running:
+            message += f". Ainda rodando: {', '.join(still_running)}"
+        if errors:
+            message += f". Erros: {'; '.join(errors)}"
+
+        return {
+            "status": "success" if not still_running else "partial",
+            "message": message,
+            "stopped_processes": stopped_processes,
+            "still_running": still_running,
+            "errors": errors,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Erro crítico na parada forçada: {e}")
+        return {
+            "status": "error",
+            "message": f"Erro crítico na parada forçada: {str(e)}",
+            "stopped_processes": stopped_processes,
+            "errors": errors + [str(e)],
+            "timestamp": datetime.now().isoformat(),
+        }
+
+
 @app.post("/run")
 async def run_scraping_manual(
     background_tasks: BackgroundTasks, request: ScrapingRequest
@@ -392,6 +479,7 @@ async def root():
             "run_scraping_monitor": "POST /scraping/monitor",
             "status": "GET /status",
             "stop_service": "POST /stop/{service}",
+            "force_stop_scraping": "POST /force-stop-scraping",
             "debug_paths": "GET /debug/paths",
             "debug_test_command": "POST /debug/test-command",
             "docs": "GET /docs",
