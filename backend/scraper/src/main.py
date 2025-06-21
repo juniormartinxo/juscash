@@ -36,7 +36,9 @@ class ScraperApplication:
         """Inicia a aplicação do scraper"""
         try:
             logger.info("🚀 Iniciando DJE Scraper Application")
-            logger.info(f"📅 Execução programada diária a partir de {self.settings.scheduler.start_date}")
+            logger.info(
+                f"📅 Execução programada diária a partir de {self.settings.scheduler.start_date}"
+            )
             logger.info(f"🎯 Target: {self.settings.scraper.target_url}")
             logger.info("💾 Salvando publicações em arquivos locais (TXT e JSON)")
 
@@ -65,7 +67,7 @@ class ScraperApplication:
             scraping_function=self._run_daily_scraping,
         )
 
-        logger.info(f"⏰ Scheduler configurado para execução duas vezes por dia:")
+        logger.info("⏰ Scheduler configurado para execução duas vezes por dia:")
         logger.info(
             f"🌅 Manhã: {self.settings.scheduler.morning_execution_hour:02d}:"
             f"{self.settings.scheduler.morning_execution_minute:02d}"
