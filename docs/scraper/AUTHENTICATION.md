@@ -93,8 +93,8 @@ const getAuthHeaders = () => {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-fetch(`${API_BASE_URL}/api/scraper-proxy/status`, {
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+fetch(`${API_BASE_URL}/scraper-proxy/status`, {
   headers: getAuthHeaders()
 })
 ```
@@ -154,8 +154,8 @@ router.get('/status', asyncHandler(async (req: Request, res: Response) => {
 # ❌ Tentativa direta (deve falhar)
 curl -H "X-API-Key: invalid" http://localhost:5000/status
 
-# ✅ Via proxy com JWT (deve funcionar)
-curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:3000/api/scraper-proxy/status
+# ✅ Via proxy com JWT (deve funcionar)  
+curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/api/scraper-proxy/status
 ```
 
 ## 🆘 **Troubleshooting**
@@ -184,8 +184,8 @@ curl -H "X-API-Key: $SCRAPER_API_KEY" http://localhost:5000/status
 ```typescript
 // Obter status do scraper
 const checkStatus = async () => {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_BASE_URL}/api/scraper-proxy/status`, {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  const response = await fetch(`${API_BASE_URL}/scraper-proxy/status`, {
     headers: getAuthHeaders()
   })
   const result = await response.json()
@@ -194,8 +194,8 @@ const checkStatus = async () => {
 
 // Iniciar scraping
 const startScraping = async (startDate: string, endDate: string) => {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_BASE_URL}/api/scraper-proxy/run`, {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  const response = await fetch(`${API_BASE_URL}/scraper-proxy/run`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
@@ -211,15 +211,15 @@ const startScraping = async (startDate: string, endDate: string) => {
 ### 2. cURL (com JWT)
 ```bash
 # Obter JWT token primeiro
-API_URL=${VITE_API_URL:-"http://localhost:8000"}
-JWT_TOKEN=$(curl -X POST ${API_URL}/api/auth/login \
+API_URL=${VITE_API_URL:-"http://localhost:8000/api"}
+JWT_TOKEN=$(curl -X POST ${API_URL}/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password"}' \
   | jq -r '.data.token')
 
 # Usar o proxy
 curl -H "Authorization: Bearer $JWT_TOKEN" \
-  ${API_URL}/api/scraper-proxy/status
+  ${API_URL}/scraper-proxy/status
 ```
 
 ## 🔄 **Migração de Projetos Existentes**
