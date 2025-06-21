@@ -12,6 +12,7 @@ import { createAuthRoutes } from './infrastructure/web/routes/auth.route'
 import { createMetricsRoutes } from './infrastructure/web/routes/metrics.route'
 import { createPublicationRoutes } from './infrastructure/web/routes/publication.route'
 import { createScraperRoutes } from './infrastructure/web/routes/scraper.route'
+import { createScraperProxyRoutes } from './infrastructure/web/routes/scraper-proxy.route'
 import { config } from './shared/config/environment'
 import { Container } from './shared/container/container'
 import { ApiResponseBuilder } from './shared/utils/api-response'
@@ -197,6 +198,12 @@ class Application {
             createPublication: 'POST /api/scraper/publications (requires X-API-Key header)',
             updateStatus: 'PUT /api/scraper/publications/:id/status (requires X-API-Key header)',
           },
+          scraperProxy: {
+            status: 'GET /api/scraper-proxy/status (requires JWT auth)',
+            run: 'POST /api/scraper-proxy/run (requires JWT auth)',
+            forceStop: 'POST /api/scraper-proxy/force-stop (requires JWT auth)',
+            today: 'POST /api/scraper-proxy/today (requires JWT auth)',
+          },
         },
       }))
     })
@@ -211,6 +218,11 @@ class Application {
     // Scraper API routes (sem autenticação JWT, usa API Key)
     this.app.use('/api/scraper', createScraperRoutes(
       this.container.publicationController
+    ))
+
+    // Scraper Proxy routes (com autenticação JWT, proxy para API do scraper)
+    this.app.use('/api/scraper-proxy', createScraperProxyRoutes(
+      this.container.authMiddleware
     ))
 
     // Metrics routes (admin only)
