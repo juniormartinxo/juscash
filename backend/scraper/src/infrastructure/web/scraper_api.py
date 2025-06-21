@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Configurar logging
@@ -23,6 +24,20 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 app = FastAPI(
     title="Scraper API", description="API para execução de comandos do scraper"
+)
+
+# Configurar CORS para permitir requisições do frontend
+cors_origins = os.getenv(
+    "CORS_ORIGIN", "http://localhost:5173,http://localhost:3000,http://localhost:8080"
+).split(",")
+cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
