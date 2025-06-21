@@ -1,198 +1,103 @@
-# 🤖 API Key para Scraper - Resumo Executivo
+# 🤖 Integração API com Scrapers
 
-## ✅ Implementação Completa
+## 🎯 **Resumo Executivo**
 
-A solução para **API Key de Scraper** foi implementada com sucesso, permitindo que scrapers/bots insiram publicações sem precisar de autenticação de usuário via JWT.
+A API JusCash possui **funcionalidade específica para integração com scrapers** através de API Key, permitindo automação e coleta de dados.
 
-## 🎯 Objetivos Alcançados
+### ✅ **Funcionalidades Implementadas:**
 
-### ✅ Endpoint Específico para Scraper
+- 🔑 **API Key específica** para scrapers (não requer autenticação JWT)
+- 🚀 **Rate limiting diferenciado** (1000 req/15min vs 100 para usuários)
+- 📝 **Logs de auditoria** específicos para identificar origem dos dados
+- 🔒 **Mesma validação rigorosa** de dados de entrada
 
-- **Rota**: `POST /api/scraper/publications`
-- **Autenticação**: Header `X-API-Key`
-- **Mesmo payload** do endpoint atual de publicações
-- **Mesma validação** rigorosa de dados
+## 🔧 **Configuração**
 
-### ✅ Middleware de Validação
-
-- Função `ApiKeyMiddleware.validateScraperApiKey`
-- Comparação segura com `process.env.SCRAPER_API_KEY`
-- Logs de auditoria completos
-- Tratamento de erros específicos
-
-### ✅ Segurança Implementada
-
-- API Key obrigatória via variável de ambiente
-- Logs de auditoria identificando origem "SCRAPER"
-- Rate limiting específico (1000 req/15min vs 100 para usuários)
-- Validação de IP e User-Agent nos logs
-
-### ✅ Estrutura de Resposta
-
-- **Sucesso**: Mesmo formato do endpoint atual
-- **Erro**: Mensagens específicas para problemas de API Key
-- Códigos HTTP apropriados (400, 401, 500)
-
-## 📁 Arquivos Criados/Modificados
-
-### Novos Arquivos
-
-1. `src/infrastructure/web/middleware/api-key.middleware.ts` - Middleware de validação
-2. `src/infrastructure/web/routes/scraper.route.ts` - Rotas específicas do scraper
-3. `SCRAPER-INTEGRATION.md` - Documentação técnica completa  
-4. `test-scraper-api.js` - Script de testes automatizados
-5. `SCRAPER-API.md` - Este resumo executivo
-
-### Arquivos Modificados
-
-1. `src/shared/config/environment.ts` - Adicionada configuração `SCRAPER_API_KEY`
-2. `src/infrastructure/web/controllers/publication.controller.ts` - Método `createPublicationFromScraper`
-3. `src/app.ts` - Integração da nova rota `/api/scraper`
-4. `example-api-request.md` - Documentação atualizada
-
-## 🔧 Configuração Necessária
-
-### Variável de Ambiente
+### **Variável de Ambiente:**
 
 ```bash
-# Adicione no seu .env
+# Adicione no .env
 SCRAPER_API_KEY="sua-chave-secreta-longa-e-segura-aqui"
 ```
 
-**Recomendação**: Use uma chave com pelo menos 32 caracteres, misturando letras, números e símbolos.
+### **Endpoint Específico:**
 
-## 🚀 Como Usar
+```
+POST /api/scraper/publications
+```
 
-### cURL
+## 🚀 **Exemplo de Uso**
+
+### **cURL:**
 
 ```bash
-curl -X POST http://localhost:3000/api/scraper/publications \
+curl -X POST http://localhost:8000/api/scraper/publications \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sua-api-key-aqui" \
-  -d '{"process_number": "123...", "availability_date": "2024-03-17", ...}'
+  -d '{
+    "process_number": "1234567-89.2024.8.26.0100",
+    "availability_date": "2024-03-17T00:00:00.000Z",
+    "authors": ["João Silva"],
+    "defendant": "Instituto Nacional do Seguro Social - INSS",
+    "content": "Conteúdo da publicação...",
+    "status": "NOVA"
+  }'
 ```
 
-### JavaScript
-
-```javascript
-const response = await axios.post('/api/scraper/publications', data, {
-  headers: {
-    'X-API-Key': process.env.SCRAPER_API_KEY,
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-### Python
+### **Python:**
 
 ```python
-response = requests.post(url, headers={'X-API-Key': os.getenv('SCRAPER_API_KEY')}, json=data)
-```
+import requests
+import os
 
-## 🧪 Testes
-
-### Script de Teste Automatizado
-
-```bash
-# Configure SCRAPER_API_KEY no .env
-node test-scraper-api.js
-```
-
-**Testes incluídos:**
-
-- ✅ API Key ausente (400)
-- ✅ API Key inválida (401)
-- ✅ Validação de dados (400)
-- ✅ Criação bem-sucedida (201)
-- ✅ Processo duplicado (500)
-- ✅ Rate limiting básico
-
-## 🔒 Segurança
-
-### Logs de Auditoria
-
-```json
-{
-  "message": "Scraper API Key validated successfully",
-  "ip": "192.168.1.100",
-  "userAgent": "Python/3.9 requests/2.28.1",
-  "url": "/api/scraper/publications",
-  "method": "POST",
-  "source": "SCRAPER"
+headers = {
+    'X-API-Key': os.getenv('SCRAPER_API_KEY'),
+    'Content-Type': 'application/json'
 }
+
+data = {
+    "process_number": "1234567-89.2024.8.26.0100",
+    "availability_date": "2024-03-17T00:00:00.000Z",
+    # ... outros campos
+}
+
+response = requests.post('http://localhost:8000/api/scraper/publications', 
+                        headers=headers, json=data)
 ```
 
-### Rate Limiting
-
-- **Usuários normais**: 100 requests/15min
-- **Scraper**: 1000 requests/15min
-- Baseado em IP + identificação de origem
-
-### Validação
-
-- Mesma validação rigorosa do endpoint normal
-- Schema validation com Zod
-- Sanitização de inputs contra SQL injection
-
-## 📊 Diferenças dos Endpoints
+## 📊 **Comparativo de Endpoints**
 
 | Aspecto | Endpoint Normal | Endpoint Scraper |
 |---------|----------------|------------------|
 | **Rota** | `POST /api/publications` | `POST /api/scraper/publications` |
 | **Auth** | JWT Token (Bearer) | API Key (X-API-Key) |
 | **Rate Limit** | 100 req/15min | 1000 req/15min |
-| **Logs** | Logs normais | Logs "SCRAPER" |
+| **Logs** | Usuário identificado | Origem "SCRAPER" |
 | **Validação** | ✅ Mesma | ✅ Mesma |
-| **Resposta** | ✅ Mesma | ✅ Mesma |
 
-## 🎉 Benefícios da Implementação
+## 🔒 **Segurança**
 
-### Para Scrapers
+- **API Key obrigatória** via header `X-API-Key`
+- **Logs de auditoria** com identificação da origem
+- **Mesma validação** rigorosa de dados
+- **Rate limiting** apropriado para automação
 
-- ✅ **Sem necessidade de login** - Não precisa autenticar como usuário
-- ✅ **Rate limiting específico** - Mais permissivo (1000 vs 100 req/15min)
-- ✅ **Mesma funcionalidade** - Todos os campos e validações mantidos
-- ✅ **Logs específicos** - Identificação clara da origem
+## 🧪 **Teste da Integração**
 
-### Para o Sistema
+Execute o script de teste para validar a configuração:
 
-- ✅ **Segurança mantida** - API Key obrigatória e validação rigorosa
-- ✅ **Auditoria completa** - Logs específicos para monitoramento
-- ✅ **Reutilização de código** - Mesma lógica de validação e criação
-- ✅ **Escalabilidade** - Rate limiting apropriado para automação
+```bash
+node backend/api/test-scraper-api.js
+```
 
-### Para Desenvolvedores
+## 📚 **Documentação Completa**
 
-- ✅ **Fácil integração** - Headers simples, payload conhecido
-- ✅ **Documentação completa** - Exemplos em múltiplas linguagens
-- ✅ **Testes automatizados** - Script de validação incluído
-- ✅ **Tratamento de erros** - Mensagens claras e códigos HTTP apropriados
+Para informações técnicas detalhadas:
 
-## 🔮 Melhorias Futuras Sugeridas
-
-1. **Múltiplas API Keys** - Diferentes scrapers com chaves específicas
-2. **Rotação de API Keys** - Sistema de rotação automática
-3. **Rate Limiting Avançado** - Limites por tipo de scraper
-4. **Métricas Específicas** - Dashboard de monitoramento
-5. **Webhook de Notificação** - Notificações em tempo real
-
-## 🏁 Conclusão
-
-A implementação está **completa e pronta para uso**. A solução:
-
-- ✅ **Atende todos os requisitos** especificados no prompt
-- ✅ **Mantém a segurança** do sistema existente
-- ✅ **Fornece flexibilidade** para automação
-- ✅ **Inclui documentação completa** e testes
-- ✅ **Segue as melhores práticas** de desenvolvimento
-
-**Status**: 🟢 **PRONTO PARA PRODUÇÃO**
+👉 **[Documentação Técnica Completa](SCRAPER-INTEGRATION.md)**
+👉 **[Exemplos Práticos](EXAMPLES.md)**
+👉 **[README Técnico da API](../../backend/api/README.md)**
 
 ---
 
-**Próximos passos:**
-
-1. Configure `SCRAPER_API_KEY` no arquivo `.env`
-2. Execute `node test-scraper-api.js` para validar
-3. Integre com seu scraper usando os exemplos fornecidos
-4. Monitore os logs para auditoria e debugging
+**Status:** 🟢 **Pronto para uso** - Integração com scrapers disponível e funcional
