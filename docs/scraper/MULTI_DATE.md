@@ -44,10 +44,12 @@ python monitor_progress.py --file /caminho/para/arquivo.json
 ### 3. Parar e Retomar
 
 Para parar o scraper:
+
 - Pressione `Ctrl+C` para shutdown graceful
 - O progresso será salvo automaticamente
 
 Para retomar:
+
 - Execute novamente o script `run_multi_date_scraper.py`
 - O sistema detectará automaticamente onde parou e continuará
 
@@ -93,6 +95,7 @@ Para retomar:
 ### Estrutura de Status
 
 #### Status de Data
+
 - `processed`: `true` se a data foi processada com sucesso
 - `worker_id`: ID do worker que processou a data
 - `start_time`/`end_time`: Timestamps de início e fim do processamento
@@ -101,6 +104,7 @@ Para retomar:
 - `retry_count`: Número de tentativas realizadas
 
 #### Status de Worker
+
 - `idle`: Worker aguardando nova tarefa
 - `working`: Worker processando uma data
 - `completed`: Worker finalizou todas as tarefas
@@ -135,12 +139,15 @@ class ScraperSettings:
 ## 🛠️ Scripts Disponíveis
 
 ### 1. `multi_date_scraper.py`
+
 Script principal com a implementação completa do sistema multi-worker.
 
 ### 2. `run_multi_date_scraper.py`
+
 Script executável simples para iniciar o scraping.
 
 ### 3. `monitor_progress.py`
+
 Monitor de progresso com interface de linha de comando.
 
 ## 📊 Monitoramento
@@ -204,6 +211,7 @@ Monitor de progresso com interface de linha de comando.
 ### Logs
 
 Os logs são salvos em:
+
 - `src/logs/scraper.log`: Log principal
 - `src/logs/error.log`: Logs de erro
 - `reports/json/`: Publicações extraídas
@@ -211,16 +219,19 @@ Os logs são salvos em:
 ## 🚨 Limitações e Considerações
 
 ### Rate Limiting
+
 - Delay de 2 segundos entre páginas
 - Delay de 1 segundo entre requests
 - Máximo de 3 workers simultâneos
 
 ### Recursos do Sistema
+
 - Cada worker usa um browser Chrome
 - Consumo de memória: ~200MB por worker
 - Uso de CPU: Moderado
 
 ### Dados Extraídos
+
 - Publicações são salvas em arquivos JSON
 - Backup automático é mantido
 - Não há verificação de duplicatas local (feita na API)
@@ -228,13 +239,16 @@ Os logs são salvos em:
 ## 📝 Logs e Debugging
 
 ### Níveis de Log
+
 - `INFO`: Progresso normal
 - `WARNING`: Situações inesperadas
 - `ERROR`: Falhas que impedem o processamento
 - `DEBUG`: Informações detalhadas (apenas em modo debug)
 
 ### Debugging
+
 Para ativar modo debug, modifique em `settings.py`:
+
 ```python
 enable_debug: bool = True
 debug_screenshot_on_error: bool = True
@@ -260,21 +274,25 @@ debug_screenshot_on_error: bool = True
 ## 🆘 Solução de Problemas
 
 ### Scraper Não Inicia
+
 - Verificar dependências: `pip install -r requirements.txt`
 - Verificar permissões do arquivo de progresso
 - Verificar logs para erros de inicialização
 
 ### Workers Param ou Falham
+
 - Verificar memória disponível
 - Verificar conexão com internet
 - Verificar se o site DJE está acessível
 
 ### Progresso Não Salva
+
 - Verificar permissões de escrita
 - Verificar espaço em disco
 - Verificar se o arquivo não está bloqueado
 
 ### Performance Lenta
+
 - Reduzir número de workers
 - Aumentar delays entre requests
 - Verificar recursos do sistema
@@ -282,6 +300,7 @@ debug_screenshot_on_error: bool = True
 ## 📞 Suporte
 
 Para problemas ou dúvidas:
+
 1. Verificar logs em `src/logs/`
 2. Executar monitor para verificar status
 3. Verificar arquivo de progresso
@@ -289,4 +308,4 @@ Para problemas ou dúvidas:
 
 ---
 
-**Desenvolvido para o projeto JusCash - Sistema de Scraping DJE-SP** 
+**Desenvolvido para o projeto JusCash - Sistema de Scraping DJE-SP**
