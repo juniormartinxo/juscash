@@ -480,7 +480,7 @@ Para dúvidas ou problemas:
 1. Verifique a documentação acima
 2. Consulte os logs em `logs/`
 3. Abra uma issue no repositório
-4. Entre em contato: amjr.box@gmail.com
+4. Entre em contato: <amjr.box@gmail.com>
 
 ---
 
