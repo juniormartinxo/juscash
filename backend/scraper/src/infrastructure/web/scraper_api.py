@@ -10,8 +10,9 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 
 # Configurar logging
@@ -39,6 +40,65 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class APIKeyMiddleware(BaseHTTPMiddleware):
+    """Middleware para validar API key em requisições."""
+
+    def __init__(self, app, excluded_paths: list = None):
+        super().__init__(app)
+        self.excluded_paths = excluded_paths or [
+            "/",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+        ]
+        self.api_key = os.getenv("SCRAPER_API_KEY")
+
+        if not self.api_key:
+            logger.warning(
+                "⚠️ SCRAPER_API_KEY não configurada! API funcionará sem autenticação."
+            )
+        elif len(self.api_key) < 32:
+            logger.warning("⚠️ SCRAPER_API_KEY parece muito curta (< 32 caracteres)")
+
+    async def dispatch(self, request: Request, call_next):
+        # Pular verificação para paths excluídos
+        if request.url.path in self.excluded_paths:
+            return await call_next(request)
+
+        # Se API key não estiver configurada, permitir acesso (modo desenvolvimento)
+        if not self.api_key:
+            logger.debug("🔓 API key não configurada - permitindo acesso")
+            return await call_next(request)
+
+        # Verificar header X-API-Key
+        api_key_header = request.headers.get("X-API-Key")
+
+        if not api_key_header:
+            logger.warning(
+                f"❌ Tentativa de acesso sem API key para {request.url.path}"
+            )
+            return Response(
+                content='{"detail":"X-API-Key header é obrigatório"}',
+                status_code=401,
+                media_type="application/json",
+            )
+
+        if api_key_header != self.api_key:
+            logger.warning(f"❌ API key inválida para {request.url.path}")
+            return Response(
+                content='{"detail":"API key inválida"}',
+                status_code=403,
+                media_type="application/json",
+            )
+
+        logger.debug(f"✅ API key válida para {request.url.path}")
+        return await call_next(request)
+
+
+# Adicionar middleware de autenticação
+app.add_middleware(APIKeyMiddleware)
 
 
 class ScraperCommand(BaseModel):
@@ -469,10 +529,17 @@ async def run_scraping_today(background_tasks: BackgroundTasks, headless: bool =
 @app.get("/")
 async def root():
     """Informações básicas da API."""
+    api_key_configured = bool(os.getenv("SCRAPER_API_KEY"))
+
     return {
         "name": "Scraper API",
         "version": "1.0.0",
         "description": "API para execução de comandos do scraper DJE",
+        "authentication": {
+            "required": api_key_configured,
+            "method": "X-API-Key header",
+            "note": "Configure SCRAPER_API_KEY para habilitar autenticação",
+        },
         "endpoints": {
             "run_scraping": "POST /run",
             "run_scraping_today": "POST /scraping/today",
@@ -488,6 +555,7 @@ async def root():
         "debug_info": {
             "script_directory": str(SCRIPT_DIR),
             "python_executable": sys.executable,
+            "api_key_configured": api_key_configured,
         },
     }
 
