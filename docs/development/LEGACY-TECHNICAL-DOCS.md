@@ -82,18 +82,21 @@ graph TB
 ### Princípios Arquiteturais
 
 #### 1. Clean Architecture (Backend)
+
 - **Domain Layer**: Entidades, regras de negócio e contratos
 - **Application Layer**: Casos de uso e orquestração
 - **Infrastructure Layer**: Implementações técnicas
 - **Web Layer**: Controllers, middlewares e rotas
 
 #### 2. Component-Based Architecture (Frontend)
+
 - **Componentes Reutilizáveis**: UI components isolados
 - **Custom Hooks**: Lógica compartilhada
 - **Context API**: Gerenciamento de estado global
 - **Service Layer**: Comunicação com API
 
 #### 3. Hexagonal Architecture (Scraper)
+
 - **Portas e Adaptadores**: Interfaces bem definidas
 - **Domínio Isolado**: Lógica de negócio independente
 - **Adaptadores**: Implementações específicas
@@ -250,7 +253,8 @@ frontend/
 ### Documentação Swagger/OpenAPI
 
 A API possui documentação completa Swagger disponível em:
-- **Local**: `http://localhost:3001/api-docs`
+
+- **Local**: `${API_BASE_URL}-docs`
 - **Produção**: `https://[seu-dominio]/api-docs`
 
 ### Endpoints Principais
@@ -258,9 +262,11 @@ A API possui documentação completa Swagger disponível em:
 #### Autenticação
 
 ##### POST `/api/auth/register`
+
 Registra um novo usuário no sistema.
 
 **Request Body:**
+
 ```json
 {
   "name": "João Silva",
@@ -270,6 +276,7 @@ Registra um novo usuário no sistema.
 ```
 
 **Response (201):**
+
 ```json
 {
   "success": true,
@@ -291,9 +298,11 @@ Registra um novo usuário no sistema.
 ```
 
 ##### POST `/api/auth/login`
+
 Autentica um usuário existente.
 
 **Request Body:**
+
 ```json
 {
   "email": "joao@exemplo.com",
@@ -302,6 +311,7 @@ Autentica um usuário existente.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -322,9 +332,11 @@ Autentica um usuário existente.
 ```
 
 ##### POST `/api/auth/refresh`
+
 Renova o token de acesso usando o refresh token.
 
 **Request Body:**
+
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -332,14 +344,17 @@ Renova o token de acesso usando o refresh token.
 ```
 
 ##### POST `/api/auth/logout`
+
 Realiza logout invalidando o refresh token.
 
 #### Publicações
 
 ##### GET `/api/publications`
+
 Lista publicações com paginação e filtros.
 
 **Query Parameters:**
+
 - `page` (number): Página (padrão: 1)
 - `limit` (number): Itens por página (padrão: 20, máx: 100)
 - `status` (enum): Filtro por status
@@ -351,6 +366,7 @@ Lista publicações com paginação e filtros.
 - `defendant` (string): Filtro por réu
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -384,9 +400,11 @@ Lista publicações com paginação e filtros.
 ```
 
 ##### GET `/api/publications/:id`
+
 Busca uma publicação específica por ID.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -424,9 +442,11 @@ Busca uma publicação específica por ID.
 ```
 
 ##### PUT `/api/publications/:id/status`
+
 Atualiza o status de uma publicação.
 
 **Request Body:**
+
 ```json
 {
   "status": "LIDA",
@@ -435,6 +455,7 @@ Atualiza o status de uma publicação.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -450,9 +471,11 @@ Atualiza o status de uma publicação.
 #### Métricas e Saúde
 
 ##### GET `/api/health`
+
 Verifica a saúde do sistema.
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -475,31 +498,37 @@ Verifica a saúde do sistema.
 ```
 
 ##### GET `/api/metrics`
+
 Retorna métricas detalhadas do sistema.
 
 ### Middlewares
 
 #### 1. Autenticação (authMiddleware)
+
 - Valida JWT tokens
 - Verifica se usuário está ativo
 - Adiciona dados do usuário ao request
 
 #### 2. Rate Limiting (rateLimitMiddleware)
+
 - Limita requisições por IP/usuário
 - Configurável por endpoint
 - Padrão: 100 req/15min
 
 #### 3. Validação (validationMiddleware)
+
 - Valida request body com schemas Zod
 - Sanitiza dados de entrada
 - Retorna erros formatados
 
 #### 4. Logging (loggingMiddleware)
+
 - Registra todas as requisições
 - Inclui timing e status codes
 - Logs estruturados com Winston
 
 #### 5. Segurança (securityMiddleware)
+
 - Headers de segurança (Helmet)
 - Proteção CORS
 - Sanitização XSS
@@ -564,6 +593,7 @@ erDiagram
 #### Tabelas Principais
 
 ##### users
+
 Tabela central de usuários do sistema.
 
 ```sql
@@ -587,6 +617,7 @@ CREATE INDEX idx_users_active ON users(is_active, created_at);
 ```
 
 ##### publications
+
 Tabela principal de publicações do DJE.
 
 ```sql
@@ -633,6 +664,7 @@ CREATE INDEX idx_publications_authors ON publications USING gin(authors);
 ```
 
 ##### scraping_executions
+
 Registra execuções do sistema de scraping.
 
 ```sql
@@ -661,6 +693,7 @@ CREATE INDEX idx_scraping_executions_status_date ON scraping_executions(status, 
 ```
 
 ##### publication_logs
+
 Auditoria de ações nas publicações.
 
 ```sql
@@ -723,11 +756,13 @@ CREATE TYPE publication_log_action AS ENUM (
 ### Estratégias de Performance
 
 #### 1. Indexação Inteligente
+
 - Índices compostos para consultas frequentes
 - Índices GIN para arrays e busca textual
 - Índices parciais para dados ativos
 
 #### 2. Particionamento
+
 ```sql
 -- Particionamento por data para publicações antigas
 CREATE TABLE publications_2023 PARTITION OF publications
@@ -738,11 +773,13 @@ FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
 ```
 
 #### 3. Otimizações de Query
+
 - LIMIT com OFFSET otimizado para paginação
 - Cursor-based pagination para grandes datasets
 - Query planning para consultas complexas
 
 #### 4. Connection Pooling
+
 ```typescript
 // Configuração Prisma
 {
@@ -770,6 +807,7 @@ const prisma = new PrismaClient({
 ### Backup e Recuperação
 
 #### 1. Backup Automático
+
 ```bash
 #!/bin/bash
 # Script de backup diário
@@ -789,11 +827,13 @@ find $BACKUP_DIR -name "full_backup_*.sql.gz" -mtime +30 -delete
 ```
 
 #### 2. Point-in-Time Recovery
+
 - WAL archiving habilitado
 - Backup incremental contínuo
 - Restore para momento específico
 
 #### 3. Replicação
+
 - Streaming replication para read replicas
 - Failover automático configurado
 - Monitoramento de lag de replicação
@@ -854,6 +894,7 @@ graph TB
 ### Componentes Principais
 
 #### 1. Scraping Orchestrator
+
 **Localização**: `backend/scraper/src/application/services/scraping_orchestrator.py`
 
 Responsável por orquestrar todo o processo de scraping:
@@ -904,6 +945,7 @@ class ScrapingOrchestrator:
 ```
 
 #### 2. Web Scraper Adapter
+
 **Localização**: `backend/scraper/src/infrastructure/web/dje_scraper_adapter.py`
 
 Implementa a extração de dados do DJE usando Playwright:
@@ -980,6 +1022,7 @@ class DJEScraperAdapter:
 ```
 
 #### 3. Content Parser
+
 **Localização**: `backend/scraper/src/infrastructure/web/enhanced_content_parser.py`
 
 Processa o conteúdo das publicações extraindo informações estruturadas:
@@ -1034,6 +1077,7 @@ class EnhancedContentParser:
 ### Configuração e Agendamento
 
 #### 1. Configurações Dinâmicas
+
 **Localização**: `backend/scraper/src/infrastructure/config/settings.py`
 
 ```python
@@ -1070,6 +1114,7 @@ class ScrapingSettings:
 ```
 
 #### 2. Agendamento Automático
+
 **Localização**: `backend/scraper/src/infrastructure/scheduler/scheduler_adapter.py`
 
 ```python
@@ -1115,6 +1160,7 @@ class SchedulerAdapter:
 ### Monitoramento e Alertas
 
 #### 1. Sistema de Monitoramento
+
 **Localização**: `backend/scraper/src/infrastructure/monitoring/monitoring_service.py`
 
 ```python
@@ -1196,6 +1242,7 @@ graph TB
 ### Componentes Principais
 
 #### 1. KanbanBoard Component
+
 **Localização**: `frontend/src/components/KanbanBoard.tsx`
 
 Componente central da aplicação que implementa o board Kanban:
@@ -1318,6 +1365,7 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
 ```
 
 #### 2. SearchFilters Component
+
 **Localização**: `frontend/src/components/SearchFilters.tsx`
 
 Implementa o sistema de filtros avançados:
@@ -1434,6 +1482,7 @@ export function SearchFilters({ onFiltersChange, initialFilters }: SearchFilters
 ### Serviços de API
 
 #### 1. API Service
+
 **Localização**: `frontend/src/services/api.ts`
 
 Centraliza todas as chamadas para a API:
@@ -1571,6 +1620,7 @@ export const apiService = new ApiService()
 ### Hooks Customizados
 
 #### 1. usePublications Hook
+
 **Localização**: `frontend/src/hooks/usePublications.ts`
 
 ```typescript
@@ -1638,6 +1688,7 @@ export function usePublications(filters: SearchFilters) {
 ### Containerização com Docker
 
 #### 1. Docker Compose Configuration
+
 **Localização**: `docker-compose.yml`
 
 ```yaml
@@ -1708,7 +1759,7 @@ services:
     networks:
       - juscash_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ["CMD", "curl", "-f", "${API_BASE_URL}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1785,6 +1836,7 @@ volumes:
 ```
 
 #### 2. Dockerfile - API Backend
+
 **Localização**: `backend/api/Dockerfile`
 
 ```dockerfile
@@ -1867,6 +1919,7 @@ CMD ["node", "dist/main.js"]
 ```
 
 #### 3. Dockerfile - Scraper Python
+
 **Localização**: `backend/scraper/Dockerfile`
 
 ```dockerfile
@@ -1916,6 +1969,7 @@ CMD ["python", "-m", "src.main"]
 ### Configuração de Produção
 
 #### 1. Nginx Configuration
+
 **Localização**: `nginx/nginx.conf`
 
 ```nginx
@@ -2028,6 +2082,7 @@ http {
 ### Estratégias de Segurança
 
 #### 1. Autenticação JWT
+
 O sistema utiliza JWT com estratégia de refresh token:
 
 ```typescript
@@ -2086,6 +2141,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 ```
 
 #### 2. Rate Limiting
+
 Implementação de rate limiting por IP e usuário:
 
 ```typescript
@@ -2130,6 +2186,7 @@ export const authRateLimit = rateLimit({
 ```
 
 #### 3. Validação e Sanitização
+
 Usando Zod para validação robusta:
 
 ```typescript
@@ -2182,6 +2239,7 @@ export const validateSchema = (schema: z.ZodSchema) => {
 ```
 
 #### 4. Proteção contra Ataques
+
 ```typescript
 import helmet from 'helmet'
 import cors from 'cors'
@@ -2223,6 +2281,7 @@ app.use(cors({
 ### Auditoria e Logs de Segurança
 
 #### 1. Log de Autenticação
+
 ```typescript
 // AuthLog model para auditoria
 interface AuthLogData {
@@ -2282,6 +2341,7 @@ export class AuthLogService {
 ### Sistema de Logs
 
 #### 1. Configuração Winston
+
 ```typescript
 import winston from 'winston'
 
@@ -2324,6 +2384,7 @@ export const logger = winston.createLogger({
 ```
 
 #### 2. Métricas de Performance
+
 ```typescript
 // Middleware de métricas
 export const metricsMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -2366,6 +2427,7 @@ export const metricsMiddleware = (req: Request, res: Response, next: NextFunctio
 ### Health Checks
 
 #### 1. Health Check Endpoint
+
 ```typescript
 // Health check completo
 export const healthCheck = async (req: Request, res: Response) => {
@@ -2445,6 +2507,7 @@ async function checkDatabase(): Promise<{ status: string; responseTime: number }
 #### 1. Pré-requisitos do Sistema
 
 **Para Desenvolvimento:**
+
 ```bash
 # Node.js 20+
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -2471,6 +2534,7 @@ sudo apt-get install git
 #### 2. Setup Automatizado
 
 **Script de Instalação:**
+
 ```bash
 #!/bin/bash
 # install.sh - Script de instalação automática
@@ -2561,7 +2625,7 @@ echo ""
 echo "🌐 URLs de acesso:"
 echo "   Frontend: http://localhost:3000"
 echo "   API: http://localhost:3001"
-echo "   API Docs: http://localhost:3001/api-docs"
+echo "   API Docs: ${API_BASE_URL}-docs"
 ```
 
 #### 3. Configuração Manual
@@ -2569,18 +2633,21 @@ echo "   API Docs: http://localhost:3001/api-docs"
 **Passo a Passo Detalhado:**
 
 1. **Clonar Repositório:**
+
 ```bash
 git clone https://github.com/seu-usuario/juscash.git
 cd juscash
 ```
 
 2. **Configurar Variáveis de Ambiente:**
+
 ```bash
 cp .env.example .env
 # Editar .env com suas configurações
 ```
 
 3. **Backend API:**
+
 ```bash
 cd backend/api
 pnpm install
@@ -2591,6 +2658,7 @@ pnpm dev
 ```
 
 4. **Frontend:**
+
 ```bash
 cd frontend
 pnpm install
@@ -2598,6 +2666,7 @@ pnpm dev
 ```
 
 5. **Scraper Python:**
+
 ```bash
 cd backend/scraper
 python3 -m venv venv
@@ -2610,6 +2679,7 @@ python -m src.main --test
 ### Configuração de Produção
 
 #### 1. Variáveis de Ambiente
+
 ```bash
 # .env.production
 NODE_ENV=production
@@ -2642,6 +2712,7 @@ SCRAPING_MAX_RETRIES=3
 ```
 
 #### 2. Deploy com Docker
+
 ```bash
 # Build e deploy
 docker-compose -f docker-compose.prod.yml up -d
@@ -2655,14 +2726,15 @@ docker-compose exec api pnpm prisma migrate deploy
 ```
 
 #### 3. Monitoramento
+
 ```bash
 # Logs em tempo real
 docker-compose logs -f api
 docker-compose logs -f scraper
 
 # Métricas de sistema
-curl http://localhost:3001/api/health
-curl http://localhost:3001/api/metrics
+curl ${API_BASE_URL}/health
+curl ${API_BASE_URL}/metrics
 ```
 
 ---
@@ -2672,6 +2744,7 @@ curl http://localhost:3001/api/metrics
 ### Contribuindo para o Projeto
 
 #### 1. Estrutura de Commits
+
 ```
 tipo(escopo): descrição
 
@@ -2693,6 +2766,7 @@ docs(readme): atualizar guia de instalação
 #### 2. Padrões de Código
 
 **TypeScript/JavaScript:**
+
 ```typescript
 // Usar interfaces para tipos
 interface Publication {
@@ -2724,6 +2798,7 @@ async function getPublications(filters: SearchFilters): Promise<Publication[]> {
 ```
 
 **Python:**
+
 ```python
 # Type hints obrigatórios
 from typing import List, Optional, Dict, Any
@@ -2751,6 +2826,7 @@ async def extract_publications(criteria: ScrapingCriteria) -> List[Publication]:
 #### 3. Testing Strategy
 
 **Backend Tests:**
+
 ```typescript
 // Unit tests
 describe('PublicationService', () => {
@@ -2780,6 +2856,7 @@ describe('Publication API', () => {
 ### Troubleshooting Comum
 
 #### 1. Problemas de Database
+
 ```bash
 # Resetar database
 pnpm prisma migrate reset
@@ -2792,6 +2869,7 @@ pnpm prisma db pull
 ```
 
 #### 2. Problemas do Scraper
+
 ```bash
 # Testar scraper
 python -m src.main --test-scraping
@@ -2804,6 +2882,7 @@ SCRAPING_HEADLESS=false python -m src.main
 ```
 
 #### 3. Problemas de Performance
+
 ```bash
 # Analisar queries lentas
 EXPLAIN ANALYZE SELECT * FROM publications WHERE ...
@@ -2828,8 +2907,9 @@ SELECT count(*) FROM pg_stat_activity;
 **Autore**: Junior Martins
 
 **Contato Técnico**:
-- Email: amjr.box@gmail.com
-- GitHub: https://github.com/juniromartinxo
+
+- Email: <amjr.box@gmail.com>
+- GitHub: <https://github.com/juniromartinxo>
 
 ---
 
