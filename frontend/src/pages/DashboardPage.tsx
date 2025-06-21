@@ -57,6 +57,16 @@ export function DashboardPage() {
     return `${day}/${month}/${year}`
   }
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token')
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  }
+
   const handleOpenDrawer = () => {
     setIsDrawerOpen(true)
     setIsDrawerAnimating(true)
@@ -79,13 +89,16 @@ export function DashboardPage() {
   const checkScraperStatus = async (showToast = false) => {
     try {
       setIsLoadingStatus(true)
-      const response = await fetch('http://localhost:5000/status')
+      const response = await fetch(`${API_BASE_URL}/scraper-proxy/status`, {
+        headers: getAuthHeaders()
+      })
 
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status}`)
       }
 
-      const status: ScraperStatus = await response.json()
+      const result = await response.json()
+      const status: ScraperStatus = result.data
       setScraperStatus(status)
 
       if (showToast) {
@@ -206,11 +219,9 @@ export function DashboardPage() {
         }
       }
 
-      const response = await fetch('http://localhost:5000/run', {
+      const response = await fetch(`${API_BASE_URL}/scraper-proxy/run`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           start_date: finalStartDate,
           end_date: finalEndDate,
@@ -253,11 +264,9 @@ export function DashboardPage() {
     try {
       setIsForceStoppingLoading(true)
 
-      const response = await fetch('http://localhost:5000/force-stop-scraping', {
+      const response = await fetch(`${API_BASE_URL}/scraper-proxy/force-stop`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -265,22 +274,23 @@ export function DashboardPage() {
       }
 
       const result = await response.json()
+      const data = result.data
 
-      if (result.status === 'success') {
+      if (data.status === 'success') {
         toast({
           title: "Scraping parado com sucesso!",
-          description: result.message,
+          description: data.message,
         })
-      } else if (result.status === 'partial') {
+      } else if (data.status === 'partial') {
         toast({
           title: "Parada parcial",
-          description: result.message,
+          description: data.message,
           variant: "destructive",
         })
       } else {
         toast({
           title: "Erro na parada forçada",
-          description: result.message,
+          description: data.message,
           variant: "destructive",
         })
       }
