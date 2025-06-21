@@ -252,7 +252,7 @@ flowchart LR
 #### 1. 📋 **Nova Publicação**
 
 - **Descrição**: Publicações recém-coletadas pelo sistema de scraping
-- **Ações Disponíveis**: 
+- **Ações Disponíveis**:
   - Visualizar detalhes completos
   - Mover para "Publicação Lida"
 - **Regras**: Status inicial de todas as publicações
@@ -386,16 +386,19 @@ npm run test:e2e
 A documentação do JusCash foi **unificada e reorganizada** para facilitar a navegação:
 
 ### 👤 Para Usuários
+
 - **[📖 Manual do Usuário](./docs/MANUAL-USUARIO.md)** - Guia completo de uso
 - **[🚀 Guia de Instalação](./docs/GUIA-INSTALACAO.md)** - Instalação passo-a-passo
 - **[🛠️ Troubleshooting](./docs/TROUBLESHOOTING.md)** - Solução de problemas
 
 ### 👨‍💻 Para Desenvolvedores
+
 - **[🔌 API Documentation](./docs/api/)** - Documentação técnica e exemplos
 - **[🕷️ Scraper Guide](./docs/scraper/)** - Sistema de scraping
 - **[⚛️ Frontend Guide](./docs/frontend/)** - Interface React
 
 ### 🚀 Para DevOps
+
 - **[🐳 Docker Guide](./docs/deployment/DOCKER.md)** - Containerização
 - **[📊 Monitoring](./docs/deployment/MONITORING.md)** - Observabilidade
 - **[💾 Backup](./docs/deployment/BACKUP.md)** - Estratégias de backup
