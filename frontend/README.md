@@ -1,54 +1,67 @@
-# React + TypeScript + Vite
+# 🎨 Frontend JusCash
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Interface React moderna para gerenciamento de publicações DJE
 
-Currently, two official plugins are available:
+## 🚀 **Quick Start**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Instalar dependências
+npm install
 
-## Expanding the ESLint configuration
+# Iniciar desenvolvimento
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+# Acesso: http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🛠️ **Stack Tecnológica**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **React 18** + **TypeScript**
+- **Vite** - Build tool moderno
+- **Tailwind CSS** - Styling
+- **React DnD** - Drag-and-drop
+- **Axios** - Cliente HTTP
+- **React Router** - Roteamento
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+## 🎯 **Funcionalidades Principais**
+
+- 🎨 **Interface Kanban** drag-and-drop
+- 🔐 **Autenticação JWT** completa  
+- 🔍 **Filtros avançados** e busca
+- 📱 **Design responsivo**
+- ⚡ **Performance otimizada**
+
+## 📚 **Documentação Completa**
+
+👉 **[Documentação Detalhada](../docs/frontend/README.md)**
+
+Para informações completas sobre:
+
+- Arquitetura e componentes
+- Sistema de design
+- Guias de desenvolvimento
+- Troubleshooting
+
+## 🔧 **Scripts Disponíveis**
+
+```bash
+npm run dev        # Desenvolvimento
+npm run build      # Build produção
+npm run preview    # Preview do build
+npm run lint       # Linting
+npm run type-check # Verificação de tipos
 ```
+
+## 🌐 **Integração com API**
+
+O frontend se comunica com a API JusCash em `http://localhost:8000`.
+
+Configuração em `src/services/api.ts` com:
+
+- Autenticação JWT automática
+- Interceptors de erro
+- Rate limiting handling
+
+---
+
+**Desenvolvido com ❤️ usando React + TypeScript + Vite**
