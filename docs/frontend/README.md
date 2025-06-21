@@ -1,395 +1,267 @@
-# ⚛️ Frontend JusCash - React Application
+# ⚛️ Frontend JusCash - Interface Kanban
 
-> Interface moderna e intuitiva para gerenciamento de publicações DJE
+> Interface React moderna para gerenciamento de publicações DJE com sistema Kanban intuitivo
 
-## 🎯 Visão Geral
+## 🎯 **Overview**
 
-O frontend do JusCash é uma Single Page Application (SPA) desenvolvida em React que oferece uma interface visual tipo Kanban para gerenciar publicações do Diário da Justiça Eletrônico de São Paulo.
+O frontend do JusCash é uma aplicação React moderna que oferece uma interface visual intuitiva para gerenciar publicações do Diário da Justiça Eletrônico através de um sistema Kanban drag-and-drop.
 
-## 🛠️ Stack Tecnológica
+### ✨ **Funcionalidades Principais**
 
-- **React** 18+ - Library principal
+- 🎨 **Interface Kanban** com drag-and-drop
+- 🔐 **Autenticação JWT** completa
+- 🔍 **Filtros avançados** e busca em tempo real
+- 📱 **Design responsivo** para desktop e mobile
+- ⚡ **Performance otimizada** com React 18
+- 🎭 **Components reutilizáveis** bem estruturados
+
+## 🛠️ **Stack Tecnológica**
+
+- **React 18** - Biblioteca principal
 - **TypeScript** - Tipagem estática
-- **Vite** - Build tool e dev server
-- **Tailwind CSS** - Framework CSS
-- **React Hook Form** - Gerenciamento de formulários
-- **React Query/TanStack Query** - Estado do servidor
-- **React Router** - Roteamento
-- **Lucide React** - Ícones
-- **date-fns** - Manipulação de datas
+- **Vite** - Build tool moderno
+- **Tailwind CSS** - Framework CSS utility-first
+- **React DnD** - Drag-and-drop nativo
+- **Axios** - Cliente HTTP
+- **React Router** - Roteamento SPA
 
-## 📁 Estrutura do Projeto
+## 🎨 **Estrutura do Kanban**
 
-```
-frontend/
-├── src/
-│   ├── components/           # Componentes reutilizáveis
-│   │   ├── ui/              # Componentes básicos de UI
-│   │   ├── KanbanBoard.tsx  # Board principal
-│   │   ├── PublicationCard.tsx
-│   │   ├── PublicationModal.tsx
-│   │   ├── SearchFilters.tsx
-│   │   └── ...
-│   ├── contexts/            # Contextos React
-│   │   └── AuthContext.tsx
-│   ├── hooks/               # Custom hooks
-│   │   ├── usePublications.ts
-│   │   └── use-toast.tsx
-│   ├── pages/               # Páginas da aplicação
-│   │   ├── DashboardPage.tsx
-│   │   ├── LoginPage.tsx
-│   │   └── SignupPage.tsx
-│   ├── services/            # Serviços e API
-│   │   └── api.ts
-│   ├── types/               # Definições de tipos
-│   │   └── index.ts
-│   ├── lib/                 # Utilitários
-│   │   ├── utils.ts
-│   │   └── validations.ts
-│   └── assets/              # Recursos estáticos
-├── public/                  # Arquivos públicos
-├── package.json
-├── vite.config.ts
-└── tailwind.config.js
+### **4 Colunas de Status:**
+
+```mermaid
+flowchart LR
+    A[📋 Nova] --> B[👀 Lida]
+    B --> C[📤 Enviada p/ Advogado]
+    C --> D[✅ Concluída]
+    C --> B
+    
+    style A fill:#f9f9f9
+    style B fill:#e3f2fd
+    style C fill:#fff3e0
+    style D fill:#e8f5e8
 ```
 
-## 🚀 Instalação e Execução
+### **Funcionalidades do Board:**
 
-### Desenvolvimento Local
+- ✅ **Drag & Drop** entre colunas
+- ✅ **Paginação infinita** (30 itens por vez)
+- ✅ **Lazy loading** otimizado
+- ✅ **Validação de movimentos** automática
+- ✅ **Feedback visual** durante ações
+
+## 🎯 **Componentes Principais**
+
+### **Pages:**
+
+- `LoginPage.tsx` - Autenticação de usuário
+- `SignupPage.tsx` - Cadastro de usuário
+- `DashboardPage.tsx` - Interface principal Kanban
+
+### **Components:**
+
+- `KanbanBoard.tsx` - Board principal com drag-and-drop
+- `PublicationCard.tsx` - Card individual de publicação
+- `PublicationModal.tsx` - Modal detalhado de publicação
+- `SearchFilters.tsx` - Sistema de filtros avançados
+- `ProtectedRoute.tsx` - Proteção de rotas autenticadas
+
+### **Hooks Customizados:**
+
+- `usePublications.ts` - Gerenciamento de estado das publicações
+- `use-toast.tsx` - Sistema de notificações
+
+### **Services:**
+
+- `api.ts` - Cliente HTTP configurado
+- `AuthContext.tsx` - Context de autenticação global
+
+## 🚀 **Instalação e Desenvolvimento**
+
+### **Pré-requisitos:**
+
+- Node.js 18+
+- npm/yarn/pnpm
+
+### **Setup Local:**
 
 ```bash
-# Navegar para o diretório
 cd frontend
 
 # Instalar dependências
 npm install
-# ou
-pnpm install
 
-# Iniciar servidor de desenvolvimento
+# Iniciar desenvolvimento
 npm run dev
-# ou
-pnpm dev
 
-# Aplicação disponível em http://localhost:5173
+# Acesso: http://localhost:5173
 ```
 
-### Build para Produção
+### **Scripts Disponíveis:**
 
 ```bash
-# Build otimizado
+npm run dev        # Servidor de desenvolvimento
+npm run build      # Build para produção
+npm run preview    # Preview do build
+npm run lint       # Linting TypeScript/ESLint
+npm run type-check # Verificação de tipos
+```
+
+## 🔧 **Configuração**
+
+### **Variáveis de Ambiente:**
+
+```bash
+# Crie um arquivo .env.local
+VITE_API_BASE_URL=http://localhost:8000
+VITE_APP_TITLE="JusCash - DJE Manager"
+```
+
+### **API Integration:**
+
+O frontend se comunica com a API através do cliente configurado em `src/services/api.ts`:
+
+```typescript
+// Configuração automática de:
+// - Base URL da API
+// - Interceptors de autenticação
+// - Tratamento de erros globais
+// - Headers padrão
+```
+
+## 🎨 **Sistema de Design**
+
+### **Paleta de Cores:**
+
+- **Primary:** Blue (links, botões principais)
+- **Success:** Green (status positivos)
+- **Warning:** Orange (ações importantes)
+- **Error:** Red (erros e validações)
+
+### **Typography:**
+
+- **Font Family:** Inter (Google Fonts)
+- **Sizes:** Base 16px com escala modular
+- **Weights:** 400 (normal), 500 (medium), 600 (semibold)
+
+### **Components UI:**
+
+- Baseados em **Tailwind CSS**
+- **Shadcn/ui** components customizados
+- **Accessibility** (ARIA) implementado
+- **Dark mode** preparado (futuro)
+
+## 📱 **Responsividade**
+
+### **Breakpoints:**
+
+```css
+sm: 640px   /* Mobile landscape */
+md: 768px   /* Tablet */
+lg: 1024px  /* Desktop */
+xl: 1280px  /* Desktop large */
+```
+
+### **Layout Adaptativo:**
+
+- **Mobile:** Kanban em scroll horizontal
+- **Tablet:** 2 colunas visíveis
+- **Desktop:** 4 colunas completas
+- **Large:** Espaçamento otimizado
+
+## 🔐 **Sistema de Autenticação**
+
+### **Fluxo JWT:**
+
+```typescript
+// Login → JWT Token → Local Storage → API Headers
+// Refresh automático antes da expiração
+// Logout limpa todo o estado
+```
+
+### **Proteção de Rotas:**
+
+```typescript
+// ProtectedRoute.tsx
+// - Verifica token válido
+// - Redireciona para login se necessário
+// - Mantém rota de destino para redirect
+```
+
+## 🧪 **Testes (Futuros)**
+
+### **Setup Planejado:**
+
+```bash
+# Testing libraries a serem adicionadas:
+- @testing-library/react
+- @testing-library/user-event
+- vitest (test runner)
+- jsdom (DOM simulation)
+```
+
+### **Cobertura Planejada:**
+
+- Testes unitários de componentes
+- Testes de integração do Kanban
+- Testes de hooks customizados
+- Testes E2E com Playwright
+
+## 🚀 **Build e Deploy**
+
+### **Build para Produção:**
+
+```bash
 npm run build
-
-# Preview do build
-npm run preview
-
-# Lint do código
-npm run lint
-
-# Type checking
-npm run type-check
+# Output: dist/ folder
 ```
 
-## 🎨 Componentes Principais
+### **Deploy Options:**
 
-### KanbanBoard
+- **Netlify/Vercel:** Deploy automático via Git
+- **Docker:** Container otimizado disponível
+- **Static Hosting:** Qualquer servidor de arquivos estáticos
 
-O componente central da aplicação que exibe as publicações em colunas organizadas por status.
+## 🎯 **Features Avançadas**
 
-**Funcionalidades:**
-- Drag & drop entre colunas
-- Carregamento lazy/paginado
-- Filtros em tempo real
-- Busca integrada
+### **Performance:**
 
-```typescript
-// Uso básico
-<KanbanBoard 
-  publications={publications}
-  onStatusChange={handleStatusChange}
-  onPublicationClick={handlePublicationClick}
-/>
-```
+- **Code Splitting** automático por rota
+- **Tree Shaking** para bundle otimizado
+- **Lazy Loading** de componentes pesados
+- **Service Worker** (PWA ready)
 
-### PublicationCard
+### **UX/UI:**
 
-Card individual de cada publicação no board.
+- **Loading states** em todas as ações
+- **Error boundaries** para recuperação de erros
+- **Toast notifications** para feedback
+- **Skeleton loading** durante carregamento
 
-**Props principais:**
-- `publication` - Dados da publicação
-- `onStatusChange` - Callback para mudança de status
-- `onClick` - Callback para clique no card
+### **Acessibilidade:**
 
-### PublicationModal
+- **ARIA labels** implementados
+- **Keyboard navigation** completa
+- **Focus management** otimizado
+- **Screen reader** friendly
 
-Modal para visualização detalhada das publicações.
+## 📚 **Documentação Relacionada**
 
-**Funcionalidades:**
-- Exibição completa dos dados
-- Histórico de alterações
-- Ações de status
-- Responsivo
+- **[Guia de Correções](./FIX-GUIDE.md)** - Soluções para problemas comuns
+- **[README Principal](../../README.md)** - Visão geral do sistema
+- **[API Documentation](../api/README.md)** - Integração com backend
 
-### SearchFilters
+## 🔄 **Roadmap**
 
-Componente de filtros avançados.
+### **Próximas Features:**
 
-**Filtros disponíveis:**
-- Busca por texto
-- Filtro por data
-- Filtro por status
-- Filtro por valor
-- Filtro por número de processo
-
-## 🔄 Gerenciamento de Estado
-
-### Context API
-
-**AuthContext** - Gerencia autenticação e usuário logado:
-
-```typescript
-const { user, login, logout, loading } = useAuth();
-```
-
-### Custom Hooks
-
-**usePublications** - Gerencia estado das publicações:
-
-```typescript
-const {
-  publications,
-  loading,
-  error,
-  updateStatus,
-  refetch
-} = usePublications(filters);
-```
-
-### React Query
-
-Usado para cache e sincronização do estado do servidor:
-
-```typescript
-// Exemplo de query
-const { data: publications, isLoading } = useQuery({
-  queryKey: ['publications', filters],
-  queryFn: () => api.getPublications(filters),
-  staleTime: 5 * 60 * 1000, // 5 minutos
-});
-```
-
-## 🎮 Funcionalidades da Interface
-
-### Board Kanban
-
-#### Estados das Colunas
-
-1. **📋 Nova Publicação** - Publicações recém-coletadas
-2. **👀 Publicação Lida** - Analisadas pelo usuário
-3. **📤 Enviar para Advogado** - Encaminhadas para ação
-4. **✅ Concluído** - Finalizadas
-
-#### Interações
-
-- **Drag & Drop**: Arrastar cards entre colunas
-- **Click**: Abrir modal com detalhes
-- **Filtros**: Busca e filtros em tempo real
-- **Paginação**: Carregamento sob demanda
-
-### Sistema de Filtros
-
-```typescript
-interface Filters {
-  search?: string;
-  status?: PublicationStatus[];
-  startDate?: Date;
-  endDate?: Date;
-  minValue?: number;
-  maxValue?: number;
-  processNumber?: string;
-}
-```
-
-### Responsividade
-
-- **Desktop**: Layout completo com todas as colunas
-- **Tablet**: Colunas com scroll horizontal
-- **Mobile**: Uma coluna por vez com navegação
-
-## 🔐 Autenticação
-
-### Fluxo de Login
-
-1. **Login Page** - Formulário de autenticação
-2. **JWT Storage** - Tokens salvos no localStorage
-3. **Protected Routes** - Verificação automática
-4. **Refresh Token** - Renovação automática
-
-### Interceptadores de API
-
-```typescript
-// Interceptor para adicionar token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Interceptor para renovar token
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      await refreshToken();
-      return api.request(error.config);
-    }
-    throw error;
-  }
-);
-```
-
-## 🎨 Estilo e Design
-
-### Tailwind CSS
-
-Configuração customizada com tema do JusCash:
-
-```javascript
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          600: '#2563eb',
-        },
-        kanban: {
-          nova: '#f1f5f9',
-          lida: '#fef3c7', 
-          enviar: '#fed7aa',
-          concluido: '#dcfce7',
-        }
-      }
-    }
-  }
-}
-```
-
-### Componentes de UI
-
-Biblioteca de componentes básicos reutilizáveis:
-
-- **Button** - Botões com variantes
-- **Input** - Campos de entrada
-- **Dialog** - Modais e overlays
-- **Toast** - Notificações
-- **Label** - Labels de formulário
-
-## 🔧 Configurações
-
-### Vite Config
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      }
-    }
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  }
-});
-```
-
-### Variáveis de Ambiente
-
-```bash
-# .env
-VITE_API_URL=http://localhost:8000
-VITE_APP_NAME=JusCash
-VITE_APP_VERSION=1.0.0
-```
-
-## 🧪 Testes
-
-### Estrutura de Testes
-
-```bash
-# Executar testes
-npm run test
-
-# Coverage
-npm run test:coverage
-
-# Testes E2E (se configurado)
-npm run test:e2e
-```
-
-### Exemplo de Teste
-
-```typescript
-import { render, screen } from '@testing-library/react';
-import { PublicationCard } from './PublicationCard';
-
-test('renders publication card', () => {
-  const publication = {
-    id: '1',
-    processNumber: '1234567-89.2024.8.26.0100',
-    status: 'NOVA',
-    // ...outros campos
-  };
-
-  render(<PublicationCard publication={publication} />);
-  
-  expect(screen.getByText(publication.processNumber)).toBeInTheDocument();
-});
-```
-
-## 📱 Performance
-
-### Otimizações Implementadas
-
-- **React.memo** - Memoização de componentes
-- **useMemo/useCallback** - Memoização de valores/funções
-- **Lazy Loading** - Carregamento sob demanda
-- **Code Splitting** - Divisão de bundles
-- **Virtual Scrolling** - Para listas grandes
-
-### Bundle Analysis
-
-```bash
-# Analisar bundle
-npm run build && npx vite-bundle-analyzer dist
-```
-
-## 🚨 Troubleshooting
-
-Consulte o [Guia de Correções](./FIX-GUIDE.md) para problemas específicos do frontend.
-
-### Problemas Comuns
-
-1. **CORS Error** - Verificar configuração do backend
-2. **Token Expired** - Implementar refresh automático
-3. **Performance** - Otimizar re-renders
-
-## 📚 Recursos Adicionais
-
-- **[Guia de Correções](./FIX-GUIDE.md)** - Soluções para problemas conhecidos
-- **[Componentes de UI](./COMPONENT-GUIDE.md)** - Documentação dos componentes
-- **[API Documentation](../api/README.md)** - Endpoints disponíveis
+- [ ] Dark mode completo
+- [ ] PWA com cache offline
+- [ ] Drag-and-drop mobile otimizado
+- [ ] Filtros avançados salvos
+- [ ] Export de relatórios
+- [ ] Notificações em tempo real
 
 ---
 
-**Desenvolvido com React e ❤️ para uma experiência de usuário excepcional** 
+**Desenvolvido com ❤️ usando React + TypeScript + Vite**
