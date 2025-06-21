@@ -22,11 +22,13 @@ The service consists of three main components:
 ## Installation
 
 1. Install dependencies:
+
 ```bash
 pip install -r requirements-monitoring.txt
 ```
 
 2. Configure Redis connection in `.env` file:
+
 ```env
 REDIS_URL=redis://localhost:6379/0
 # Or use individual settings:
@@ -75,12 +77,15 @@ python monitor_json_files.py \
 ## Error Handling
 
 ### Retry Mechanism
+
 - Maximum retries: 5 attempts
 - Exponential backoff: 2^n seconds (max 60 seconds)
 - Failed items are moved to a separate Redis queue
 
 ### Error Logs
+
 Error logs are saved in JSON format with the following structure:
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:45.123456",
@@ -96,6 +101,7 @@ Error logs are saved in JSON format with the following structure:
 ## Redis Queues
 
 The service uses three Redis queues:
+
 - `json_files_queue`: Main queue for new files
 - `json_files_processing`: Temporary queue for items being processed
 - `json_files_failed`: Queue for items that failed after max retries
@@ -105,6 +111,7 @@ The service uses three Redis queues:
 The orchestrator monitors both services and automatically restarts them if they fail.
 
 ### Service Health
+
 - Redis connection is checked every minute
 - Failed processes are automatically restarted
 - Graceful shutdown on SIGINT/SIGTERM signals
@@ -114,6 +121,7 @@ The orchestrator monitors both services and automatically restarts them if they 
 ### Using systemd (Linux)
 
 Create `/etc/systemd/system/json-monitor.service`:
+
 ```ini
 [Unit]
 Description=JSON File Monitoring Service
@@ -133,6 +141,7 @@ WantedBy=multi-user.target
 ```
 
 Enable and start:
+
 ```bash
 sudo systemctl enable json-monitor
 sudo systemctl start json-monitor
@@ -175,6 +184,7 @@ CMD ["python", "monitor_json_files.py", "--api-endpoint", "${API_BASE_URL}"]
 ### Debug Mode
 
 Run with debug logging:
+
 ```bash
 python monitor_json_files.py --api-endpoint http://api.example.com/endpoint --log-level DEBUG
 ```

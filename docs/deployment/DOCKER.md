@@ -635,6 +635,7 @@ services:
 ### Problemas Comuns
 
 1. **Porta em uso**
+
    ```bash
    # Verificar portas
    sudo lsof -i :5173
@@ -644,18 +645,21 @@ services:
    ```
 
 2. **Problema de permissão**
+
    ```bash
    # Corrigir permissões
    sudo chown -R $USER:$USER .
    ```
 
 3. **Espaço em disco**
+
    ```bash
    # Limpar Docker
    docker system prune -a --volumes
    ```
 
 4. **Container não inicia**
+
    ```bash
    # Ver logs detalhados
    docker-compose logs container_name
@@ -672,4 +676,4 @@ services:
 
 ---
 
-**Docker: Containerização que facilita desenvolvimento e deployment** 🐳 
+**Docker: Containerização que facilita desenvolvimento e deployment** 🐳
