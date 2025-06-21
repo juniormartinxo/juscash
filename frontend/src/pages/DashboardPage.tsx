@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Scale, X, Calendar, Play, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
+import { Scale, X, Calendar, Play, Loader2, AlertCircle, CheckCircle, RefreshCw, StopCircle } from 'lucide-react'
 import { TbClockCog } from 'react-icons/tb'
 import { Navbar } from '@/components/Navbar'
 import { SearchFiltersComponent } from '@/components/SearchFilters'
@@ -35,6 +35,9 @@ export function DashboardPage() {
   const [scraperStatus, setScraperStatus] = useState<ScraperStatus | null>(null)
   const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const [statusPollingInterval, setStatusPollingInterval] = useState<NodeJS.Timeout | null>(null)
+
+  // Estados para parada forçada
+  const [isForceStoppingLoading, setIsForceStoppingLoading] = useState(false)
 
   const { toast } = useToast()
 
@@ -207,6 +210,57 @@ export function DashboardPage() {
     }
   }
 
+  const handleForceStopScraping = async () => {
+    try {
+      setIsForceStoppingLoading(true)
+
+      const response = await fetch('http://localhost:5000/force-stop-scraping', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.status === 'success') {
+        toast({
+          title: "Scraping parado com sucesso!",
+          description: result.message,
+        })
+      } else if (result.status === 'partial') {
+        toast({
+          title: "Parada parcial",
+          description: result.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Erro na parada forçada",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+
+      // Verificar status novamente para atualizar a UI
+      setTimeout(() => checkScraperStatus(), 2000)
+
+    } catch (error) {
+      console.error('Erro ao forçar parada do scraping:', error)
+      toast({
+        title: "Erro ao forçar parada",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      })
+    } finally {
+      setIsForceStoppingLoading(false)
+    }
+  }
+
   const getStatusDisplay = () => {
     if (!scraperStatus) return null
 
@@ -269,6 +323,7 @@ export function DashboardPage() {
   const isScrapingDisabled = () => {
     return (
       isScrapingLoading ||
+      isForceStoppingLoading ||
       scraperStatus?.status.scraping ||
       (!useCurrentDate && (!startDate || !endDate))
     )
@@ -339,7 +394,7 @@ export function DashboardPage() {
                 </div>
                 <button
                   onClick={() => setIsDrawerOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                 >
                   <X size={20} className="text-gray-500" />
                 </button>
@@ -351,123 +406,143 @@ export function DashboardPage() {
                   {/* Status dos serviços */}
                   {getStatusDisplay()}
 
-                  {/* Alerta quando scraping está rodando */}
-                  {scraperStatus?.status.scraping && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
-                        <span className="text-sm text-orange-800 font-medium">
-                          Scraping em execução
-                        </span>
+                  {/* Conteúdo condicional: Se scraping está rodando, mostra botão de parada; senão, mostra formulário */}
+                  {scraperStatus?.status.scraping ? (
+                    /* Seção de parada quando scraping está rodando */
+                    <div className="space-y-4">
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
+                          <span className="text-sm text-orange-800 font-medium">
+                            Scraping em execução
+                          </span>
+                        </div>
+                        <p className="text-sm text-orange-700 mt-1">
+                          O scraping está coletando dados. Você pode aguardar a conclusão ou forçar a parada.
+                        </p>
                       </div>
-                      <p className="text-sm text-orange-700 mt-1">
-                        Aguarde a conclusão antes de iniciar outro scraping.
-                      </p>
+
+                      {/* Botão para forçar parada */}
+                      <button
+                        onClick={handleForceStopScraping}
+                        disabled={isForceStoppingLoading}
+                        className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                      >
+                        {isForceStoppingLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Parando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <StopCircle className="w-4 h-4" />
+                            <span>Forçar Parada</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                  )}
-
-                  {/* Checkbox para usar data atual */}
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="useCurrentDate"
-                      checked={useCurrentDate}
-                      onChange={(e) => setUseCurrentDate(e.target.checked)}
-                      disabled={scraperStatus?.status.scraping}
-                      className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 disabled:opacity-50"
-                    />
-                    <label htmlFor="useCurrentDate" className="text-sm font-medium text-gray-700">
-                      Usar data atual (hoje)
-                    </label>
-                  </div>
-
-                  {/* Campos de data - aparecem apenas quando checkbox não está marcado */}
-                  {!useCurrentDate && (
-                    <>
-                      <div className="space-y-2">
-                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                          Data Inicial
+                  ) : (
+                    /* Seção do formulário quando scraping não está rodando */
+                    <div className="space-y-6">
+                      {/* Checkbox para usar data atual */}
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="useCurrentDate"
+                          checked={useCurrentDate}
+                          onChange={(e) => setUseCurrentDate(e.target.checked)}
+                          disabled={isForceStoppingLoading}
+                          className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 disabled:opacity-50"
+                        />
+                        <label htmlFor="useCurrentDate" className="text-sm font-medium text-gray-700">
+                          Usar data atual (hoje)
                         </label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                          <input
-                            type="date"
-                            id="startDate"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            disabled={scraperStatus?.status.scraping}
-                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
-                            required
-                          />
+                      </div>
+
+                      {/* Campos de data - aparecem apenas quando checkbox não está marcado */}
+                      {!useCurrentDate && (
+                        <>
+                          <div className="space-y-2">
+                            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                              Data Inicial
+                            </label>
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <input
+                                type="date"
+                                id="startDate"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                disabled={isForceStoppingLoading}
+                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                              Data Final
+                            </label>
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <input
+                                type="date"
+                                id="endDate"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                disabled={isForceStoppingLoading}
+                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
+                                required
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Informação sobre a data atual quando checkbox está marcado */}
+                      {useCurrentDate && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm text-blue-800">
+                              Scraping será executado para a data de hoje: <strong>{getCurrentDate()}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Configurações adicionais */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-sm font-medium text-gray-700 mb-2">Configurações</h3>
+                        <div className="space-y-2 text-sm text-gray-600">
+                          <div className="flex items-center justify-between">
+                            <span>Modo Headless:</span>
+                            <span className="font-medium text-green-600">Ativado</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                          Data Final
-                        </label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                          <input
-                            type="date"
-                            id="endDate"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            disabled={scraperStatus?.status.scraping}
-                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
-                            required
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Informação sobre a data atual quando checkbox está marcado */}
-                  {useCurrentDate && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-blue-800">
-                          Scraping será executado para a data de hoje: <strong>{getCurrentDate()}</strong>
-                        </span>
-                      </div>
+                      {/* Botão de iniciar */}
+                      <button
+                        onClick={handleStartScraping}
+                        disabled={isScrapingDisabled()}
+                        className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        {isScrapingLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Iniciando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            <span>Iniciar Scraping</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
-
-                  {/* Configurações adicionais */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Configurações</h3>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div className="flex items-center justify-between">
-                        <span>Modo Headless:</span>
-                        <span className="font-medium text-green-600">Ativado</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Botão de iniciar */}
-                  <button
-                    onClick={handleStartScraping}
-                    disabled={isScrapingDisabled()}
-                    className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
-                  >
-                    {isScrapingLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Iniciando...</span>
-                      </>
-                    ) : scraperStatus?.status.scraping ? (
-                      <>
-                        <AlertCircle className="w-4 h-4" />
-                        <span>Scraping em Execução</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        <span>Iniciar Scraping</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
             </div>
