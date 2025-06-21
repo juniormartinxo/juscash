@@ -6,7 +6,8 @@ Realizada auditoria completa dos testes do sistema de scraper, com foco na elimi
 
 ## 🔍 Levantamento Inicial
 
-### Situação Encontrada:
+### Situação Encontrada
+
 - **26 arquivos** relacionados a testes espalhados pelo projeto
 - **6 testes de debug** na raiz (desenvolvimento temporário)
 - **1 pasta** de testes específicos de fase (`melhorias_fase1`)
@@ -14,7 +15,8 @@ Realizada auditoria completa dos testes do sistema de scraper, com foco na elimi
 - **Estrutura desorganizada** com caches acumulados
 - **Configuração de pytest vazia**
 
-### Categorização dos Arquivos:
+### Categorização dos Arquivos
+
 ```
 📁 ANTES da auditoria:
 ├── 🗂️ Raiz do scraper (7 arquivos)
@@ -32,12 +34,14 @@ Realizada auditoria completa dos testes do sistema de scraper, com foco na elimi
 ## ♻️ Ações de Limpeza Realizadas
 
 ### 1. **Remoção de Arquivos Cache**
+
 ```bash
 # Removidos todos os __pycache__ e .pyc
 find backend/scraper -name "__pycache__" -type d -exec rm -rf {} +
 ```
 
 ### 2. **Eliminação de Testes de Debug/Desenvolvimento (6 arquivos)**
+
 ```bash
 # Removidos da raiz:
 - test_enrich_existing.py
@@ -47,39 +51,49 @@ find backend/scraper -name "__pycache__" -type d -exec rm -rf {} +
 - test_esaj_enrichment.py
 - test_full_enrichment_flow.py
 ```
+
 **Motivo**: Scripts específicos de desenvolvimento, não testes estruturados.
 
 ### 3. **Remoção de Testes de Fase Específica**
+
 ```bash
 # Removida pasta completa:
 rm -rf backend/scraper/tests/melhorias_fase1/
 ```
+
 **Motivo**: Testes de uma fase de desenvolvimento específica que já foi concluída.
 
 ### 4. **Correção de Estrutura Duplicada**
+
 ```bash
 # Removida pasta aninhada problemática:
 rm -rf backend/scraper/tests/unit/tests/
 ```
 
 ### 5. **Eliminação de Testes Duplicados**
+
 ```bash
 # Removido:
 - test_entities.py (duplicava test_publication_entity.py)
 ```
+
 **Motivo**: Testavam a mesma classe com imports diferentes.
 
 ### 6. **Reorganização de Scripts**
+
 ```bash
 # Movido:
 test-scraper.py → scripts/verify-scraper-setup.py
 ```
+
 **Motivo**: É um script de verificação, não um teste unitário.
 
 ## 🛠️ Melhorias Implementadas
 
 ### 1. **Configuração do Pytest**
+
 Criado `pytest.ini` completo com:
+
 - ✅ Marcadores personalizados (unit, integration, slow, network, database)
 - ✅ Configurações de saída otimizadas
 - ✅ Suporte a testes assíncronos
@@ -89,6 +103,7 @@ Criado `pytest.ini` completo com:
 - ✅ Padrões de coleta
 
 ### 2. **Estrutura Final Organizada**
+
 ```
 📁 DEPOIS da auditoria:
 backend/scraper/
@@ -112,7 +127,8 @@ backend/scraper/
 
 ## ✅ Resultados da Auditoria
 
-### 📊 Estatísticas:
+### 📊 Estatísticas
+
 | Métrica | Antes | Depois | Melhoria |
 |---------|-------|--------|----------|
 | **Total de arquivos** | 26 | 11 | -58% |
@@ -122,24 +138,28 @@ backend/scraper/
 | **Configuração pytest** | Vazia | Completa | ✅ |
 | **Sintaxe dos testes** | ? | 100% OK | ✅ |
 
-### 🎯 Benefícios Alcançados:
+### 🎯 Benefícios Alcançados
 
 #### ✅ **Organização**
+
 - Estrutura clara com separação unit/integration
 - Eliminação de redundâncias e duplicações
 - Configuração profissional do pytest
 
 #### ✅ **Manutenibilidade**
+
 - Testes focados e específicos
 - Sem código obsoleto ou de desenvolvimento
 - Nomenclatura clara e consistente
 
 #### ✅ **Performance**
+
 - Redução de 58% nos arquivos
 - Eliminação de testes desnecessários
 - Cache otimizado
 
 #### ✅ **Qualidade**
+
 - 100% dos testes com sintaxe correta
 - Fixtures compartilhadas no conftest.py
 - Configuração adequada para CI/CD
@@ -147,17 +167,20 @@ backend/scraper/
 ## 🚀 Como Executar os Testes
 
 ### **Instalação das Dependências**
+
 ```bash
 cd backend/scraper
 pip install -r tests/requirements-test.txt
 ```
 
 ### **Executar Todos os Testes**
+
 ```bash
 python -m pytest tests/ -v
 ```
 
 ### **Executar por Categoria**
+
 ```bash
 # Apenas testes unitários
 python -m pytest tests/unit/ -v
@@ -170,11 +193,13 @@ python -m pytest -m "not slow" -v
 ```
 
 ### **Com Cobertura de Código**
+
 ```bash
 python -m pytest tests/ --cov=src --cov-report=html
 ```
 
 ### **Verificar Setup do Sistema**
+
 ```bash
 python scripts/verify-scraper-setup.py
 ```
@@ -182,18 +207,22 @@ python scripts/verify-scraper-setup.py
 ## 📈 Próximos Passos Recomendados
 
 ### 1. **Cobertura de Código**
+
 - Implementar métricas de cobertura
 - Meta: mínimo 80% de cobertura
 
 ### 2. **Testes de Performance**
+
 - Adicionar benchmarks específicos
 - Monitorar tempo de execução
 
 ### 3. **Integração Contínua**
+
 - Configurar execução automática no CI/CD
 - Testes obrigatórios para pull requests
 
 ### 4. **Documentação de Testes**
+
 - Expandir exemplos de uso
 - Guias para novos desenvolvedores
 
@@ -201,4 +230,4 @@ python scripts/verify-scraper-setup.py
 
 **📅 Auditoria realizada**: $(date)  
 **🎯 Responsável**: Sistema de qualidade  
-**📋 Status**: ✅ Concluída com sucesso 
+**📋 Status**: ✅ Concluída com sucesso
