@@ -7,7 +7,9 @@ import type {
     PublicationStatus,
     SearchFilters,
     SignupForm,
-    User
+    User,
+    ScraperStatus,
+    ScrapingRequest
 } from "@/types"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -345,6 +347,35 @@ class ApiService {
 
     setToken(token: string): void {
         localStorage.setItem('accessToken', token)
+    }
+
+    // Métodos do Scraper
+    async getScraperStatus(): Promise<ScraperStatus> {
+        const response = await this.request<ApiResponse<ScraperStatus>>('/scraper-proxy/status')
+        return response.data
+    }
+
+    async startScraping(request: ScrapingRequest): Promise<any> {
+        const response = await this.request<ApiResponse<any>>('/scraper-proxy/run', {
+            method: 'POST',
+            body: JSON.stringify(request),
+        })
+        return response.data
+    }
+
+    async stopScraping(): Promise<any> {
+        const response = await this.request<ApiResponse<any>>('/scraper-proxy/force-stop', {
+            method: 'POST',
+        })
+        return response.data
+    }
+
+    async startScrapingToday(headless: boolean = true): Promise<any> {
+        const response = await this.request<ApiResponse<any>>('/scraper-proxy/today', {
+            method: 'POST',
+            body: JSON.stringify({ headless }),
+        })
+        return response.data
     }
 }
 
