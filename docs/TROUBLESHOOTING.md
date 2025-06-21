@@ -3,7 +3,8 @@
 ## ❌ Problema: Timeout na seleção do caderno
 
 **Erro típico:**
-```
+
+```txt
 Page.select_option: Timeout 30000ms exceeded.
 Call log:
 - waiting for locator("#cadernos")
@@ -13,9 +14,10 @@ Call log:
 ### 🔍 Diagnóstico
 
 1. **Execute o script de debug:**
-```bash
-python debug-caderno.py
-```
+
+   ```bash
+   python debug-caderno.py
+   ```
 
 2. **Verifique as opções disponíveis** na saída do script
 
@@ -43,16 +45,23 @@ O scraper agora inclui:
 Se o problema persistir:
 
 1. **Verifique a conectividade:**
-```bash
-curl -I https://dje.tjsp.jus.br/cdje/consultaAvancada.do
-```
+
+   ```bash
+   curl -I https://dje.tjsp.jus.br/cdje/consultaAvancada.do
+   ```
 
 2. **Teste em modo não-headless (fora do Docker):**
-```bash
-python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --no-headless
-```
 
-3. **Verifique logs detalhados** - O scraper agora mostra:
+   ```bash
+   python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --no-headless
+   ```
+
+3. **Verifique logs detalhados**
+
+   - O scraper agora mostra:
+
+4. **Parâmetros**
+
    - Opções de caderno encontradas
    - Qual caderno foi selecionado
    - Se há resultados de busca
@@ -60,6 +69,7 @@ python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --no-headle
 ## ❌ Problema: Nenhum resultado encontrado
 
 **Sintomas:**
+
 - "📭 Nenhum resultado encontrado para DD/MM/YYYY"
 - Scraper pula para próxima data
 
@@ -72,11 +82,14 @@ python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15 --no-headle
 ### ✅ Verificações
 
 1. **Teste uma data conhecida com resultados:**
-```bash
-python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
-```
 
-2. **Verifique logs** - O scraper agora mostra:
+   ```bash
+   python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
+   ```
+
+2. **Verifique logs**
+
+   - O scraper agora mostra:
    - Se div de resultados foi encontrada
    - Se há mensagens de "nenhum registro"
    - Quantos links de publicação foram encontrados
@@ -84,6 +97,7 @@ python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
 ## ❌ Problema: Erro ao baixar PDF
 
 **Sintomas:**
+
 - "❌ Erro ao baixar PDF"
 - Publicações encontradas mas não processadas
 
@@ -96,10 +110,11 @@ python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
 ## ❌ Problema: Erro no ESAJ
 
 **Sintomas:**
+
 - "❌ Dados de conteúdo não encontrados para PROCESSO"
 - PDF processado mas dados complementares faltando
 
-### ✅ Verificações
+### ✅ Verificações realizadas
 
 1. **Formato do processo** - Deve ser XXXXXXX-XX.XXXX.8.26.XXXX
 2. **Conectividade com ESAJ**
@@ -109,7 +124,7 @@ python scraping.py run --start-date 2025-01-15 --end-date 2025-01-15
 
 O scraper agora fornece logs detalhados:
 
-```
+```txt
 🔍 Opções disponíveis no caderno: [{'value': '3', 'text': 'Judicial - 1ª Instância'}]
 ✅ Caderno selecionado: 3
 🔍 Busca executada, aguardando resultados...
@@ -126,6 +141,7 @@ Se após seguir este guia o problema persistir:
 
 1. **Colete informações:**
    - Saída completa do `python debug-caderno.py`
+
    - Logs do scraper com timestamps
    - Data específica que está falhando
 
@@ -137,4 +153,4 @@ Se após seguir este guia o problema persistir:
 3. **Informações do ambiente:**
    - Versão do Docker/SO
    - Conectividade de rede
-   - Logs de sistema 
+   - Logs de sistema
