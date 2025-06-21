@@ -5,6 +5,7 @@ import { PublicationCard } from './PublicationCard'
 import { PublicationModal } from './PublicationModal'
 import { useToast } from '@/hooks/use-toast'
 import { usePublicationCount, useUpdatePublicationStatus } from '@/hooks/usePublications'
+import { useScrapingCompletionDetector } from '@/hooks/useScraper'
 import { apiService } from '@/services/api'
 import { Publication, PublicationStatus, SearchFilters, KanbanColumn, PublicationStatusName } from '@/types'
 import Spin from './Spin'
@@ -65,6 +66,9 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
 
   // Hook para atualizar status
   const updateStatusMutation = useUpdatePublicationStatus()
+
+  // Hook para detectar quando o scraping termina
+  const { isScrapingRunning } = useScrapingCompletionDetector()
 
   // Detectar novos dados e mostrar notificação - CORRIGIDO para evitar loop infinito
   useEffect(() => {
@@ -351,6 +355,23 @@ export function KanbanBoard({ filters }: KanbanBoardProps) {
 
   return (
     <div className="max-h-[calc(100vh-1000px)] mb-32 pb-32">
+      {/* Indicador de scraping ativo */}
+      {isScrapingRunning && (
+        <div className="mb-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-orange-800">
+                Scraping em execução
+              </span>
+            </div>
+            <span className="text-xs text-orange-600">
+              Novas publicações serão exibidas automaticamente quando o processo for concluído
+            </span>
+          </div>
+        </div>
+      )}
+
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-4 gap-6 h-full">
           {columnOrder.map((status) => {

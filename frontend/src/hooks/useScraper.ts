@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiService } from '@/services/api'
 import { ScraperStatus, ScrapingRequest } from '@/types'
 import { useToast } from './use-toast'
+import { publicationKeys } from './usePublications'
+import { useEffect, useRef } from 'react'
 
 // Keys para as queries do scraper
 export const scraperKeys = {
@@ -11,7 +13,10 @@ export const scraperKeys = {
 
 // Hook para buscar status do scraper
 export function useScraperStatus() {
-    return useQuery({
+    const queryClient = useQueryClient()
+    const wasScrapingRef = useRef<boolean>(false)
+
+    const query = useQuery({
         queryKey: scraperKeys.status(),
         queryFn: () => apiService.getScraperStatus(),
         staleTime: 1000 * 30, // 30 segundos
@@ -28,6 +33,31 @@ export function useScraperStatus() {
             return failureCount < 3
         },
     })
+
+    // Detectar quando o scraping termina e invalidar queries das publicações
+    useEffect(() => {
+        const currentlyScrapingStatus = query.data?.status?.scraping
+        const wasScrapingStatus = wasScrapingRef.current
+
+        // Se estava rodando e agora parou, invalidar queries das publicações
+        if (wasScrapingStatus && !currentlyScrapingStatus) {
+            console.log('🔄 [useScraperStatus] Scraping finished, invalidating publication queries')
+
+            // Invalidar todas as queries de publicações
+            queryClient.invalidateQueries({ queryKey: publicationKeys.all })
+
+            // Forçar refetch dos contadores
+            queryClient.refetchQueries({ queryKey: publicationKeys.counts() })
+
+            // Limpar cache do API service
+            apiService.clearCache()
+        }
+
+        // Atualizar ref para próxima verificação
+        wasScrapingRef.current = currentlyScrapingStatus || false
+    }, [query.data?.status?.scraping, queryClient])
+
+    return query
 }
 
 // Hook para iniciar scraping
@@ -46,6 +76,9 @@ export function useStartScraping() {
 
             // Invalidar e refetch do status
             queryClient.invalidateQueries({ queryKey: scraperKeys.status() })
+
+            // Também invalidar queries das publicações para preparar para novos dados
+            queryClient.invalidateQueries({ queryKey: publicationKeys.all })
 
             const formatDate = (dateStr: string) => {
                 const [year, month, day] = dateStr.split('-')
@@ -160,5 +193,49 @@ export function useRefreshScraperStatus() {
         console.log('🔄 [useRefreshScraperStatus] Manual refresh triggered')
         queryClient.invalidateQueries({ queryKey: scraperKeys.status() })
         queryClient.refetchQueries({ queryKey: scraperKeys.status() })
+    }
+}
+
+// Hook para detectar quando há novas publicações (usado pelo KanbanBoard)
+export function useScrapingCompletionDetector() {
+    const queryClient = useQueryClient()
+    const { toast } = useToast()
+    const wasScrapingRef = useRef<boolean>(false)
+
+    const { data: scraperStatus } = useQuery({
+        queryKey: scraperKeys.status(),
+        queryFn: () => apiService.getScraperStatus(),
+        staleTime: 1000 * 30,
+        refetchInterval: 5000,
+        refetchIntervalInBackground: true,
+    })
+
+    // Detectar quando o scraping termina
+    useEffect(() => {
+        const currentlyScrapingStatus = scraperStatus?.status?.scraping
+        const wasScrapingStatus = wasScrapingRef.current
+
+        // Se estava rodando e agora parou, mostrar notificação
+        if (wasScrapingStatus && !currentlyScrapingStatus) {
+            console.log('🎉 [useScrapingCompletionDetector] Scraping completed!')
+
+            toast({
+                title: "🎉 Scraping concluído!",
+                description: "Novas publicações podem estar disponíveis. Os dados serão atualizados automaticamente.",
+                duration: 5000,
+            })
+
+            // Invalidar todas as queries de publicações
+            queryClient.invalidateQueries({ queryKey: publicationKeys.all })
+            queryClient.refetchQueries({ queryKey: publicationKeys.counts() })
+            apiService.clearCache()
+        }
+
+        wasScrapingRef.current = currentlyScrapingStatus || false
+    }, [scraperStatus?.status?.scraping, queryClient, toast])
+
+    return {
+        isScrapingRunning: scraperStatus?.status?.scraping || false,
+        scraperStatus
     }
 } 
