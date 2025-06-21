@@ -5,17 +5,8 @@ import { Navbar } from '@/components/Navbar'
 import { SearchFiltersComponent } from '@/components/SearchFilters'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { useToast } from '@/hooks/use-toast'
-import type { SearchFilters } from '@/types'
-
-interface ScraperStatus {
-  status: {
-    monitor: boolean
-    scraping: boolean
-  }
-  pids: Record<string, string[]>
-  script_directory: string
-  python_executable: string
-}
+import { useScraperStatus, useStartScraping, useStopScraping, useRefreshScraperStatus } from '@/hooks/useScraper'
+import type { SearchFilters, ScrapingRequest } from '@/types'
 
 export function DashboardPage() {
   const [filters, setFilters] = useState<SearchFilters>({
@@ -27,20 +18,17 @@ export function DashboardPage() {
   const [isDrawerAnimating, setIsDrawerAnimating] = useState(false)
 
   // Estados do formulário de scraping
-  const [isScrapingLoading, setIsScrapingLoading] = useState(false)
   const [useCurrentDate, setUseCurrentDate] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // Estados do status do scraper
-  const [scraperStatus, setScraperStatus] = useState<ScraperStatus | null>(null)
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
-  const [statusPollingInterval, setStatusPollingInterval] = useState<NodeJS.Timeout | null>(null)
-
-  // Estados para parada forçada
-  const [isForceStoppingLoading, setIsForceStoppingLoading] = useState(false)
-
   const { toast } = useToast()
+
+  // Hooks do React Query para o scraper
+  const { data: scraperStatus, isLoading: isLoadingStatus, error: statusError } = useScraperStatus()
+  const startScrapingMutation = useStartScraping()
+  const stopScrapingMutation = useStopScraping()
+  const refreshStatus = useRefreshScraperStatus()
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
     setFilters(newFilters)
@@ -55,16 +43,6 @@ export function DashboardPage() {
     // Converte YYYY-MM-DD para DD/MM/YYYY
     const [year, month, day] = dateString.split('-')
     return `${day}/${month}/${year}`
-  }
-
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('accessToken')
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
   }
 
   const handleOpenDrawer = () => {
@@ -85,82 +63,6 @@ export function DashboardPage() {
     }, 350) // 350ms duração da animação + buffer
   }
 
-  // Função para verificar o status do scraper
-  const checkScraperStatus = async (showToast = false) => {
-    try {
-      setIsLoadingStatus(true)
-      const response = await fetch(`${API_BASE_URL}/scraper-proxy/status`, {
-        headers: getAuthHeaders()
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`)
-      }
-
-      const result = await response.json()
-      const status: ScraperStatus = result.data
-      setScraperStatus(status)
-
-      if (showToast) {
-        toast({
-          title: "Status atualizado",
-          description: status.status.scraping
-            ? "Scraping está em execução"
-            : "Scraping não está rodando",
-        })
-      }
-
-      return status
-    } catch (error) {
-      console.error('Erro ao verificar status:', error)
-      if (showToast) {
-        toast({
-          title: "Erro ao verificar status",
-          description: error instanceof Error ? error.message : "Erro desconhecido",
-          variant: "destructive",
-        })
-      }
-      return null
-    } finally {
-      setIsLoadingStatus(false)
-    }
-  }
-
-  // Verificar status quando o drawer abre
-  useEffect(() => {
-    if (isDrawerOpen) {
-      checkScraperStatus()
-    }
-  }, [isDrawerOpen])
-
-  // Polling do status quando scraping está rodando
-  useEffect(() => {
-    if (scraperStatus?.status.scraping) {
-      const interval = setInterval(() => {
-        checkScraperStatus()
-      }, 5000) // Verifica a cada 5 segundos
-
-      setStatusPollingInterval(interval)
-
-      return () => {
-        clearInterval(interval)
-        setStatusPollingInterval(null)
-      }
-    } else if (statusPollingInterval) {
-      clearInterval(statusPollingInterval)
-      setStatusPollingInterval(null)
-    }
-  }, [scraperStatus?.status.scraping])
-
-  // Limpar polling quando componente desmonta
-  useEffect(() => {
-    return () => {
-      if (statusPollingInterval) {
-        clearInterval(statusPollingInterval)
-      }
-    }
-  }, [])
-
   // Fechar drawer com ESC
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -177,10 +79,8 @@ export function DashboardPage() {
 
   const handleStartScraping = async () => {
     try {
-      // Verificar status primeiro
-      const currentStatus = await checkScraperStatus()
-
-      if (currentStatus?.status.scraping) {
+      // Verificar se scraping já está rodando
+      if (scraperStatus?.status.scraping) {
         toast({
           title: "Scraping já em execução",
           description: "Aguarde o scraping atual terminar antes de iniciar outro.",
@@ -188,8 +88,6 @@ export function DashboardPage() {
         })
         return
       }
-
-      setIsScrapingLoading(true)
 
       let finalStartDate = startDate
       let finalEndDate = endDate
@@ -219,94 +117,29 @@ export function DashboardPage() {
         }
       }
 
-      const response = await fetch(`${API_BASE_URL}/scraper-proxy/run`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          start_date: finalStartDate,
-          end_date: finalEndDate,
-          headless: true
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`)
+      const request: ScrapingRequest = {
+        start_date: finalStartDate,
+        end_date: finalEndDate,
+        headless: true
       }
 
-      const result = await response.json()
-
-      toast({
-        title: "Scraping iniciado com sucesso!",
-        description: `Período: ${formatDateToBrazilian(finalStartDate)} até ${formatDateToBrazilian(finalEndDate)}`,
-      })
+      await startScrapingMutation.mutateAsync(request)
 
       // Limpar o formulário
       setStartDate('')
       setEndDate('')
       setUseCurrentDate(false)
 
-      // Verificar status novamente para atualizar a UI
-      setTimeout(() => checkScraperStatus(), 2000)
-
     } catch (error) {
-      console.error('Erro ao iniciar scraping:', error)
-      toast({
-        title: "Erro ao iniciar scraping",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      })
-    } finally {
-      setIsScrapingLoading(false)
+      // Erro já tratado no hook
     }
   }
 
   const handleForceStopScraping = async () => {
     try {
-      setIsForceStoppingLoading(true)
-
-      const response = await fetch(`${API_BASE_URL}/scraper-proxy/force-stop`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`)
-      }
-
-      const result = await response.json()
-      const data = result.data
-
-      if (data.status === 'success') {
-        toast({
-          title: "Scraping parado com sucesso!",
-          description: data.message,
-        })
-      } else if (data.status === 'partial') {
-        toast({
-          title: "Parada parcial",
-          description: data.message,
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Erro na parada forçada",
-          description: data.message,
-          variant: "destructive",
-        })
-      }
-
-      // Verificar status novamente para atualizar a UI
-      setTimeout(() => checkScraperStatus(), 2000)
-
+      await stopScrapingMutation.mutateAsync()
     } catch (error) {
-      console.error('Erro ao forçar parada do scraping:', error)
-      toast({
-        title: "Erro ao forçar parada",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      })
-    } finally {
-      setIsForceStoppingLoading(false)
+      // Erro já tratado no hook
     }
   }
 
@@ -321,7 +154,7 @@ export function DashboardPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-700">Status dos Serviços</h3>
           <button
-            onClick={() => checkScraperStatus(true)}
+            onClick={() => refreshStatus()}
             disabled={isLoadingStatus}
             className="p-1 hover:bg-gray-200 rounded transition-colors"
             title="Atualizar status"
@@ -371,8 +204,8 @@ export function DashboardPage() {
 
   const isScrapingDisabled = () => {
     return (
-      isScrapingLoading ||
-      isForceStoppingLoading ||
+      startScrapingMutation.isPending ||
+      stopScrapingMutation.isPending ||
       scraperStatus?.status.scraping ||
       (!useCurrentDate && (!startDate || !endDate))
     )
@@ -414,7 +247,10 @@ export function DashboardPage() {
               <TbClockCog size={24} className="text-primary" />
               {/* Indicador de status quando scraping está rodando */}
               {scraperStatus?.status.scraping && (
-                <div className="absolute -top-1 -left-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="relative -top-11 -left-5  flex size-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex size-3 rounded-full bg-orange-500"></span>
+                </span>
               )}
             </button>
           </div>
@@ -481,10 +317,10 @@ export function DashboardPage() {
                       {/* Botão para forçar parada */}
                       <button
                         onClick={handleForceStopScraping}
-                        disabled={isForceStoppingLoading}
+                        disabled={stopScrapingMutation.isPending}
                         className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
                       >
-                        {isForceStoppingLoading ? (
+                        {stopScrapingMutation.isPending ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Parando...</span>
@@ -507,7 +343,7 @@ export function DashboardPage() {
                           id="useCurrentDate"
                           checked={useCurrentDate}
                           onChange={(e) => setUseCurrentDate(e.target.checked)}
-                          disabled={isForceStoppingLoading}
+                          disabled={startScrapingMutation.isPending}
                           className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 disabled:opacity-50"
                         />
                         <label htmlFor="useCurrentDate" className="text-sm font-medium text-gray-700">
@@ -529,7 +365,7 @@ export function DashboardPage() {
                                 id="startDate"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                disabled={isForceStoppingLoading}
+                                disabled={startScrapingMutation.isPending}
                                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
                                 required
                               />
@@ -547,7 +383,7 @@ export function DashboardPage() {
                                 id="endDate"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                disabled={isForceStoppingLoading}
+                                disabled={startScrapingMutation.isPending}
                                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
                                 required
                               />
@@ -585,7 +421,7 @@ export function DashboardPage() {
                         disabled={isScrapingDisabled()}
                         className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 cursor-pointer"
                       >
-                        {isScrapingLoading ? (
+                        {startScrapingMutation.isPending ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Iniciando...</span>
