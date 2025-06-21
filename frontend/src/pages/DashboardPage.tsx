@@ -50,6 +50,12 @@ export function DashboardPage() {
     return now.toISOString().split('T')[0]
   }
 
+  const formatDateToBrazilian = (dateString: string) => {
+    // Converte YYYY-MM-DD para DD/MM/YYYY
+    const [year, month, day] = dateString.split('-')
+    return `${day}/${month}/${year}`
+  }
+
   // Função para verificar o status do scraper
   const checkScraperStatus = async (showToast = false) => {
     try {
@@ -187,7 +193,7 @@ export function DashboardPage() {
 
       toast({
         title: "Scraping iniciado com sucesso!",
-        description: `Período: ${finalStartDate} até ${finalEndDate}`,
+        description: `Período: ${formatDateToBrazilian(finalStartDate)} até ${formatDateToBrazilian(finalEndDate)}`,
       })
 
       // Limpar o formulário
@@ -412,7 +418,6 @@ export function DashboardPage() {
                     <div className="space-y-4">
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                         <div className="flex items-center space-x-2">
-                          <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
                           <span className="text-sm text-orange-800 font-medium">
                             Scraping em execução
                           </span>
@@ -426,7 +431,7 @@ export function DashboardPage() {
                       <button
                         onClick={handleForceStopScraping}
                         disabled={isForceStoppingLoading}
-                        className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                        className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
                       >
                         {isForceStoppingLoading ? (
                           <>
@@ -506,7 +511,7 @@ export function DashboardPage() {
                           <div className="flex items-center space-x-2">
                             <Calendar className="w-4 h-4 text-blue-600" />
                             <span className="text-sm text-blue-800">
-                              Scraping será executado para a data de hoje: <strong>{getCurrentDate()}</strong>
+                              Scraping será executado para a data de hoje: <strong>{formatDateToBrazilian(getCurrentDate())}</strong>
                             </span>
                           </div>
                         </div>
