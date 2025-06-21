@@ -87,6 +87,7 @@ python test-monetary-values.py
 ```
 
 **Saída esperada:**
+
 ```
 🧪 Testando valores monetários no JSON
 📄 Publicação de teste criada: 0003901-40.2025.8.26.0053
@@ -117,11 +118,13 @@ Após aplicar a correção no `utils.ts`, os valores devem aparecer corretamente
 ## 📁 Arquivos para Alterar
 
 ### `frontend/src/lib/utils.ts`
+
 Substitua a função `formatCurrency` existente pela versão melhorada acima.
 
 ## 🔍 Formato dos Valores
 
 ### **Nos JSONs do Scraper:**
+
 ```json
 {
   "gross_value": "1242337",
@@ -132,6 +135,7 @@ Substitua a função `formatCurrency` existente pela versão melhorada acima.
 ```
 
 ### **Da API (com superjson):**
+
 ```json
 {
   "gross_value": {
@@ -142,6 +146,7 @@ Substitua a função `formatCurrency` existente pela versão melhorada acima.
 ```
 
 ### **No Frontend (após formatCurrency):**
+
 - `gross_value: "1242337"` → `"R$ 12.423,37"`
 - `interest_value: "808905"` → `"R$ 8.089,05"`
 - `attorney_fees: "215976"` → `"R$ 2.159,76"`
@@ -160,4 +165,4 @@ Com essas correções:
 - **Valores estão em centavos** nos JSONs (ex: 1242337 = R$ 12.423,37)
 - **Função formatCurrency divide por 100** para exibir corretamente
 - **Strings são convertidas** para números antes da formatação
-- **Fallbacks** implementados para casos de erro 
+- **Fallbacks** implementados para casos de erro
