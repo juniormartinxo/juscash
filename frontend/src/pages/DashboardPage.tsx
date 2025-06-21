@@ -1,10 +1,21 @@
-import { useState } from 'react'
-import { Scale, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Scale, X, Calendar, Play, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 import { TbClockCog } from 'react-icons/tb'
 import { Navbar } from '@/components/Navbar'
 import { SearchFiltersComponent } from '@/components/SearchFilters'
 import { KanbanBoard } from '@/components/KanbanBoard'
+import { useToast } from '@/hooks/use-toast'
 import type { SearchFilters } from '@/types'
+
+interface ScraperStatus {
+  status: {
+    monitor: boolean
+    scraping: boolean
+  }
+  pids: Record<string, string[]>
+  script_directory: string
+  python_executable: string
+}
 
 export function DashboardPage() {
   const [filters, setFilters] = useState<SearchFilters>({
@@ -14,8 +25,253 @@ export function DashboardPage() {
   })
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
+  // Estados do formulário de scraping
+  const [isScrapingLoading, setIsScrapingLoading] = useState(false)
+  const [useCurrentDate, setUseCurrentDate] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
+  // Estados do status do scraper
+  const [scraperStatus, setScraperStatus] = useState<ScraperStatus | null>(null)
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
+  const [statusPollingInterval, setStatusPollingInterval] = useState<NodeJS.Timeout | null>(null)
+
+  const { toast } = useToast()
+
   const handleFiltersChange = (newFilters: SearchFilters) => {
     setFilters(newFilters)
+  }
+
+  const getCurrentDate = () => {
+    const now = new Date()
+    return now.toISOString().split('T')[0]
+  }
+
+  // Função para verificar o status do scraper
+  const checkScraperStatus = async (showToast = false) => {
+    try {
+      setIsLoadingStatus(true)
+      const response = await fetch('http://localhost:5000/status')
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`)
+      }
+
+      const status: ScraperStatus = await response.json()
+      setScraperStatus(status)
+
+      if (showToast) {
+        toast({
+          title: "Status atualizado",
+          description: status.status.scraping
+            ? "Scraping está em execução"
+            : "Scraping não está rodando",
+        })
+      }
+
+      return status
+    } catch (error) {
+      console.error('Erro ao verificar status:', error)
+      if (showToast) {
+        toast({
+          title: "Erro ao verificar status",
+          description: error instanceof Error ? error.message : "Erro desconhecido",
+          variant: "destructive",
+        })
+      }
+      return null
+    } finally {
+      setIsLoadingStatus(false)
+    }
+  }
+
+  // Verificar status quando o drawer abre
+  useEffect(() => {
+    if (isDrawerOpen) {
+      checkScraperStatus()
+    }
+  }, [isDrawerOpen])
+
+  // Polling do status quando scraping está rodando
+  useEffect(() => {
+    if (scraperStatus?.status.scraping) {
+      const interval = setInterval(() => {
+        checkScraperStatus()
+      }, 5000) // Verifica a cada 5 segundos
+
+      setStatusPollingInterval(interval)
+
+      return () => {
+        clearInterval(interval)
+        setStatusPollingInterval(null)
+      }
+    } else if (statusPollingInterval) {
+      clearInterval(statusPollingInterval)
+      setStatusPollingInterval(null)
+    }
+  }, [scraperStatus?.status.scraping])
+
+  // Limpar polling quando componente desmonta
+  useEffect(() => {
+    return () => {
+      if (statusPollingInterval) {
+        clearInterval(statusPollingInterval)
+      }
+    }
+  }, [])
+
+  const handleStartScraping = async () => {
+    try {
+      // Verificar status primeiro
+      const currentStatus = await checkScraperStatus()
+
+      if (currentStatus?.status.scraping) {
+        toast({
+          title: "Scraping já em execução",
+          description: "Aguarde o scraping atual terminar antes de iniciar outro.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setIsScrapingLoading(true)
+
+      let finalStartDate = startDate
+      let finalEndDate = endDate
+
+      if (useCurrentDate) {
+        const currentDate = getCurrentDate()
+        finalStartDate = currentDate
+        finalEndDate = currentDate
+      } else {
+        // Validação das datas quando não usar data atual
+        if (!startDate || !endDate) {
+          toast({
+            title: "Erro de validação",
+            description: "Por favor, preencha ambas as datas.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+          toast({
+            title: "Erro de validação",
+            description: "A data inicial não pode ser posterior à data final.",
+            variant: "destructive",
+          })
+          return
+        }
+      }
+
+      const response = await fetch('http://localhost:5000/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          start_date: finalStartDate,
+          end_date: finalEndDate,
+          headless: true
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      toast({
+        title: "Scraping iniciado com sucesso!",
+        description: `Período: ${finalStartDate} até ${finalEndDate}`,
+      })
+
+      // Limpar o formulário
+      setStartDate('')
+      setEndDate('')
+      setUseCurrentDate(false)
+
+      // Verificar status novamente para atualizar a UI
+      setTimeout(() => checkScraperStatus(), 2000)
+
+    } catch (error) {
+      console.error('Erro ao iniciar scraping:', error)
+      toast({
+        title: "Erro ao iniciar scraping",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      })
+    } finally {
+      setIsScrapingLoading(false)
+    }
+  }
+
+  const getStatusDisplay = () => {
+    if (!scraperStatus) return null
+
+    const isScrapingRunning = scraperStatus.status.scraping
+    const isMonitorRunning = scraperStatus.status.monitor
+
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-gray-700">Status dos Serviços</h3>
+          <button
+            onClick={() => checkScraperStatus(true)}
+            disabled={isLoadingStatus}
+            className="p-1 hover:bg-gray-200 rounded transition-colors"
+            title="Atualizar status"
+          >
+            <RefreshCw className={`w-4 h-4 text-gray-500 ${isLoadingStatus ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Scraping:</span>
+            <div className="flex items-center space-x-2">
+              {isScrapingRunning ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                  <span className="font-medium text-orange-600">Em execução</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="font-medium text-green-600">Parado</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Monitor:</span>
+            <div className="flex items-center space-x-2">
+              {isMonitorRunning ? (
+                <>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="font-medium text-green-600">Ativo</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium text-gray-500">Inativo</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const isScrapingDisabled = () => {
+    return (
+      isScrapingLoading ||
+      scraperStatus?.status.scraping ||
+      (!useCurrentDate && (!startDate || !endDate))
+    )
   }
 
   return (
@@ -48,10 +304,14 @@ export function DashboardPage() {
           <div className="fixed right-0 top-1/2 transform -translate-y-1/2 z-10">
             <button
               onClick={() => setIsDrawerOpen(true)}
-              className="bg-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-l-lg p-4 border border-r-0 border-gray-200 hover:translate-x-1 cursor-pointer"
+              className="bg-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-l-lg p-4 border border-r-0 border-gray-200 hover:translate-x-1 cursor-pointer relative"
               title="Configurações"
             >
               <TbClockCog size={24} className="text-primary" />
+              {/* Indicador de status quando scraping está rodando */}
+              {scraperStatus?.status.scraping && (
+                <div className="absolute -top-1 -left-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+              )}
             </button>
           </div>
         </div>
@@ -74,7 +334,7 @@ export function DashboardPage() {
                 <div className="flex items-center space-x-2">
                   <TbClockCog size={20} className="text-primary" />
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Configurações
+                    Iniciar Scraping
                   </h2>
                 </div>
                 <button
@@ -87,9 +347,128 @@ export function DashboardPage() {
 
               {/* Content */}
               <div className="flex-1 p-6 overflow-y-auto">
-                <p className="text-gray-600">
-                  Configurações de tempo e agendamentos serão implementadas aqui.
-                </p>
+                <div className="space-y-6">
+                  {/* Status dos serviços */}
+                  {getStatusDisplay()}
+
+                  {/* Alerta quando scraping está rodando */}
+                  {scraperStatus?.status.scraping && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
+                        <span className="text-sm text-orange-800 font-medium">
+                          Scraping em execução
+                        </span>
+                      </div>
+                      <p className="text-sm text-orange-700 mt-1">
+                        Aguarde a conclusão antes de iniciar outro scraping.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Checkbox para usar data atual */}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="useCurrentDate"
+                      checked={useCurrentDate}
+                      onChange={(e) => setUseCurrentDate(e.target.checked)}
+                      disabled={scraperStatus?.status.scraping}
+                      className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 disabled:opacity-50"
+                    />
+                    <label htmlFor="useCurrentDate" className="text-sm font-medium text-gray-700">
+                      Usar data atual (hoje)
+                    </label>
+                  </div>
+
+                  {/* Campos de data - aparecem apenas quando checkbox não está marcado */}
+                  {!useCurrentDate && (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                          Data Inicial
+                        </label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="date"
+                            id="startDate"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            disabled={scraperStatus?.status.scraping}
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                          Data Final
+                        </label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="date"
+                            id="endDate"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            disabled={scraperStatus?.status.scraping}
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-gray-50"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Informação sobre a data atual quando checkbox está marcado */}
+                  {useCurrentDate && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-blue-800">
+                          Scraping será executado para a data de hoje: <strong>{getCurrentDate()}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Configurações adicionais */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Configurações</h3>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center justify-between">
+                        <span>Modo Headless:</span>
+                        <span className="font-medium text-green-600">Ativado</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botão de iniciar */}
+                  <button
+                    onClick={handleStartScraping}
+                    disabled={isScrapingDisabled()}
+                    className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {isScrapingLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Iniciando...</span>
+                      </>
+                    ) : scraperStatus?.status.scraping ? (
+                      <>
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Scraping em Execução</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" />
+                        <span>Iniciar Scraping</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
