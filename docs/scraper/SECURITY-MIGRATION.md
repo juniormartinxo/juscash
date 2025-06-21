@@ -47,8 +47,8 @@ SCRAPER_API_URL=http://localhost:5000
 
 ```bash
 # frontend/.env
-# ✅ ADICIONAR: URL da API principal
-VITE_API_URL=http://localhost:8000
+# ✅ ADICIONAR: URL da API principal (com /api)
+VITE_API_URL=http://localhost:8000/api
 
 # ❌ REMOVER: API key do scraper (não é mais necessária)
 # VITE_SCRAPER_API_KEY=xxx
@@ -68,7 +68,7 @@ fetch('http://localhost:5000/status', { headers })
 **Depois (SEGURO):**
 ```typescript
 // ✅ Usar JWT via proxy com variável de ambiente
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 const headers = {
   'Authorization': `Bearer ${token}`
 }
@@ -102,14 +102,14 @@ fetch(`${API_BASE_URL}/scraper-proxy/status`, { headers })
 ### Verificar Proxy Funcionando
 ```bash
 # 1. Obter JWT token
-API_URL=${VITE_API_URL:-"http://localhost:8000"}
-JWT_TOKEN=$(curl -X POST ${API_URL}/api/auth/login \
+API_URL=${VITE_API_URL:-"http://localhost:8000/api"}
+JWT_TOKEN=$(curl -X POST ${API_URL}/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password"}' \
   | jq -r '.data.token')
 
 # 2. Testar proxy (usar a URL da API)
-API_URL=${VITE_API_URL:-"http://localhost:8000"}
+API_URL=${VITE_API_URL:-"http://localhost:8000/api"}
 curl -H "Authorization: Bearer $JWT_TOKEN" \
   ${API_URL}/scraper-proxy/status
 ```
@@ -143,12 +143,12 @@ export SCRAPER_API_KEY="production-key-here"
 export SCRAPER_API_URL="https://scraper.example.com"
 
 # Frontend (SEM API KEYS!)
-export VITE_API_URL="https://api.example.com"
+export VITE_API_URL="https://api.example.com/api"
 ```
 
 ### Verificação
 ```bash
-# Testar comunicação
+# Testar comunicação  
 curl -H "Authorization: Bearer $PROD_JWT" \
   https://api.example.com/api/scraper-proxy/status
 ```
